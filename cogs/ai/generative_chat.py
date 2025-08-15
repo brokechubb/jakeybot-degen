@@ -174,8 +174,6 @@ class BaseChat():
                     </reply_metadata>
                     {message.content}"""
                 )
-                await message.channel.send(f"✅ Referenced message: {_context_message.jump_url}")
-
 
             # For now the entire function is under try 
             # Maybe this can be separated into another function
