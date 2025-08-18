@@ -1,13 +1,96 @@
+# Python
 **/__pycache__
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
 .vscode/
 temp/
 .venv/
+venv/
+ENV/
+env/
+.env
+
+# Environment files and secrets
+dev.env
+*.env
+.env.local
+.env.development
+.env.test
+.env.production
+.env.staging
+secrets.json
+secrets.yaml
+secrets.yml
+config.json
+config.yaml
+config.yml
+
+# API Keys and tokens
+*.key
+*.pem
+*.p12
+*.pfx
+*.crt
+*.cer
+*.der
+*.p7b
+*.p7c
+*.jks
+*.keystore
+
+# Database files
+chat_history.db
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs
+chroma.log
+*.log
+logs/
+
+# Temporary files
 .idx/
 _wavelink/plugins
 _wavelink/application.yml
 _wavelink/Lavalink.jar
 _wavelink/logs
-chat_history.db
-dev.env
-chroma.log
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Custom bot files
 emojis.yaml

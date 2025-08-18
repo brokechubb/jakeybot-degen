@@ -89,6 +89,14 @@ You will need to provide Discord bot token from the developers portal.
 
 Please see [CONFIG.md](./docs/CONFIG.md) for more information about configuration.
 
+### 🔒 Security
+**Important**: Never commit your `dev.env` file to version control! It contains sensitive API keys and tokens.
+
+- The `dev.env` file is automatically ignored by git
+- A pre-commit hook prevents accidental commits of sensitive information
+- Run `python scripts/security_check.py` to scan for potential security issues
+- See [SECURITY.md](./docs/SECURITY.md) for comprehensive security guidelines
+
 ## Music features
 THIS FEATURE IS ON HOLD!
 
