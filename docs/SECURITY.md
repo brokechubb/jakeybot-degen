@@ -5,6 +5,7 @@ This document provides comprehensive guidance on keeping your personal informati
 ## 🔒 Critical Security Measures
 
 ### 1. Environment Variables
+
 **NEVER commit your `dev.env` file to version control!**
 
 - Copy `dev.env.template` to `dev.env`
@@ -12,6 +13,7 @@ This document provides comprehensive guidance on keeping your personal informati
 - The `dev.env` file is already in `.gitignore` to prevent accidental commits
 
 ### 2. API Keys and Tokens
+
 Keep these secure and never share them:
 
 - **Discord Bot Token**: Your bot's authentication token
@@ -22,6 +24,7 @@ Keep these secure and never share them:
 - **MongoDB Connection String**: Database connection with credentials
 
 ### 3. Database Security
+
 - Never commit database files (`.db`, `.sqlite`, etc.)
 - Use environment variables for database connection strings
 - Consider using connection string encryption for production
@@ -29,7 +32,9 @@ Keep these secure and never share them:
 ## 🛡️ Security Features
 
 ### Pre-commit Hook
+
 A pre-commit hook is installed that automatically checks for:
+
 - API keys and tokens in code
 - Environment files being committed
 - Database files being committed
@@ -38,7 +43,9 @@ A pre-commit hook is installed that automatically checks for:
 The hook will block commits if it detects potential sensitive information.
 
 ### Comprehensive .gitignore
+
 The `.gitignore` file includes:
+
 - All environment files (`*.env`, `dev.env`)
 - API key files (`*.key`, `*.pem`, etc.)
 - Database files (`*.db`, `*.sqlite`)
@@ -48,26 +55,30 @@ The `.gitignore` file includes:
 
 ## 🚨 Common Security Mistakes to Avoid
 
-### ❌ Don't do this:
+### ❌ Don't do this
+
 ```python
 # Hardcoding API keys in code
 api_key = "sk-1234567890abcdef1234567890abcdef1234567890abcdef"
 ```
 
-### ✅ Do this instead:
+### ✅ Do this instead
+
 ```python
 # Using environment variables
 import os
 api_key = os.environ.get("OPENAI_API_KEY")
 ```
 
-### ❌ Don't commit:
+### ❌ Don't commit
+
 - `dev.env` files with real credentials
 - Database files with user data
 - Log files that might contain sensitive information
 - Configuration files with passwords
 
-### ✅ Safe to commit:
+### ✅ Safe to commit
+
 - `dev.env.template` (template files)
 - Code that reads from environment variables
 - Documentation and README files
@@ -75,13 +86,15 @@ api_key = os.environ.get("OPENAI_API_KEY")
 
 ## 🔍 Checking for Sensitive Information
 
-### Before committing, check:
+### Before committing, check
+
 1. **API Keys**: Look for patterns like `sk-`, `ghp_`, `AIza`
 2. **Connection Strings**: Check for URLs with credentials
 3. **Environment Files**: Ensure `.env` files aren't being committed
 4. **Database Files**: Verify no `.db` or `.sqlite` files are included
 
-### Manual check command:
+### Manual check command
+
 ```bash
 # Check for API keys in your code
 grep -r "sk-[a-zA-Z0-9]" . --exclude-dir=venv --exclude-dir=.git
@@ -95,13 +108,15 @@ grep -r "AIza[0-9A-Za-z-_]" . --exclude-dir=venv --exclude-dir=.git
 
 ## 🚨 If You Accidentally Commit Sensitive Information
 
-### Immediate Actions:
+### Immediate Actions
+
 1. **Don't panic** - act quickly
 2. **Revoke the exposed credentials** immediately
 3. **Generate new credentials** to replace the old ones
 4. **Update your environment variables** with the new credentials
 
-### Remove from Git History:
+### Remove from Git History
+
 ```bash
 # Remove file from git history (use with caution)
 git filter-branch --force --index-filter \
@@ -114,14 +129,16 @@ git push origin --force --all
 
 ## 🔐 Production Security
 
-### For production deployments:
+### For production deployments
+
 1. **Use environment variables** or secure secret management
 2. **Rotate API keys regularly**
 3. **Use least-privilege access** for all services
 4. **Monitor for unusual activity**
 5. **Keep dependencies updated**
 
-### Docker Security:
+### Docker Security
+
 ```bash
 # Use environment file for Docker
 docker run --env-file dev.env your-image
@@ -133,6 +150,7 @@ docker run -e TOKEN=your-token -e OPENAI_API_KEY=your-key your-image
 ## 📞 Getting Help
 
 If you discover a security vulnerability:
+
 1. **Don't create a public issue** with sensitive information
 2. **Contact the maintainer privately** if possible
 3. **Include minimal reproduction steps** without exposing credentials
@@ -140,6 +158,7 @@ If you discover a security vulnerability:
 ## ✅ Security Checklist
 
 Before pushing to GitHub:
+
 - [ ] No API keys in code
 - [ ] No `dev.env` file committed
 - [ ] No database files committed

@@ -1,30 +1,36 @@
 - [Jakey Bot](#jakey-bot)
   - [Platform availability](#platform-availability)
   - [Features](#features)
+  - [🔒 Security Features](#-security-features)
 - [Installation and setup](#installation-and-setup)
   - [Required permissions for Discord bot](#required-permissions-for-discord-bot)
   - [Installation](#installation)
   - [Configuring](#configuring)
-  - [Music features](#music-features)
+  - [🔒 Security](#-security)
 - [Get Started](#get-started)
   - [Chat](#chat)
     - [Chat Variables](#chat-variables)
   - [Model used](#model-used)
 - [Commands](#commands)
+- [Security Tools](#security-tools)
 - [FAQ](#faq)
 
-
 # Jakey Bot
-Jakey Bot is a multi-model AI and music bot with personality, designed to give you access to popular AI chatbots from Google Gemini, OpenAI, Anthropic, Mistral, LLaMA, OpenRouter right within Discord! 
+
+Jakey Bot is a multi-model AI and music bot with personality, designed to give you access to popular AI chatbots from Google Gemini, OpenAI, Anthropic, Mistral, LLaMA, OpenRouter right within Discord!
+
+> **🔒 Enhanced Security Fork**: This fork includes comprehensive security measures to protect your personal information and API keys. See [Security Features](#-security-features) for details.
 
 ![Jakey Bot Banner](./assets/banner.png)
 
 This bot uses models from Google, OpenAI, Anthropic, Mistral, or use [OpenRouter](https://openrouter.ai) for unified access to some models using LiteLLM! Combined with best Python and Discord APIs to create a helpful AI assistants
 
 ## Platform availability
+
 Jakey AI is available as Discord Bot. Other platforms is coming soon!
 
 ## Features
+
 - Access to the top AI flagship models right within Discord!
 - Summarize text channels and messages
 - Multimodality support and summarize file attachments!
@@ -32,11 +38,26 @@ Jakey AI is available as Discord Bot. Other platforms is coming soon!
 - Create and conversationally edit images using Gemini 2.0 Flash Image generation
 
 Other non-AI extras include:
+
 - Mimic other users
 
+## 🔒 Security Features
+
+This fork includes comprehensive security measures to protect your personal information and API keys:
+
+- **🛡️ Enhanced .gitignore**: Automatically excludes sensitive files (`.env`, `*.key`, `*.db`, etc.)
+- **🔍 Pre-commit Hook**: Scans for API keys and tokens before commits
+- **📋 Security Check Script**: Comprehensive repository scanning for sensitive data
+- **🔧 Environment Setup**: Secure setup script for configuration
+- **📚 Security Documentation**: Complete guides and best practices
+- **🚨 Automatic Protection**: Prevents accidental exposure of credentials
+
+See [Security Tools](#security-tools) section for detailed usage instructions.
 
 # Installation and setup
+
 ## Required permissions for Discord bot
+
 - Read message history for channel summaries
 - Embed messages (required for rendering text more than 2000 and for most commands)
 - Send messages
@@ -47,11 +68,12 @@ Other non-AI extras include:
 - View Channels
 - Add Reactions
 
-
-For demo version, you can add this bot and see the required permissions and capabilities: https://discord.com/oauth2/authorize?client_id=1051409808877699072&permissions=563330095107136&integration_type=0&scope=bot
+For demo version, you can add this bot and see the required permissions and capabilities: <https://discord.com/oauth2/authorize?client_id=1051409808877699072&permissions=563330095107136&integration_type=0&scope=bot>
 
 ## Installation
+
 The best way to get started is through Docker method... You can directly pull the image from my Docker 🐳 Hub repository and simply run the bot below:
+
 ```
 ~ $ docker pull zavocc/jakey:sugilite
 ~ $ docker run -it --env-file dev.env --rm zavocc/jakey:sugilite
@@ -64,6 +86,7 @@ NOTE: You need to provide [the dev.env file](#configuring) as explained below
   But if you prefer manual method without using containers, you need to install Python version atleast 3.10+ with pip and venv is highly preferred and run the commands
 
   You must create a virtual environment before proceeding which you can do by running:
+
   ```
   python -m venv .venv
 
@@ -72,6 +95,7 @@ NOTE: You need to provide [the dev.env file](#configuring) as explained below
   ```
 
   Install dependencies as needed
+
   ```
   pip3 install -r requirements.txt
 
@@ -80,9 +104,11 @@ NOTE: You need to provide [the dev.env file](#configuring) as explained below
   pip3 uninstall py-cord discord.py
   pip3 install py-cord
   ```
+
 </details>
 
 ## Configuring
+
 After you install the required dependencies, configure your bot first by heading over to [dev.env.template](./dev.env.template) and save it as `dev.env` in the gitroot directory
 
 You will need to provide Discord bot token from the developers portal.
@@ -90,23 +116,58 @@ You will need to provide Discord bot token from the developers portal.
 Please see [CONFIG.md](./docs/CONFIG.md) for more information about configuration.
 
 ### 🔒 Security
+
 **Important**: Never commit your `dev.env` file to version control! It contains sensitive API keys and tokens.
 
-- The `dev.env` file is automatically ignored by git
-- A pre-commit hook prevents accidental commits of sensitive information
-- Run `python scripts/security_check.py` to scan for potential security issues
-- See [SECURITY.md](./docs/SECURITY.md) for comprehensive security guidelines
+This fork includes enhanced security measures:
+
+- **🛡️ Automatic Protection**: The `dev.env` file is automatically ignored by git
+- **🔍 Pre-commit Scanning**: A pre-commit hook prevents accidental commits of sensitive information
+- **📋 Security Verification**: Run `python scripts/security_check.py` to scan for potential security issues
+- **🔧 Secure Setup**: Use `python scripts/setup_env.py` for safe environment configuration
+- **📚 Comprehensive Guides**: See [SECURITY.md](./docs/SECURITY.md) for detailed security guidelines
+- **🚨 Real-time Detection**: Automatically detects API keys, tokens, and connection strings
+
+**Quick Security Check:**
+
+```bash
+# Run security scan
+python scripts/security_check.py
+
+# Set up environment securely
+python scripts/setup_env.py
+```
 
 ## Music features
+
 THIS FEATURE IS ON HOLD!
 
 # Get Started
-Get started by asking Jakey `/ask prompt:Who are you and how can I get started` or **@Jakey what can you do?**
+
+## 🚀 Quick Start (Secure Setup)
+
+1. **Set up environment securely**:
+
+   ```bash
+   python scripts/setup_env.py
+   ```
+
+2. **Configure your API keys** in the created `dev.env` file
+
+3. **Verify security**:
+
+   ```bash
+   python scripts/security_check.py
+   ```
+
+4. **Start the bot** and ask Jakey `/ask prompt:Who are you and how can I get started` or **@Jakey what can you do?**
 
 ## Chat
+
 Once you added or installed Jakey to your server or yourself, you can mention @Jakey along with your prompt or directly message Jakey in DMs. If you use Gemini model, you can prompt files such as images, audio, video, and visual PDFs too!
 
 ### Chat Variables
+
 When you enter a prompt to Jakey... you can use chat variables which are substrings to detect which action to perform before sending the request to LLM
 
 - `prompt /chat:ephemeral` - Do not append the last message turn to chat history while having its previous memory
@@ -116,17 +177,20 @@ When you enter a prompt to Jakey... you can use chat variables which are substri
 For claude-specific models, you can also use the `/cache:true` prompt variable to cache your inputs and save costs... Good for attaching PDF files.
 
 ## Model used
+
 The default model used for chat experience is Gemini 2.5 Flash Thinking, including other experiences like message summarization. However, you can switch to different chat models as you choice offered by OpenAI, Anthropic, xAI, DeepSeek, and LLaMA and custom models with OpenRouter.
 
 You can also sticky set the model using `/model set` command, or list models using `/model list` command. \
-If you decide touse OpenRouter model, you will need to configure `/openrouter` command first by setting the model names through https://openrouter.ai/models
+If you decide touse OpenRouter model, you will need to configure `/openrouter` command first by setting the model names through <https://openrouter.ai/models>
 
-When you set a model, you are switching chat threads to that model associated for that provider... So switching to GPT-4o model would have its own chat thread and files, but you can always switch back to previous provider with it's memory. Note that switching models for OpenRouter would result in chat thread being cleared to ensure consistency 
+When you set a model, you are switching chat threads to that model associated for that provider... So switching to GPT-4o model would have its own chat thread and files, but you can always switch back to previous provider with it's memory. Note that switching models for OpenRouter would result in chat thread being cleared to ensure consistency
 
 If you decide to use other models please see [Models comparison](https://github.com/zavocc/JakeyBot/wiki/Supported-Models) and [the LLM arena by livebench](https://livebench.ai/) to understand your models use cases.
 
 # Commands
+
 Jakey provides slash commands such as:
+
 - `/ask` - Ask Jakey quick questions.
 - `/sweep` - Clear the conversation
 - `/feature` - Extend Jakey skills by activating chat tools! (Clears conversation when feature are set, only supports Gemini models)
@@ -139,5 +203,68 @@ Jakey also has message actions or apps which is used to take action on a selecte
 
 ![apps](./assets/apps.png)
 
+# Security Tools
+
+This fork provides several tools to help maintain security and prevent accidental exposure of sensitive information:
+
+## 🔍 Security Check Script
+
+Comprehensive scanning tool that detects potential security issues:
+
+```bash
+python scripts/security_check.py
+```
+
+**What it scans for:**
+
+- API keys (OpenAI, Google, GitHub, Discord, etc.)
+- Database connection strings with credentials
+- Hardcoded passwords and secrets
+- Environment files with sensitive data
+- Certificate and key files
+
+## 🔧 Environment Setup Script
+
+Secure setup tool for creating your configuration:
+
+```bash
+python scripts/setup_env.py
+```
+
+**Features:**
+
+- Safely copies template to `dev.env`
+- Provides step-by-step guidance
+- Emphasizes security best practices
+- Prevents common configuration mistakes
+
+## 🛡️ Pre-commit Hook
+
+Automatically runs before every commit to prevent sensitive data exposure:
+
+- **Automatic Detection**: Scans for API keys and tokens
+- **File Type Checking**: Warns about environment and config files
+- **Commit Blocking**: Prevents commits with detected issues
+- **Bypass Option**: `git commit --no-verify` for legitimate cases
+
+## 📚 Security Documentation
+
+- **[SECURITY.md](./docs/SECURITY.md)**: Comprehensive security guide
+- **[SECURITY_SUMMARY.md](./docs/SECURITY_SUMMARY.md)**: Implementation overview
+- **[CONFIG.md](./docs/CONFIG.md)**: Configuration guide
+
+## 🚨 Emergency Procedures
+
+If you accidentally commit sensitive information:
+
+1. **Don't panic** - act quickly
+2. **Revoke exposed credentials** immediately
+3. **Generate new credentials** to replace old ones
+4. **Update environment variables** with new credentials
+5. **Use git filter-branch** to remove from history (if needed)
+
+See [SECURITY.md](./docs/SECURITY.md) for detailed emergency procedures.
+
 # FAQ
+
 Please see [FAQ](./docs/FAQ.md) for more information.

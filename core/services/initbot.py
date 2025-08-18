@@ -6,6 +6,7 @@ import aiohttp
 import logging
 import openai
 
+
 # List of services to be started, separated from main.py
 # for cleanliness and modularity
 class ServicesInitBot(bridge.Bot):
@@ -19,24 +20,30 @@ class ServicesInitBot(bridge.Bot):
 
         # OpenAI client for openai models
         _base_url = environ.get("OPENAI_API_ENDPOINT")
+        _openai_api_key = environ.get("OPENAI_API_KEY")
 
-        # Check if we need to use default_query param for Azure OpenAI
-        # Needed for Azure OpenAI
-        if environ.get("OPENAI_USE_AZURE_OPENAI") and _base_url:
-            _default_query = {"api-version": "preview"}
-            logging.info("Using Azure OpenAI endpoint for OpenAI models... Using nextgen API")
+        # Initialize OpenAI client only if API key is provided
+        if _openai_api_key:
+            # Check if we need to use default_query param for Azure OpenAI
+            _default_query = (
+                {"api-version": "preview"}
+                if environ.get("OPENAI_USE_AZURE_OPENAI") and _base_url
+                else None
+            )
+            self._openai_client = openai.AsyncOpenAI(
+                api_key=_openai_api_key,
+                base_url=_base_url,
+                default_query=_default_query,
+            )
+            logging.info(
+                "OpenAI client initialized successfully %s",
+                f"with custom endpoint: {_base_url}"
+                if _base_url
+                else "with default endpoint",
+            )
         else:
-            _default_query = None
-
-        self._openai_client = openai.AsyncOpenAI(
-            api_key=environ.get("OPENAI_API_KEY"),
-            base_url=_base_url,
-            default_query=_default_query
-        )
-        if _base_url:
-            logging.info("OpenAI client initialized successfully with custom endpoint: %s", _base_url)
-        else:
-            logging.info("OpenAI client initialized successfully with default endpoint")
+            self._openai_client = None
+            logging.warning("OPENAI_API_KEY not set; OpenAI models disabled.")
 
         # We are currently testing the next generation of Azure OpenAI
         # Simply pass this to your baseURL: https://YOUR-RESOURCE-NAME.openai.azure.com/openai/v1/
@@ -47,7 +54,7 @@ class ServicesInitBot(bridge.Bot):
         #     # OpenAI API endpoint must be set to Azure OpenAI endpoint
         #     if not _base_url:
         #         raise ValueError("OPENAI_API_ENDPOINT must be set when using Azure OpenAI")
-        #     
+        #
         #     self._openai_client = openai.AsyncAzureOpenAI(
         #         azure_endpoint=_base_url,
         #         api_key=environ.get("OPENAI_API_KEY"),
@@ -62,19 +69,26 @@ class ServicesInitBot(bridge.Bot):
         #     logging.info("Using OpenAI API for serving OpenAI models")
 
         # OpenAI client for OpenRouter
-        self._openai_client_openrouter = openai.AsyncOpenAI(
-            api_key=environ.get("OPENROUTER_API_KEY"),
-            base_url="https://openrouter.ai/api/v1"
-        )
-        logging.info("OpenAI client for OpenRouter initialized successfully")
+        if environ.get("OPENROUTER_API_KEY"):
+            self._openai_client_openrouter = openai.AsyncOpenAI(
+                api_key=environ.get("OPENROUTER_API_KEY"),
+                base_url="https://openrouter.ai/api/v1",
+            )
+            logging.info("OpenAI client for OpenRouter initialized successfully")
+        else:
+            self._openai_client_openrouter = None
+            logging.warning("OPENROUTER_API_KEY not set; OpenRouter models disabled.")
 
         # OpenAI client for Groq based models
-        self._openai_client_groq = openai.AsyncOpenAI(
-            api_key=environ.get("GROQ_API_KEY"),
-            base_url="https://api.groq.com/openai/v1"
-        )
-        logging.info("OpenAI client for Groq initialized successfully")
-
+        if environ.get("GROQ_API_KEY"):
+            self._openai_client_groq = openai.AsyncOpenAI(
+                api_key=environ.get("GROQ_API_KEY"),
+                base_url="https://api.groq.com/openai/v1",
+            )
+            logging.info("OpenAI client for Groq initialized successfully")
+        else:
+            self._openai_client_groq = None
+            logging.warning("GROQ_API_KEY not set; Groq models disabled.")
 
         # Everything else (mostly GET requests)
         self._aiohttp_main_client_session = aiohttp.ClientSession(loop=self.loop)
@@ -87,7 +101,9 @@ class ServicesInitBot(bridge.Bot):
             ).from_connection_string(environ.get("AZURE_STORAGE_CONNECTION_STRING"))
             logging.info("Azure Blob Storage client initialized successfully")
         except Exception as e:
-            logging.error("Failed to initialize Azure Blob Storage client: %s, skipping....", e)
+            logging.error(
+                "Failed to initialize Azure Blob Storage client: %s, skipping....", e
+            )
 
     async def stop_services(self):
         # Close aiohttp client sessions
