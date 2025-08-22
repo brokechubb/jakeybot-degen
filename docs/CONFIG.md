@@ -57,7 +57,7 @@ Add the `DEFAULT_TOOL` environment variable to your `dev.env` file:
 
 ```bash
 # Default tool to enable for new users/guilds
-# Options: ImageGen, ExaSearch, GitHub, YouTube, AudioTools, IdeationTools, CryptoPrice, CodeExecution, or None to disable
+# Options: ImageGen, ExaSearch, GitHub, YouTube, AudioTools, IdeationTools, CryptoPrice, CurrencyConverter, CodeExecution, or None to disable
 DEFAULT_TOOL=ImageGen
 ```
 
@@ -85,6 +85,7 @@ python scripts/set_default_tool.py None
 - **AudioTools** - Audio manipulation and voice cloning
 - **IdeationTools** - Canvas and artifacts for brainstorming
 - **CryptoPrice** - Live crypto token prices
+- **CurrencyConverter** - Live currency conversion between 170+ currencies
 - **CodeExecution** - Python code execution (Gemini only)
 - **None** - Disable all tools
 

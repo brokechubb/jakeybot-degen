@@ -84,6 +84,7 @@ python main.py
 ### Available Tools
 
 - **💰 CryptoPrice** - Live Solana/Ethereum token prices
+- **💱 CurrencyConverter** - Live currency conversion (170+ currencies)
 - **🎨 ImageGen** - AI image generation & editing (**Recently Fixed!**)
 - **🎵 AudioTools** - Audio creation & manipulation
 - **📺 YouTube** - Video analysis & summarization

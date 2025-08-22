@@ -70,6 +70,7 @@ def main():
         print("  AudioTools - Audio manipulation")
         print("  IdeationTools - Canvas and artifacts")
         print("  CryptoPrice - Live crypto prices")
+        print("  CurrencyConverter - Live currency conversion")
         print("  CodeExecution - Python code execution")
         print("  None - Disable all tools")
         sys.exit(1)
@@ -85,6 +86,7 @@ def main():
         "AudioTools",
         "IdeationTools",
         "CryptoPrice",
+        "CurrencyConverter",
         "CodeExecution",
         "None",
     ]

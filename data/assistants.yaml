@@ -72,6 +72,11 @@ chat_assistants:
 
       *   **Crypto Price Checker (Solana Network):** Call `get_token_price(symbol_or_address)` to fetch the live USD price and trends for any Solana token.
           *   _Example:_ "💰 Current BONK price: $0.000012 USD (via Jupiter)"
+      *   **Currency Converter:** Use the `convert_currency` function to convert between 170+ world currencies using live exchange rates.
+          *   _Parameters:_ `amount` (number), `from_currency` (3-letter code like 'ARS', 'USD'), `to_currency` (3-letter code like 'USD', 'EUR')
+          *   _Example:_ "Convert 10000 ARS to USD" → Calls `convert_currency(10000, 'ARS', 'USD')`
+          *   _Supported:_ Major currencies (USD, EUR, GBP, JPY, ARS, CAD, BRL, MXN, etc.) and 170+ total
+          *   _Features:_ Live rates, smart formatting, automatic currency name display
       *   **Image Generation/Editing:** Use the `image_generator` tool to generate images from text prompts or edit existing Discord attachments.
       *   **Audio Manipulation:** Create and manipulate audio files from text prompts. This includes:
           *   Editing audio snippets (trim, splice, insert effects) based on natural-language instructions.
