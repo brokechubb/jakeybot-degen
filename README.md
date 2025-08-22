@@ -1,6 +1,6 @@
 # Jakey Bot: Degen Edition 🎰
 
-**Multi-model AI Discord bot** with over the top personality — access to **Google Gemini**, **OpenAI**, **Anthropic**, **Mistral**, **LLaMA**, and **OpenRouter** models!
+**Multi-model AI Discord bot** with over the top personality — access to **Google Gemini**, **OpenAI**, **Anthropic**, **Mistral**, **LLaMA**, **DeepSeek**, **Grok**, and **OpenRouter** models!
 
 > **🔒 Enhanced Security Fork** | **🎰 Degenerate Gambler Edition** | **💀 Unfiltered Personality**
 
@@ -25,12 +25,12 @@ python main.py
 
 ### 🤖 AI Capabilities
 
-- **Multi-model support** (Gemini, GPT, Claude, Mistral, LLaMA)
+- **Multi-model support** (Gemini 2.5 Pro/Flash, GPT-5, Claude 4, DeepSeek V3/R1, Grok 3, LearnLM 2.0 Flash)
 - **Real-time chat** with personality
-- **Image generation & editing** (Gemini 2.0 Flash)
+- **Image generation & editing** (Gemini 2.0 Flash - **Recently Fixed!**)
 - **Audio manipulation** (TTS, voice cloning, editing)
 - **Code execution** (Python)
-- **Web search** &**YouTube analysis**
+- **Web search** & **YouTube analysis**
 
 ### 🎰 Online Gambling Specialties
 
@@ -72,6 +72,7 @@ python main.py
 - `/model set` - Switch AI models
 - `/summarize` - Channel insights
 - `/mimic` - User impersonation
+- `/feature` - Enable/disable tools (one at a time)
 
 ### Special Capabilities
 
@@ -83,13 +84,35 @@ python main.py
 ### Available Tools
 
 - **💰 CryptoPrice** - Live Solana/Ethereum token prices
-- **🎨 ImageGen** - AI image generation & editing
+- **🎨 ImageGen** - AI image generation & editing (**Recently Fixed!**)
 - **🎵 AudioTools** - Audio creation & manipulation
 - **📺 YouTube** - Video analysis & summarization
 - **💻 CodeExecution** - Python code execution
 - **🔍 ExaSearch** - Advanced web search
 - **📊 GitHub** - Repository access
-- **🎯 IdeationTools** - Creative brainstorming
+- **🎯 IdeationTools** - Creative brainstorming & file generation
+
+## 🆕 Latest Updates
+
+### 🔧 Critical Fixes (August 2025)
+
+- **Image Editing Fixed!** - Resolved critical bugs preventing image generation/editing
+- **Tool Execution** - Fixed Gemini API tool calling issues
+- **Discord Attachments** - Improved URL handling for image editing
+
+### 🚀 New Features
+
+- **Tool Management System** - New script for managing default tools across users
+- **Enhanced AI Chat** - Improved message handling and history management
+- **New AI Models** - Added GPT-5, DeepSeek V3/R1, Grok 3, LearnLM 2.0 Flash
+- **Default Tool Configuration** - Set preferred tools via environment variables
+
+### 🎯 New AI Models Available
+
+- **OpenAI**: GPT-5, GPT-5 Mini, O4 Mini
+- **DeepSeek**: V3 (non-reasoning), R1 (reasoning) via Azure AI Foundry
+- **xAI**: Grok 3 for creative tasks
+- **Google**: LearnLM 2.0 Flash Experimental for learning tasks
 
 ## 🔒 Security Tools
 
@@ -101,6 +124,9 @@ python scripts/security_check.py
 
 # Secure environment setup
 python scripts/setup_env.py
+
+# Manage default tools for all users
+python scripts/set_default_tool.py <tool_name>
 ```
 
 ### Protection Features
@@ -144,11 +170,11 @@ python scripts/setup_env.py
 
 ## 🎯 Get Started
 
-1. **Set up securely** with`python scripts/setup_env.py`
-2. **Configure API keys** in`dev.env`
-3. **Verify security** with`python scripts/security_check.py`
+1. **Set up securely** with `python scripts/setup_env.py`
+2. **Configure API keys** in `dev.env`
+3. **Verify security** with `python scripts/security_check.py`
 4. **Start chatting** with Jakey's unique personality!
 
 ---
 
-**🔒 Enhanced Security Fork** | **🎰 Courtyard Edition** | **💀 Unfiltered & Proud**
+**🔒 Enhanced Security Fork** | **🎰 Degen Edition** | **💀 Unfiltered & Proud**
