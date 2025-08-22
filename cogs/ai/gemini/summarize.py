@@ -11,23 +11,22 @@ import logging
 import json
 import random
 
+
 class GeminiAITools(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
 
         self._default_model = HelperFunctions.fetch_default_model(
-            model_type="base",
-            output_modalities="text",
-            provider="gemini"
+            model_type="base", output_modalities="text", provider="gemini"
         )["model_name"]
 
-   ###############################################
+    ###############################################
     # Summarize discord messages
     ###############################################
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild},
-        integration_types={discord.IntegrationType.guild_install}
+        integration_types={discord.IntegrationType.guild_install},
     )
     @discord.option(
         "before_date",
@@ -37,31 +36,39 @@ class GeminiAITools(commands.Cog):
     @discord.option(
         "after_date",
         description="Format mm/dd/yyyy - When to read messages before the particular date",
-        default=None
+        default=None,
     )
     @discord.option(
         "around_date",
         description="Format mm/dd/yyyy - When to read messages before the particular date",
-        default=None
+        default=None,
     )
     @discord.option(
         "max_references",
         description="Determines how many references it should display - Max 10.",
         min_value=1,
         max_value=10,
-        default=5
+        default=5,
     )
     @discord.option(
         "limit",
         description="Limit the number of messages to read - higher the limits can lead to irrelevant summary",
         min_value=5,
         max_value=100,
-        default=25
+        default=25,
     )
-    async def summarize(self, ctx, before_date: str, after_date: str, around_date: str, max_references: int, limit: int):
+    async def summarize(
+        self,
+        ctx,
+        before_date: str,
+        after_date: str,
+        around_date: str,
+        max_references: int,
+        limit: int,
+    ):
         """Summarize or catch up latest messages based on the current channel"""
         await ctx.response.defer(ephemeral=True)
-            
+
         # Do not allow message summarization if the channel is NSFW
         if ctx.channel.is_nsfw():
             await ctx.respond("❌ Sorry, I can't summarize messages in NSFW channels!")
@@ -69,24 +76,25 @@ class GeminiAITools(commands.Cog):
 
         # Parse the dates
         if before_date is not None:
-            before_date = datetime.datetime.strptime(before_date, '%m/%d/%Y')
+            before_date = datetime.datetime.strptime(before_date, "%m/%d/%Y")
         if after_date is not None:
-            after_date = datetime.datetime.strptime(after_date, '%m/%d/%Y')
+            after_date = datetime.datetime.strptime(after_date, "%m/%d/%Y")
         if around_date is not None:
-            around_date = datetime.datetime.strptime(around_date, '%m/%d/%Y')
+            around_date = datetime.datetime.strptime(around_date, "%m/%d/%Y")
 
         # Prompt feed which contains the messages
         _prompt_feed = [
             types.Part.from_text(
-                text = inspect.cleandoc(
-                    f"""Date today is {datetime.datetime.now().strftime('%m/%d/%Y')}
+                text=inspect.cleandoc(
+                    f"""Date today is {datetime.datetime.now().strftime("%m/%d/%Y")}
                     OK, now generate summaries for me:"""
                 )
             )
         ]
-        
 
-        _messages = ctx.channel.history(limit=limit, before=before_date, after=after_date, around=around_date)
+        _messages = ctx.channel.history(
+            limit=limit, before=before_date, after=after_date, around=around_date
+        )
         async for x in _messages:
             # Check if the message is empty, has less than 3 characters
             if len(x.content) < 3 or x.content.strip() == "":
@@ -96,7 +104,7 @@ class GeminiAITools(commands.Cog):
             if len(x.content) <= 2000:
                 _prompt_feed.append(
                     types.Part.from_text(
-                        text = inspect.cleandoc(
+                        text=inspect.cleandoc(
                             f"""# Message by: {x.author.name} at {x.created_at}
 
                             # Message body:
@@ -107,7 +115,8 @@ class GeminiAITools(commands.Cog):
 
                             # Additional information:
                             - Discord User ID: {x.author.id}
-                            - Discord User Display Name: {x.author.display_name}""")
+                            - Discord User Display Name: {x.author.display_name}"""
+                        )
                     )
                 )
             else:
@@ -117,45 +126,46 @@ class GeminiAITools(commands.Cog):
         # MODEL
         #################
         # set model
-        _completions = Completions(model_name=self._default_model, discord_ctx=ctx, discord_bot=self.bot)
-        _system_prompt = await HelperFunctions.set_assistant_type("discord_msg_summarizer_prompt", type=1)
-
-        # Constrain the output to JSON
-        _completions._genai_params.update({
-            "response_schema": {
-                "type": "object",
-                "properties": {
-                    "summary": {
-                        "type": "STRING"
-                    },
-                    "links": {
-                        "type": "array",
-                        "items": {
-                            "type": "OBJECT",
-                            "properties": {
-                                "description": {
-                                    "type": "STRING"
-                                },
-                                "jump_url": {
-                                    "type": "STRING"
-                                }
-                            },
-                            "required": ["description", "jump_url"]
-                        }
-                    }
-                },
-                "required": ["summary", "links"]
-            },
-            "response_mime_type": "application/json"
-        })
-
-        # Turn prompt feed to content
-        _prompt_feed = types.Content(
-            parts=_prompt_feed,
-            role="user"
+        _completions = Completions(
+            model_name=self._default_model, discord_ctx=ctx, discord_bot=self.bot
+        )
+        _system_prompt = await HelperFunctions.set_assistant_type(
+            "discord_msg_summarizer_prompt", type=1
         )
 
-        _summary = json.loads(await _completions.completion(_prompt_feed, system_instruction=_system_prompt))
+        # Constrain the output to JSON
+        _completions._genai_params.update(
+            {
+                "response_schema": {
+                    "type": "object",
+                    "properties": {
+                        "summary": {"type": "STRING"},
+                        "links": {
+                            "type": "array",
+                            "items": {
+                                "type": "OBJECT",
+                                "properties": {
+                                    "description": {"type": "STRING"},
+                                    "jump_url": {"type": "STRING"},
+                                },
+                                "required": ["description", "jump_url"],
+                            },
+                        },
+                    },
+                    "required": ["summary", "links"],
+                },
+                "response_mime_type": "application/json",
+            }
+        )
+
+        # Turn prompt feed to content
+        _prompt_feed = types.Content(parts=_prompt_feed, role="user")
+
+        _summary = json.loads(
+            await _completions.completion(
+                _prompt_feed, system_instruction=_system_prompt
+            )
+        )
 
         # If arguments are given, also display the date
         _app_title = f"Summary for {ctx.channel.name}"
@@ -169,7 +179,9 @@ class GeminiAITools(commands.Cog):
         # Send message in an embed format or in markdown file if it exceeds to 4096 characters
         if len(_summary["summary"]) > 4096:
             # Send the response as file
-            response_file = f"{environ.get('TEMP_DIR')}/response{random.randint(8000,9000)}.md"
+            response_file = (
+                f"{environ.get('TEMP_DIR')}/response{random.randint(8000, 9000)}.md"
+            )
             async with aiofiles.open(response_file, "a+") as f:
                 await f.write(_app_title + "\n----------\n")
                 await f.write(_summary["summary"])
@@ -177,13 +189,18 @@ class GeminiAITools(commands.Cog):
                 # Iterate over the provided links
                 await f.write(f"\n\n----------\n# References\n----------\n\n")
                 for _links in _summary["links"]:
-                    await f.write(f"- [{_links['description']}]({_links['jump_url']})\n")
-            await ctx.respond(f"Here is the summary generated for this channel", file=discord.File(response_file, "response.md"))
+                    await f.write(
+                        f"- [{_links['description']}]({_links['jump_url']})\n"
+                    )
+            await ctx.respond(
+                f"Here is the summary generated for this channel",
+                file=discord.File(response_file, "response.md"),
+            )
         else:
             _embed = discord.Embed(
-                    title=_app_title,
-                    description=str(_summary["summary"]),
-                    color=discord.Color.random()
+                title=_app_title,
+                description=str(_summary["summary"]),
+                color=discord.Color.random(),
             )
             _embed.set_author(name="Catch-up")
 
@@ -192,27 +209,72 @@ class GeminiAITools(commands.Cog):
                 if len(_embed.fields) >= max_references:
                     break
                 # Truncate the description to 256 characters if it exceeds beyond that since discord wouldn't allow it
-                _embed.add_field(name=_links["description"][:256], value=_links["jump_url"], inline=False)
-                
-            _embed.set_footer(text="Responses generated by AI may not give accurate results! Double check with facts!")
+                _embed.add_field(
+                    name=_links["description"][:256],
+                    value=_links["jump_url"],
+                    inline=False,
+                )
+
+            _embed.set_footer(
+                text="Responses generated by AI may not give accurate results! Double check with facts!"
+            )
             await ctx.respond(embed=_embed)
 
     # Handle errors
     @summarize.error
-    async def on_application_command_error(self, ctx: discord.ApplicationContext, error: discord.DiscordException):        
+    async def on_application_command_error(
+        self, ctx: discord.ApplicationContext, error: discord.DiscordException
+    ):
         # Check if this command is executed in a guild
         if isinstance(error, commands.NoPrivateMessage):
             await ctx.respond("❌ Sorry, this command is only to be used in a guild!")
+            return
 
         # Get original exception from the DiscordException.original attribute
         _error = getattr(error, "original", error)
-        if "time data" in str(_error):
-            await ctx.respond("⚠️ Sorry, I couldn't summarize messages with that date format! Please use **mm/dd/yyyy** format.")
-        else:
-            await ctx.respond("❌ Sorry, I can't summarize messages at the moment, I'm still learning! Please try again, and please try again later.")
-        
-        logging.error("An error has occurred while generating an summaries, reason: %s", _error, exc_info=True)
 
-    
+        # Handle specific error types
+        if "time data" in str(_error):
+            await ctx.respond(
+                "⚠️ Sorry, I couldn't summarize messages with that date format! Please use **mm/dd/yyyy** format."
+            )
+        elif "KeyError" in str(_error) and "utility_assistants" in str(_error):
+            await ctx.respond(
+                "❌ Configuration error: Missing utility assistant prompts. Please contact the bot administrator."
+            )
+        elif "KeyError" in str(_error) and "discord_msg_summarizer_prompt" in str(
+            _error
+        ):
+            await ctx.respond(
+                "❌ Configuration error: Missing summarizer prompt. Please contact the bot administrator."
+            )
+        elif "GEMINI_API_KEY" in str(_error):
+            await ctx.respond(
+                "❌ Configuration error: Gemini API key not set. Please contact the bot administrator."
+            )
+        elif "Gemini API client" in str(_error):
+            await ctx.respond(
+                "❌ Service error: Gemini API client not initialized. Please contact the bot administrator."
+            )
+        elif "aiohttp client session" in str(_error):
+            await ctx.respond(
+                "❌ Service error: HTTP client not initialized. Please contact the bot administrator."
+            )
+        elif "MONGO_DB_URL" in str(_error):
+            await ctx.respond(
+                "❌ Configuration error: Database connection not configured. Please contact the bot administrator."
+            )
+        else:
+            await ctx.respond(
+                "❌ Sorry, I encountered an unexpected error while summarizing messages. Please try again later or contact the bot administrator if the problem persists."
+            )
+
+        logging.error(
+            "An error has occurred while generating summaries, reason: %s",
+            _error,
+            exc_info=True,
+        )
+
+
 def setup(bot):
     bot.add_cog(GeminiAITools(bot))

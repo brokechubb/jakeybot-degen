@@ -152,7 +152,14 @@ class BaseChat:
             return
 
         # Must be mentioned and check if it's not starts with prefix or slash command
-        if message.guild is None or self.bot.user.mentioned_in(message):
+        if (
+            message.guild is None
+            or "jakey" in message.content.lower()
+            or "@jakey" in message.content.lower()
+            or "botmanjakey" in message.content.lower()
+            or "@botmanjakey" in message.content.lower()
+            or self.bot.user.mentioned_in(message)
+        ):
             # Ensure it must not be triggered by command prefix or slash command
             if message.content.startswith(
                 self.bot.command_prefix
