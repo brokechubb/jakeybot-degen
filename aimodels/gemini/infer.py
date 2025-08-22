@@ -124,15 +124,9 @@ class Completions(ModelParams):
         if self._model_name.endswith("-nonthinking"):
             self._model_name = self._model_name.replace("-nonthinking", "")
 
-            # Configure thinking budget to 0
-            _thinkingConfigBudget = types.ThinkingConfig(
-                thinking_budget=0,
-            )
             logging.info(
                 "Using non-thinking variant of the model: %s", self._model_name
             )
-        else:
-            _thinkingConfigBudget = None
 
         # Create response
         _response = await self._gemini_api_client.aio.models.generate_content(
@@ -140,9 +134,8 @@ class Completions(ModelParams):
             contents=prompt,
             config=types.GenerateContentConfig(
                 **self._genai_params,
-                system_instruction=system_instruction or None,
-                tools=tool,
-                thinking_config=_thinkingConfigBudget,
+                system_instruction=system_instruction,
+                tools=tool,  # Pass the tool schema in config to enable function calling
             ),
         )
 
@@ -179,7 +172,7 @@ class Completions(ModelParams):
         # First response which is called only once
         try:
             _response = await self.completion(
-                prompt=_chat_thread,
+                prompt=[_prompt],
                 tool=_Tool["tool_schema"],
                 system_instruction=system_instruction,
                 return_text=False,
@@ -383,25 +376,41 @@ class Completions(ModelParams):
                     return_text=False,
                 )
 
-                # If the response has tool calls, re-run the request
-                if not _response.function_calls:
-                    if _response.text or _response.candidates[0].content.parts[-1].text:
-                        await Utils.send_ai_response(
-                            self._discord_ctx,
-                            prompt,
-                            _response.candidates[0].content.parts[-1].text,
-                            self._discord_method_send,
+                _filtered_parts = []
+                for part in _response.candidates[0].content.parts:
+                    if part.text:
+                        _filtered_parts.append(types.Part.from_text(text=part.text))
+                    elif part.function_call:
+                        _filtered_parts.append(
+                            types.Part.from_function_call(
+                                function_call=part.function_call
+                            )
                         )
-                else:
-                    continue
+
+                _chat_thread.append(
+                    types.Content(
+                        parts=_filtered_parts, role=_response.candidates[0].content.role
+                    ).model_dump(exclude_unset=True)
+                )
 
             # Assuming we are done with the response and continue statement isn't triggered
             break
 
         # Done
         # Append the chat thread and send the status response
+        _filtered_parts = []
+        for part in _response.candidates[0].content.parts:
+            if part.text:
+                _filtered_parts.append(types.Part.from_text(text=part.text))
+            elif part.function_call:
+                _filtered_parts.append(
+                    types.Part.from_function_call(function_call=part.function_call)
+                )
+
         _chat_thread.append(
-            _response.candidates[0].content.model_dump(exclude_unset=True)
+            types.Content(
+                parts=_filtered_parts, role=_response.candidates[0].content.role
+            ).model_dump(exclude_unset=True)
         )
         return {"response": "OK", "chat_thread": _chat_thread}
 
