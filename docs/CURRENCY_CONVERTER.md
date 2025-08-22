@@ -1,10 +1,10 @@
-# CurrencyConverter Tool
+# 💱 CurrencyConverter Tool
 
 ## Overview
 
 The **CurrencyConverter** tool allows JakeyBot to convert between different currencies using live exchange rates. This tool provides reliable, real-time currency conversion for over 170 currencies worldwide.
 
-## Features
+## ✨ Features
 
 - **Live Exchange Rates**: Real-time conversion rates updated frequently
 - **170+ Currencies**: Support for major and minor world currencies
@@ -12,7 +12,7 @@ The **CurrencyConverter** tool allows JakeyBot to convert between different curr
 - **Smart Formatting**: Automatic number formatting based on currency type
 - **Error Handling**: Graceful fallbacks and user-friendly error messages
 
-## Usage
+## 🚀 Usage
 
 ### Enabling the Tool
 
@@ -40,7 +40,7 @@ The tool supports all major currencies including:
 - **Oceania**: AUD, NZD
 - **Africa**: ZAR, EGP, NGN
 
-## Technical Details
+## 🔧 Technical Details
 
 ### API Provider
 
@@ -87,7 +87,7 @@ tools/CurrencyConverter/
 }
 ```
 
-## Example Responses
+## 📊 Example Responses
 
 ### Successful Conversion
 
@@ -103,7 +103,7 @@ tools/CurrencyConverter/
 ❌ Conversion failed: Currency XXX not found in exchange rates
 ```
 
-## Integration
+## 🔗 Integration
 
 The CurrencyConverter tool is automatically discovered by JakeyBot's tool system and integrates seamlessly with:
 
@@ -112,7 +112,42 @@ The CurrencyConverter tool is automatically discovered by JakeyBot's tool system
 - **Tool Management**: Can be enabled/disabled via `/feature` command
 - **Default Configuration**: Can be set as default tool via environment variables
 
-## Troubleshooting
+## 🛠️ Management & Monitoring
+
+### Tool Status
+
+Check the tool's status and configuration:
+
+```bash
+# View all tools status
+python scripts/manage_tools.py
+
+# Check specific tool status
+python scripts/manage_tools.py status CurrencyConverter
+```
+
+### Set as Default Tool
+
+Make CurrencyConverter the default tool for new users:
+
+```bash
+# Set as default tool
+python scripts/set_default_tool.py CurrencyConverter
+
+# Or set in environment
+DEFAULT_TOOL=CurrencyConverter
+```
+
+### Tool Health Check
+
+Verify the tool is working correctly:
+
+```bash
+# Check tool files and configuration
+python scripts/manage_tools.py status CurrencyConverter
+```
+
+## 🚨 Troubleshooting
 
 ### Common Issues
 
@@ -126,7 +161,7 @@ The CurrencyConverter tool is automatically discovered by JakeyBot's tool system
 - **Caching**: Exchange rates are fetched fresh for each request
 - **Reliability**: 99%+ uptime with graceful error handling
 
-## Future Enhancements
+## 🔮 Future Enhancements
 
 Potential improvements for future versions:
 
@@ -135,14 +170,29 @@ Potential improvements for future versions:
 - **Batch Conversion**: Convert multiple amounts simultaneously
 - **Custom Rate Alerts**: Notifications for target exchange rates
 
-## Support
+## 📚 Additional Resources
+
+### Related Documentation
+
+- **Tools Overview**: `docs/TOOLS.md`
+- **Configuration Guide**: `docs/CONFIG.md`
+- **Scripts Documentation**: `scripts/README.md`
+
+### Management Scripts
+
+- **Tool Management**: `python scripts/manage_tools.py`
+- **Default Tool Setting**: `python scripts/set_default_tool.py CurrencyConverter`
+- **Security Check**: `python scripts/security_check.py`
+
+## 🆘 Support
 
 For issues with the CurrencyConverter tool:
 
 1. Check that the tool is properly enabled
 2. Verify your internet connection
 3. Try a different currency pair
-4. Contact bot administrators if problems persist
+4. Use the management scripts to diagnose issues
+5. Contact bot administrators if problems persist
 
 ---
 

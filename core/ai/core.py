@@ -7,12 +7,19 @@ import logging
 import os
 import yaml
 
+
 class Utils:
     ###############################################
     # Method to send message dynamically based on the length of the message
     ###############################################
     @staticmethod
-    async def send_ai_response(ctx: Union[discord.ApplicationContext, discord.Message], prompt: str, response: str, method_send, strip: bool = True) -> None:
+    async def send_ai_response(
+        ctx: Union[discord.ApplicationContext, discord.Message],
+        prompt: str,
+        response: str,
+        method_send,
+        strip: bool = True,
+    ) -> None:
         """Optimized method to send message based on the length of the message"""
         # Check if we can strip the message
         if strip and type(response) == str:
@@ -26,15 +33,19 @@ class Utils:
             # Send the response as file
             if ctx.guild:
                 if not ctx.channel.permissions_for(ctx.guild.me).attach_files:
-                    await method_send("⚠️ Your message was too long to be sent please ask a follow-up question of this answer in concise format.")
+                    await method_send(
+                        "⚠️ Your message was too long to be sent please ask a follow-up question of this answer in concise format."
+                    )
                     return
-                
-            await method_send("⚠️ Response is too long. But, I saved your response into a markdown file", file=discord.File(io.StringIO(response), "response.md"))
+
+            await method_send(
+                "⚠️ Response is too long. But, I saved your response into a markdown file",
+                file=discord.File(io.StringIO(response), "response.md"),
+            )
         elif len(response) >= 2000:
             await method_send(
                 embed=discord.Embed(
-                    title=prompt.replace("\n", " ")[0:20] + "...",
-                    description=response
+                    title=prompt.replace("\n", " ")[0:20] + "...", description=response
                 )
             )
         else:
@@ -52,7 +63,7 @@ class ModelsList:
         # Iterate through the models and yield each as a discord.OptionChoice
         for model in _internal_model_data:
             yield model["model"]
-        
+
     @staticmethod
     def get_models_list():
         # Load the models list from YAML file
@@ -65,8 +76,10 @@ class ModelsList:
             if model.get("hide_ui") is not None and model.get("hide_ui") == True:
                 continue
 
-            yield discord.OptionChoice(f"{model['name']} - {model['description']}", model["model"])
-        
+            yield discord.OptionChoice(
+                f"{model['name']} - {model['description']}", model["model"]
+            )
+
     @staticmethod
     def get_tools_list():
         _hasYieldDisableValue = False
@@ -86,7 +99,11 @@ class ModelsList:
                 _tool = importlib.import_module(f"tools.{_tool_names}")
             except Exception as e:
                 # Log the error for syntax and import errors
-                logging.error("An error has occurred while importing the tool definition: %s, reason: %s", _tool_names, e)
+                logging.error(
+                    "An error has occurred while importing the tool definition: %s, reason: %s",
+                    _tool_names,
+                    e,
+                )
                 continue
 
             # Check if it has __init__.py file
@@ -100,14 +117,23 @@ class ModelsList:
                 # method_send, discord_ctx, discord_bot
                 if hasattr(_tool.Tool, "__init__"):
                     # Check if the constructor has the parameters
-                    if not all(_params in _tool.Tool.__init__.__code__.co_varnames for _params in ["method_send", "discord_ctx", "discord_bot"]):
-                        logging.error("The tool %s does not have the required constructor parameters: method_send, discord_ctx, and discord_bot", _tool_names)
+                    if not all(
+                        _params in _tool.Tool.__init__.__code__.co_varnames
+                        for _params in ["method_send", "discord_ctx", "discord_bot"]
+                    ):
+                        logging.error(
+                            "The tool %s does not have the required constructor parameters: method_send, discord_ctx, and discord_bot",
+                            _tool_names,
+                        )
                         continue
 
                 # Get the tool human name
                 _tool_human_name = getattr(_tool.Tool, "tool_human_name")
             else:
-                logging.error("The tool %s does not have a tool_human_name and other necessary tool definition attributes", _tool_names)
+                logging.error(
+                    "The tool %s does not have a tool_human_name and other necessary tool definition attributes",
+                    _tool_names,
+                )
                 continue
 
             # Yield as discord.OptionChoice
@@ -136,4 +162,3 @@ class ModelsList:
         # Iterate through the tools and yield each as a discord.OptionChoice
         for uioptions in _remix_prompts:
             yield discord.OptionChoice(uioptions["image_style"])
-        

@@ -123,15 +123,12 @@ class Completions(ModelParams):
 
         # Agentic experiences
         # Begin inference operation
-        _interstitial = None
+        # Removed interstitial message variable
         _toolUseErrorOccurred = False
         while True:
             # Check for tools
             if _response.choices[0].message.tool_calls:
-                if not _interstitial:
-                    _interstitial = await self._discord_method_send(
-                        "▶️ Coming up with the plan..."
-                    )
+                # Removed interstitial message for cleaner tool usage
 
                 # Append the chat history
                 _chat_thread.append(
@@ -151,9 +148,7 @@ class Completions(ModelParams):
                 _toolCalls = _response.choices[0].message.tool_calls
                 _toolParts = []
                 for _tool in _toolCalls:
-                    await _interstitial.edit(
-                        f"▶️ Executing tool: **{_tool.function.name}**"
-                    )
+                    # Removed interstitial message edit for cleaner tool usage
 
                     if hasattr(
                         _Tool["tool_object"], f"_tool_function_{_tool.function.name}"
@@ -202,14 +197,9 @@ class Completions(ModelParams):
                     )
 
             # Re-run the request after tool call
-            if _interstitial and _toolParts:
-                # Edit interstitial message
-                if _toolUseErrorOccurred:
-                    await _interstitial.edit(
-                        f"⚠️ Error executing tool: **{_Tool['tool_human_name']}**"
-                    )
-                else:
-                    await _interstitial.edit(f"✅ Used: **{_Tool['tool_human_name']}**")
+            if _toolParts:
+                # Handle tool execution results
+                # Removed interstitial message handling for cleaner tool usage
 
                 # Append the tool call result to the chat thread
                 _chat_thread.extend(_toolParts)

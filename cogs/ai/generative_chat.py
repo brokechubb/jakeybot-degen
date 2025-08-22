@@ -102,9 +102,7 @@ class BaseChat:
                 f"📄 Processing the file: **{prompt.attachments[0].filename}**"
             )
             await _infer.input_files(attachment=prompt.attachments[0])
-            await _processFileInterstitial.edit(
-                f"✅ Used: **{prompt.attachments[0].filename}**"
-            )
+            # Removed the "✅ Used:" message for cleaner file processing
 
         ###############################################
         # Answer generation
@@ -118,6 +116,41 @@ class BaseChat:
         _system_prompt = await HelperFunctions.set_assistant_type(
             "jakey_system_prompt", type=0
         )
+
+        # Retrieve relevant facts from knowledge base
+        facts = await self.DBConn.search_facts(guild_id, _final_prompt, limit=3)
+        if facts:
+            knowledge_section = "Relevant knowledge:\n" + "\n".join(
+                f"- {fact}" for fact in facts
+            )
+            _system_prompt += "\n\n" + knowledge_section
+
+        # Add memory instructions to system prompt
+        memory_instructions = """
+IMPORTANT MEMORY INSTRUCTIONS:
+1. If the user shares personal information (name, preferences, interests, etc.), automatically remember it using the memory tool.
+2. When answering questions, always check your memory first for relevant information.
+3. Use the memory tool to store facts that would be useful for future conversations.
+4. Examples of what to remember: user names, preferences, interests, important dates, personal details.
+5. Examples of what NOT to remember: temporary requests, commands, or non-personal information.
+6. When you remember something, briefly acknowledge it in your response.
+7. When recalling information, present it naturally in conversation - don't show technical details.
+8. Never mention "tool used" or show technical implementation details.
+9. Make memory recall feel like natural conversation, not a database query.
+10. Integrate recalled information seamlessly into your responses.
+11. Use the memory tool responses directly in your conversation - they are already formatted naturally.
+12. When the memory tool returns information, present it as if you naturally remembered it yourself.
+
+Memory tool functions available:
+- remember_fact: Store new information
+- recall_fact: Search for relevant information
+- list_facts: List stored information by category
+"""
+        _system_prompt += "\n\n" + memory_instructions
+
+        # Check if the prompt is empty
+        if not _final_prompt:
+            raise CustomErrorMessage("Please provide a prompt to continue")
 
         # Generate the response and simulate the typing
         async with prompt.channel.typing():

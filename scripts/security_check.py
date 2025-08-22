@@ -19,15 +19,25 @@ from typing import List, Tuple
 SENSITIVE_PATTERNS = [
     # OpenAI API keys
     (r"sk-[a-zA-Z0-9]{20,}", "OpenAI API Key"),
+    # Azure OpenAI API keys
+    (r"sk-[a-zA-Z0-9]{32}", "Azure OpenAI API Key"),
+    # Claude API keys
+    (r"sk-ant-[a-zA-Z0-9]{48}", "Claude API Key"),
+    # Gemini API keys
+    (r"AIza[0-9A-Za-z-_]{35}", "Google/Gemini API Key"),
+    (r"AIzaSy[0-9A-Za-z\-_]{22}", "Google API Key (Alternative)"),
+    # Kimi API keys
+    (r"kimi-[a-zA-Z0-9]{32,}", "Kimi API Key"),
+    # XAI API keys
+    (r"xai-[a-zA-Z0-9]{32,}", "XAI API Key"),
+    # OpenRouter API keys
+    (r"sk-or-[a-zA-Z0-9]{32,}", "OpenRouter API Key"),
     # GitHub tokens
     (r"ghp_[a-zA-Z0-9]{36}", "GitHub Personal Access Token"),
     (r"gho_[a-zA-Z0-9]{36}", "GitHub OAuth Token"),
     (r"ghu_[a-zA-Z0-9]{36}", "GitHub User-to-Server Token"),
     (r"ghs_[a-zA-Z0-9]{36}", "GitHub Server-to-Server Token"),
     (r"ghr_[a-zA-Z0-9]{36}", "GitHub Refresh Token"),
-    # Google API keys
-    (r"AIza[0-9A-Za-z-_]{35}", "Google API Key"),
-    (r"AIzaSy[0-9A-Za-z\-_]{22}", "Google API Key (Alternative)"),
     # Google OAuth tokens
     (r"ya29\.[0-9A-Za-z\-_]+", "Google OAuth Token"),
     (r"1//[0-9A-Za-z\-_]+", "Google OAuth Refresh Token"),
@@ -38,6 +48,8 @@ SENSITIVE_PATTERNS = [
     (r"xoxp-[a-zA-Z0-9\-]+", "Slack User Token"),
     (r"xoxa-[a-zA-Z0-9\-]+", "Slack App Token"),
     (r"xoxr-[a-zA-Z0-9\-]+", "Slack App-Level Token"),
+    # Exa Search API keys
+    (r"exa-[a-zA-Z0-9]{32,}", "Exa Search API Key"),
     # Generic bearer tokens
     (r"Bearer [a-zA-Z0-9\-_\.]{20,}", "Bearer Token"),
     # Connection strings with credentials
@@ -51,6 +63,9 @@ SENSITIVE_PATTERNS = [
     (r'secret\s*=\s*[\'"][^\'"]+[\'"]', "Hardcoded Secret"),
     (r'token\s*=\s*[\'"][^\'"]+[\'"]', "Hardcoded Token"),
     (r'api_key\s*=\s*[\'"][^\'"]+[\'"]', "Hardcoded API Key"),
+    (r'api_secret\s*=\s*[\'"][^\'"]+[\'"]', "Hardcoded API Secret"),
+    (r'client_id\s*=\s*[\'"][^\'"]+[\'"]', "Hardcoded Client ID"),
+    (r'client_secret\s*=\s*[\'"][^\'"]+[\'"]', "Hardcoded Client Secret"),
 ]
 
 # Directories to exclude from scanning
@@ -65,6 +80,7 @@ EXCLUDE_DIRS = {
     ".venv",
     "env",
     "ENV",
+    ".env",
 }
 
 # Files to exclude from scanning (documentation examples, etc.)

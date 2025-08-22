@@ -236,17 +236,12 @@ class Completions(ModelParams):
 
         # Agentic experiences
         # Begin inference operation
-        _interstitial = None
+        # Removed interstitial message variable
         _toolUseErrorOccurred = False
         while True:
             # Check for function calls
             _toolParts = []
-            if _response.function_calls:
-                if not _interstitial:
-                    # Send interstitial message
-                    _interstitial = await self._discord_method_send(
-                        "▶️ Coming up with the plan..."
-                    )
+            # Removed interstitial message for cleaner tool usage
 
             # Check for tools or other content to be sent
             for _part in _response.candidates[0].content.parts:
@@ -263,10 +258,7 @@ class Completions(ModelParams):
                     )
 
                     try:
-                        # Edit the interstitial message
-                        await _interstitial.edit(
-                            f"▶️ Executing tool: **{_part.function_call.name}**"
-                        )
+                        # Removed interstitial message edit for cleaner tool usage
 
                         if hasattr(
                             _Tool["tool_object"],
@@ -303,7 +295,7 @@ class Completions(ModelParams):
                             "Something when calling specific tool lately, reason: %s", e
                         )
                         _toolResult = {
-                            "error": f"⚠️ Something went wrong while executing the tool: {e}\nTell the user about this error",
+                            "error": f"⚠️ Something went wrong while executing the tool: {e}\nTell the user about this error and make sure the tool is enabled with the /feature command",
                             "tool_args": _part.function_call.args,
                         }
 
@@ -351,15 +343,9 @@ class Completions(ModelParams):
                             )
                         )
 
-            # Edit interstitial message
-            # This is always executed when tools are used
-            if _toolParts and _interstitial:
-                if _toolUseErrorOccurred:
-                    await _interstitial.edit(
-                        f"⚠️ Error executing tool: **{_Tool['tool_human_name']}**"
-                    )
-                else:
-                    await _interstitial.edit(f"✅ Used: **{_Tool['tool_human_name']}**")
+            # Handle tool execution results
+            if _toolParts:
+                # Removed interstitial message handling for cleaner tool usage
 
                 # Append the tool parts to the chat thread
                 _chat_thread.append(
@@ -380,12 +366,21 @@ class Completions(ModelParams):
                 for part in _response.candidates[0].content.parts:
                     if part.text:
                         _filtered_parts.append(types.Part.from_text(text=part.text))
+                        # Send the AI's response that integrates tool results to Discord
+                        await self._discord_method_send(part.text)
                     elif part.function_call:
-                        _filtered_parts.append(
-                            types.Part.from_function_call(
-                                function_call=part.function_call
+                        try:
+                            # Try the newer version signature first
+                            _filtered_parts.append(
+                                types.Part.from_function_call(part.function_call)
                             )
-                        )
+                        except TypeError:
+                            # Fallback to older version signature if needed
+                            _filtered_parts.append(
+                                types.Part.from_function_call(
+                                    function_call=part.function_call
+                                )
+                            )
 
                 _chat_thread.append(
                     types.Content(
@@ -403,9 +398,16 @@ class Completions(ModelParams):
             if part.text:
                 _filtered_parts.append(types.Part.from_text(text=part.text))
             elif part.function_call:
-                _filtered_parts.append(
-                    types.Part.from_function_call(function_call=part.function_call)
-                )
+                try:
+                    # Try the newer version signature first
+                    _filtered_parts.append(
+                        types.Part.from_function_call(part.function_call)
+                    )
+                except TypeError:
+                    # Fallback to older version signature if needed
+                    _filtered_parts.append(
+                        types.Part.from_function_call(function_call=part.function_call)
+                    )
 
         _chat_thread.append(
             types.Content(

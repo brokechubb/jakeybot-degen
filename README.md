@@ -21,6 +21,25 @@ python scripts/security_check.py
 python main.py
 ```
 
+## ⚠️ **Important: Python Version Compatibility**
+
+**Currently Supported Python Versions:**
+
+- ✅ **Python 3.11** - Full compatibility (Recommended)
+- ⚠️ **Python 3.12** - Partial compatibility (Some features may not work)
+- ❌ **Python 3.13** - Not compatible (audioop module removed)
+
+**For best results, use Python 3.11:**
+
+```bash
+# Install Python 3.11
+sudo pacman -S python311 python311-pip python311-venv
+
+# Create virtual environment
+python3.11 -m venv venv
+source venv/bin/activate
+```
+
 ## ✨ Features
 
 ### 🤖 AI Capabilities
@@ -80,9 +99,11 @@ python main.py
 - **🎲 Gambling**: Expert casino & betting insights
 - **🏈 Sports**: Analysis, odds, predictions
 - **💸 Crypto**: Airdrops, tips, blockchain knowledge
+- **🧠 Memory**: Automatically remembers and recalls user information across conversations
 
 ### Available Tools
 
+- **🧠 Memory** - Automatic memory recall and information storage (**Recommended Default**)
 - **💰 CryptoPrice** - Live Solana/Ethereum token prices
 - **💱 CurrencyConverter** - Live currency conversion (170+ currencies)
 - **🎨 ImageGen** - AI image generation & editing (**Recently Fixed!**)
@@ -93,6 +114,28 @@ python main.py
 - **📊 GitHub** - Repository access
 - **🎯 IdeationTools** - Creative brainstorming & file generation
 
+## 🧠 Memory System
+
+The bot now features an intelligent memory system that automatically remembers and recalls information across conversations:
+
+### How It Works
+
+- **Automatic Detection**: The bot automatically detects when users share personal information and stores it
+- **Smart Recall**: When you ask questions, the bot searches its memory for relevant information
+- **Natural Integration**: Memory recall happens seamlessly during normal conversations
+
+### Examples
+
+- **Sharing Info**: "My name is Jimmy" → Bot remembers and acknowledges
+- **Recalling Info**: "What's my name?" → Bot recalls "Your name is Jimmy"
+- **Preferences**: "I love pizza" → Bot remembers your food preference
+- **Future Conversations**: Bot will remember your preferences even in new conversations
+
+### Manual Commands
+
+- `/remember <fact>` - Manually store information
+- `/feature Memory` - Enable the Memory tool for automatic operation
+
 ## 🆕 Latest Updates
 
 ### 🔧 Critical Fixes (August 2025)
@@ -100,9 +143,14 @@ python main.py
 - **Image Editing Fixed!** - Resolved critical bugs preventing image generation/editing
 - **Tool Execution** - Fixed Gemini API tool calling issues
 - **Discord Attachments** - Improved URL handling for image editing
+- **Python Compatibility** - Fixed audioop module issues with newer Python versions
 
 ### 🚀 New Features
 
+- **🧠 Memory Tool** - Automatically remembers and recalls user information
+- **🛠️ Management Scripts** - Comprehensive tool and AI model management
+- **🔒 Enhanced Security** - Improved security checking and environment setup
+- **📚 Better Documentation** - Comprehensive guides and troubleshooting
 - **Tool Management System** - New script for managing default tools across users
 - **Enhanced AI Chat** - Improved message handling and history management
 - **New AI Models** - Added GPT-5, DeepSeek V3/R1, Grok 3, LearnLM 2.0 Flash
@@ -114,6 +162,44 @@ python main.py
 - **DeepSeek**: V3 (non-reasoning), R1 (reasoning) via Azure AI Foundry
 - **xAI**: Grok 3 for creative tasks
 - **Google**: LearnLM 2.0 Flash Experimental for learning tasks
+
+## 🛠️ **New Management Scripts**
+
+### **Tool Management**
+
+```bash
+# Check all tools status
+python scripts/manage_tools.py
+
+# Check specific tool
+python scripts/manage_tools.py status Memory
+
+# Set default tool for all users
+python scripts/set_default_tool.py Memory
+```
+
+### **AI Model Management**
+
+```bash
+# Check all AI models status
+python scripts/manage_ai_models.py
+
+# Check specific model configuration
+python scripts/manage_ai_models.py config openai
+```
+
+### **Setup & Testing**
+
+```bash
+# Set up Memory tool as default
+python scripts/setup_memory.py
+
+# Test Memory tool functionality
+python scripts/test_memory.py
+
+# Security verification
+python scripts/security_check.py
+```
 
 ## 🔒 Security Tools
 
@@ -141,6 +227,18 @@ python scripts/set_default_tool.py <tool_name>
 
 ## 🛠️ Installation
 
+### Prerequisites
+
+**Required Python Version: 3.11 (Recommended)**
+
+```bash
+# Install Python 3.11
+sudo pacman -S python311 python311-pip python311-venv
+
+# Verify installation
+python3.11 --version
+```
+
 ### Docker (Recommended)
 
 ```bash
@@ -151,9 +249,12 @@ docker run -it --env-file dev.env --rm zavocc/jakey:sugilite
 ### Manual Setup
 
 ```bash
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate
+# Create virtual environment with Python 3.11
+python3.11 -m venv venv
+source venv/bin/activate
+
+# Verify Python version
+python --version  # Should show Python 3.11.x
 
 # Install dependencies
 pip install -r requirements.txt
@@ -168,13 +269,39 @@ python scripts/setup_env.py
 - **[SECURITY.md](./docs/SECURITY.md)** - Security best practices
 - **[TOOLS.md](./docs/TOOLS.md)** - Tool documentation
 - **[FAQ.md](./docs/FAQ.md)** - Frequently asked questions
+- **[MEMORY_QUICKSTART.md](./docs/MEMORY_QUICKSTART.md)** - Memory tool guide
+- **[Scripts README](./scripts/README.md)** - Management scripts guide
+- **[🚀 DISCORD_QUICKSTART.md](./docs/DISCORD_QUICKSTART.md)** - **5-minute quick start for Discord users**
+- **[🎮 DISCORD_USER_GUIDE.md](./docs/DISCORD_USER_GUIDE.md)** - **Complete user guide for Discord users**
 
 ## 🎯 Get Started
 
-1. **Set up securely** with `python scripts/setup_env.py`
-2. **Configure API keys** in `dev.env`
-3. **Verify security** with `python scripts/security_check.py`
-4. **Start chatting** with Jakey's unique personality!
+1. **Install Python 3.11** (required for compatibility)
+2. **Set up securely** with `python scripts/setup_env.py`
+3. **Configure API keys** in `dev.env`
+4. **Verify security** with `python scripts/security_check.py`
+5. **Set up Memory tool** with `python scripts/setup_memory.py`
+6. **Start chatting** with Jakey's unique personality!
+
+## 🆘 **Troubleshooting**
+
+### **Python Version Issues**
+
+```bash
+# Check Python version
+python --version
+
+# If not 3.11, install and use Python 3.11
+sudo pacman -S python311 python311-pip python311-venv
+python3.11 -m venv venv
+source venv/bin/activate
+```
+
+### **Common Issues**
+
+- **audioop module errors** → Use Python 3.11
+- **Tool not working** → Check with `python scripts/manage_tools.py`
+- **Memory not working** → Run `python scripts/setup_memory.py`
 
 ---
 

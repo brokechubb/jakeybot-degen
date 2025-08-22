@@ -1,8 +1,8 @@
-# Security Guide
+# 🔒 Security Guide
 
 This document provides comprehensive guidance on keeping your personal information and API keys secure when using JakeyBot.
 
-## 🔒 Critical Security Measures
+## 🚨 Critical Security Measures
 
 ### 1. Environment Variables
 
@@ -48,7 +48,7 @@ The `.gitignore` file includes:
 
 - All environment files (`*.env`, `dev.env`)
 - API key files (`*.key`, `*.pem`, etc.)
-- Database files (`*.db`, `*.sqlite`)
+- Database files (`*.db`, `.sqlite`)
 - Log files (`*.log`)
 - Virtual environments (`venv/`, `.venv/`)
 - IDE files (`.vscode/`, `.idea/`)

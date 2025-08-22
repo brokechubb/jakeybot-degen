@@ -7,6 +7,7 @@ import discord
 import google.genai as genai
 import io
 
+
 class Tool(ToolManifest):
     def __init__(self, method_send, discord_ctx, discord_bot):
         super().__init__()
@@ -15,40 +16,56 @@ class Tool(ToolManifest):
         self.discord_bot = discord_bot
 
     # Image generator
-    async def _tool_function(self, prompt: str, temperature: int = 0.7, discord_attachment_url: str = None):
+    async def _tool_function(
+        self, prompt: str, temperature: int = 0.7, discord_attachment_url: str = None
+    ):
         # Create image
-        _message_curent = await self.method_send(f"⌛ Generating with prompt **{prompt}**... this may take few minutes")
-        
+        _message_curent = await self.method_send(
+            f"⌛ Generating with prompt **{prompt}**... this may take few minutes"
+        )
+
         # Check if global aiohttp and google genai client session is initialized
         if not hasattr(self.discord_bot, "_gemini_api_client"):
-            raise Exception("gemini api client isn't set up, please check the bot configuration")
-        
+            raise Exception(
+                "gemini api client isn't set up, please check the bot configuration"
+            )
+
         if not hasattr(self.discord_bot, "_aiohttp_main_client_session"):
-            raise Exception("aiohttp client session for get requests not initialized, please check the bot configuration")
-        
+            raise Exception(
+                "aiohttp client session for get requests not initialized, please check the bot configuration"
+            )
+
         _api_client: genai.Client = self.discord_bot._gemini_api_client
-        _client_session: aiohttp.ClientSession = self.discord_bot._aiohttp_main_client_session
+        _client_session: aiohttp.ClientSession = (
+            self.discord_bot._aiohttp_main_client_session
+        )
 
         # Craft prompts
         _prompt = [prompt]
 
-        # Download the image if needed        
+        # Download the image if needed
         # We need to check the file size
         if discord_attachment_url:
             async with _client_session.head(url=discord_attachment_url) as _response:
                 _content_length = int(_response.headers.get("Content-Length", 0))
 
                 if _content_length == 0:
-                    raise ValueError("The image size is zero or invalid, please provide a valid image")
-                
+                    raise ValueError(
+                        "The image size is zero or invalid, please provide a valid image"
+                    )
+
                 # Check if the mime type is image
                 _mime_type = _response.headers.get("Content-Type", None)
                 if not _mime_type or not _mime_type.startswith("image"):
-                    raise ValueError("The file is not an image, please provide an image file")
+                    raise ValueError(
+                        "The file is not an image, please provide an image file"
+                    )
 
                 if _content_length > 10 * 1024 * 1024:
-                    raise ValueError("The image size is too large, please provide an image that is less than 10MB")
-                
+                    raise ValueError(
+                        "The image size is too large, please provide an image that is less than 10MB"
+                    )
+
             # Download the image
             async with _client_session.get(discord_attachment_url) as _response:
                 _imagedata = await _response.read()
@@ -57,9 +74,7 @@ class Tool(ToolManifest):
 
         # Set the model
         _default_model = HelperFunctions.fetch_default_model(
-            model_type="base",
-            output_modalities="image",
-            provider="gemini"
+            model_type="base", output_modalities="image", provider="gemini"
         )["model_name"]
 
         # Generate response
@@ -70,8 +85,8 @@ class Tool(ToolManifest):
                 "response_modalities": ["Text", "Image"],
                 "candidate_count": 1,
                 "temperature": temperature,
-                "max_output_tokens": 8192
-            }
+                "max_output_tokens": 8192,
+            },
         )
 
         if _response.candidates[0].finish_reason == "IMAGE_SAFETY":
@@ -84,7 +99,7 @@ class Tool(ToolManifest):
             "additionalInstructions": "DO NOT present te Gemini responses to end users!!! These texts are already sent.. Also, do not send the image URL as it will also be used for internal purposes and it would end up displaying it twice",
             "userExperienceConstraints": "DO NOT send the link to the image, it will be sent automatically. Unless the user explicitly asks for the image URL, then you can send it",
             "responsesLogs": [],
-            "generatedImagesURL": []
+            "generatedImagesURL": [],
         }
 
         # Send the image
@@ -93,14 +108,19 @@ class Tool(ToolManifest):
                 # HH_MM_SS_MMDDYYYY_EPOCH
                 _file_format = datetime.datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
 
-                 # Send the image
-                _files = await self.method_send(file=discord.File(fp=io.BytesIO(_parts.inline_data.data), filename=f"generated_image{_file_format}_image_part{_index}.png"))
+                # Send the image
+                _files = await self.method_send(
+                    file=discord.File(
+                        fp=io.BytesIO(_parts.inline_data.data),
+                        filename=f"generated_image{_file_format}_image_part{_index}.png",
+                    )
+                )
                 _gemini_responses["generatedImagesURL"].append(
                     {
                         "generatedImageDiscordURL": _files.attachments[0].url,
                         "fileName": _files.attachments[0].filename,
                         "createdTime": _file_format,
-                        "index": _index
+                        "index": _index,
                     }
                 )
 

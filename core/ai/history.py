@@ -5,6 +5,7 @@ from pymongo import ReturnDocument
 import discord as typehint_Discord
 import logging
 import motor.motor_asyncio
+from datetime import datetime
 
 _fetchdict = HelperFunctions.fetch_default_model(
     model_type="reasoning", output_modalities="text", provider="gemini"
@@ -20,6 +21,7 @@ class History:
         db_conn: motor.motor_asyncio.AsyncIOMotorClient = None,
     ):
         self._db_conn = db_conn
+        self._knowledge_indexes = set()
 
         if db_conn is None:
             raise ConnectionError("Please set MONGO_DB_URL in dev.env")
@@ -60,7 +62,7 @@ class History:
     ):
         # Use environment variable for default tool if not specified
         if tool_use is None:
-            tool_use = environ.get("DEFAULT_TOOL", "ImageGen")
+            tool_use = environ.get("DEFAULT_TOOL", "Memory")
         # Check if guild_id is string
         if not isinstance(guild_id, str):
             raise TypeError("guild_id is required and must be a string")
@@ -191,3 +193,78 @@ class History:
         except Exception as e:
             logging.error("Error getting key: %s", e)
             raise HistoryDatabaseError(f"Error getting key: {key}")
+
+    ####################################################################################
+    # Knowledge Base Management
+    ####################################################################################
+
+    async def add_fact(
+        self,
+        guild_id: int,
+        user_id: int,
+        fact_text: str,
+        source: str,
+        expires_at: datetime = None,
+    ):
+        """Store a fact in the knowledge base with expiration"""
+        guild_id = self._normalize_guild_id(guild_id)
+        knowledge_collection = self._db[f"knowledge_{guild_id}"]
+
+        fact = {
+            "user_id": user_id,
+            "fact_text": fact_text,
+            "source": source,
+            "created_at": datetime.utcnow(),
+            "last_accessed_at": datetime.utcnow(),
+            "relevance_score": 0,  # Default relevance score
+            "expires_at": expires_at,
+        }
+        result = await knowledge_collection.insert_one(fact)
+        return result.inserted_id
+
+    async def get_fact(self, guild_id: int, fact_id: str):
+        """Retrieve a fact from the knowledge base if not expired"""
+        guild_id = self._normalize_guild_id(guild_id)
+        knowledge_collection = self._db[f"knowledge_{guild_id}"]
+        fact = await knowledge_collection.find_one({"_id": fact_id})
+        if fact and (
+            fact["expires_at"] is None or fact["expires_at"] > datetime.utcnow()
+        ):
+            # Update last_accessed_at
+            await knowledge_collection.update_one(
+                {"_id": fact_id}, {"$set": {"last_accessed_at": datetime.utcnow()}}
+            )
+            return fact["fact_text"]
+        return None
+
+    async def search_facts(self, guild_id: int, query: str, limit: int = 5):
+        """Search for relevant facts using simple text matching"""
+        guild_id = self._normalize_guild_id(guild_id)
+        collection_name = f"knowledge_{guild_id}"
+
+        if collection_name not in await self._db.list_collection_names():
+            return []
+
+        knowledge_collection = self._db[collection_name]
+
+        if guild_id not in self._knowledge_indexes:
+            await knowledge_collection.create_index([("fact_text", "text")])
+            self._knowledge_indexes.add(guild_id)
+
+        # Simple keyword matching for now.
+        # TODO: Implement a more advanced relevance scoring algorithm.
+        results = []
+        async for fact in knowledge_collection.find(
+            {"$text": {"$search": query}}
+        ).limit(limit):
+            if fact and (
+                fact["expires_at"] is None or fact["expires_at"] > datetime.utcnow()
+            ):
+                results.append(fact["fact_text"])
+        return results
+
+    async def delete_fact(self, guild_id: int, fact_id: str):
+        """Remove a fact from the knowledge base"""
+        guild_id = self._normalize_guild_id(guild_id)
+        knowledge_collection = self._db[f"knowledge_{guild_id}"]
+        await knowledge_collection.delete_one({"_id": fact_id})

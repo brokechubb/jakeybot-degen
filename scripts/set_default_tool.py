@@ -8,10 +8,25 @@ import asyncio
 import motor.motor_asyncio
 import os
 import sys
+from pathlib import Path
 from dotenv import load_dotenv
 
 # Load environment variables
 load_dotenv("dev.env")
+
+
+def get_available_tools():
+    """Get list of available tools from the tools directory"""
+    tools_dir = Path("tools")
+    if not tools_dir.exists():
+        return []
+
+    available_tools = []
+    for tool_dir in tools_dir.iterdir():
+        if tool_dir.is_dir() and (tool_dir / "__init__.py").exists():
+            available_tools.append(tool_dir.name)
+
+    return sorted(available_tools)
 
 
 async def set_default_tool_for_all_users(tool_name: str):
@@ -63,33 +78,29 @@ def main():
     if len(sys.argv) != 2:
         print("Usage: python scripts/set_default_tool.py <tool_name>")
         print("\nAvailable tools:")
-        print("  ImageGen - Image generation and editing")
-        print("  ExaSearch - Web search")
-        print("  GitHub - GitHub repository access")
-        print("  YouTube - YouTube search and analysis")
-        print("  AudioTools - Audio manipulation")
-        print("  IdeationTools - Canvas and artifacts")
-        print("  CryptoPrice - Live crypto prices")
-        print("  CurrencyConverter - Live currency conversion")
-        print("  CodeExecution - Python code execution")
+
+        # Dynamically get available tools
+        available_tools = get_available_tools()
+        if available_tools:
+            for tool in available_tools:
+                print(f"  {tool}")
+        else:
+            print("  ❌ No tools found in tools/ directory")
+
         print("  None - Disable all tools")
+        print("\nExamples:")
+        print("  python scripts/set_default_tool.py Memory")
+        print("  python scripts/set_default_tool.py ImageGen")
+        print("  python scripts/set_default_tool.py None")
         sys.exit(1)
 
     tool_name = sys.argv[1]
 
+    # Get available tools for validation
+    available_tools = get_available_tools()
+
     # Validate tool name
-    valid_tools = [
-        "ImageGen",
-        "ExaSearch",
-        "GitHub",
-        "YouTube",
-        "AudioTools",
-        "IdeationTools",
-        "CryptoPrice",
-        "CurrencyConverter",
-        "CodeExecution",
-        "None",
-    ]
+    valid_tools = available_tools + ["None"]
 
     if tool_name not in valid_tools:
         print(f"❌ Invalid tool name: {tool_name}")

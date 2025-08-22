@@ -38,7 +38,14 @@ This document summarizes all the security measures implemented to prevent person
 - **User guidance**: Provides step-by-step instructions
 - **Security reminders**: Emphasizes best practices
 
-### 5. Documentation
+### 5. Management Scripts
+
+- **Tool management**: `python scripts/manage_tools.py`
+- **AI model management**: `python scripts/manage_ai_models.py`
+- **Database management**: `python scripts/flush_db.py`
+- **Memory tool setup**: `python scripts/setup_memory.py`
+
+### 6. Documentation
 
 - **Security guide**: Comprehensive `docs/SECURITY.md`
 - **Best practices**: Examples of what to do and what not to do

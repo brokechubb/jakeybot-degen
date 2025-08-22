@@ -97,7 +97,7 @@ bot = InitBot(command_prefix=environ.get("BOT_PREFIX", "$"), intents=intents)
 @bot.event
 async def on_ready():
     await bot.change_presence(
-        activity=discord.Game(f"Preparing the bot for it's first use...")
+        activity=discord.Game("Preparing the bot for it's first use...")
     )
     # https://stackoverflow.com/a/65780398 - for multiple statuses
     await bot.change_presence(

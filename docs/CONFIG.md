@@ -43,7 +43,135 @@ To use Google Search, Bing Search, and YouTube tools, you must set the following
 
 - `TEMP_DIR` - Path to store temporary uploaded/downloaded attachments for multimodal use. Defaults to `temp/` in the cuurent directory if not set. Files are always deleted on every execution regardless if its successful or not, or when the bot is restared or shutdown.
 
-- `SHARED_CHAT_HISTORY` - Determines whether to share the chat history to all members inside the guild. Accepts case insensitive boolean values. We recommend setting this to `false` as the bot does not have admin controls to manage chat history guild wide and conversations are treated as single dialogue. Setting to `false` makes it as if interacting the bot in DMs having their own history regardless of the setting. Keep in mind that this does not immediately delete per-guild chat history when set to `false`. Use SQLite database browser to manually manage history, refer to [HistoryManagement class](../core/ai/history.py) for more information.
+## Chat History Configuration
+
+### `SHARED_CHAT_HISTORY`
+
+**Purpose**: Controls whether chat history is shared across all members within a Discord guild (server).
+
+**Values**:
+
+- `true` - Chat history is shared guild-wide (all members see the same conversation context)
+- `false` - Each user has their own private chat history (recommended)
+
+**Default**: `false` (private per-user history)
+
+**Example Configuration**:
+
+```bash
+# In your dev.env file
+SHARED_CHAT_HISTORY=false  # Recommended: Private conversations
+# SHARED_CHAT_HISTORY=true   # Not recommended: Shared guild history
+```
+
+#### **How It Works**
+
+**When `SHARED_CHAT_HISTORY=true`**:
+
+- All guild members share the same conversation context
+- Bot remembers conversations across the entire guild
+- Useful for collaborative bots where team context is important
+- **⚠️ Privacy Risk**: All members can see each other's conversation history
+
+**When `SHARED_CHAT_HISTORY=false` (Recommended)**:
+
+- Each user has completely separate conversation history
+- Bot treats each user as having private, independent conversations
+- Conversations behave like private DMs regardless of guild setting
+- **✅ Privacy**: Each user's conversations remain completely private
+
+#### **Important Considerations**
+
+**Why We Recommend `false`**:
+
+1. **No Admin Controls**: The bot lacks administrative controls to manage guild-wide chat history
+2. **Privacy Protection**: Users expect their conversations to remain private
+3. **Context Separation**: Prevents conversation context pollution between users
+4. **Compliance**: Better for privacy regulations and user expectations
+
+**Limitations**:
+
+- Setting to `false` does **NOT** immediately delete existing per-guild chat history
+- You must manually manage existing shared history if you want to clear it
+- The bot cannot selectively migrate or preserve specific conversation data
+
+#### **Managing Existing Shared History**
+
+If you're changing from `true` to `false` and want to clear existing shared history:
+
+**Option 1: Complete Database Reset (⚠️ DANGEROUS)**
+
+```bash
+# This will delete ALL data for ALL users
+python scripts/flush_db.py
+```
+
+**Option 2: Manual Database Management**
+
+1. Use MongoDB tools to manually manage collections
+2. Reference the [HistoryManagement class](../core/ai/history.py) for implementation details
+3. Consider backing up data before making changes
+
+**Option 3: Gradual Migration**
+
+1. Set `SHARED_CHAT_HISTORY=false`
+2. New users will automatically get private history
+3. Existing shared history remains but is no longer updated
+4. Users can continue using existing context until manually cleared
+
+#### **Use Case Examples**
+
+**Set to `true` when**:
+
+- Building a collaborative team bot
+- All guild members need shared context
+- Privacy is not a concern
+- Bot is used for team coordination
+
+**Set to `false` when**:
+
+- Building a personal assistant bot
+- User privacy is important
+- Bot serves individual users independently
+- Compliance with privacy regulations is required
+
+#### **Configuration Best Practices**
+
+1. **Start with `false`** for most use cases
+2. **Test thoroughly** before deploying to production
+3. **Document the setting** for your team and users
+4. **Consider data migration** if changing from shared to private
+5. **Monitor user feedback** after making changes
+
+#### **Related Scripts and Tools**
+
+```bash
+# Check current database status
+python scripts/manage_tools.py
+
+# View tool usage statistics
+python scripts/manage_tools.py
+
+# Clear all data (⚠️ DANGEROUS - use with caution)
+python scripts/flush_db.py
+
+# Set default tool for new users
+python scripts/set_default_tool.py Memory
+```
+
+#### **Troubleshooting**
+
+**Common Issues**:
+
+- **"Bot remembers other users' conversations"**: Check if `SHARED_CHAT_HISTORY` is set to `true`
+- **"Conversation context is lost"**: Verify the setting matches your intended behavior
+- **"Database errors"**: Ensure MongoDB connection is properly configured
+
+**Debugging**:
+
+- Check your `.env` file for the correct setting
+- Verify the bot has been restarted after changing the setting
+- Use the management scripts to check current status
 
 # Default Tool Configuration
 

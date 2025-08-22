@@ -424,6 +424,63 @@ class Chat(commands.Cog):
             "An error has occurred while executing feature command, reason: ",
             exc_info=True,
         )
+        
+    ####################################################################################
+    # Knowledge Management Commands
+    ####################################################################################
+    
+    @commands.slash_command(
+        contexts={
+            discord.InteractionContextType.guild,
+            discord.InteractionContextType.bot_dm,
+        },
+        integration_types={
+            discord.IntegrationType.guild_install,
+            discord.IntegrationType.user_install,
+        },
+    )
+    @discord.option("fact", description="The fact to remember", required=True)
+    @discord.option("expires_in", description="Expiration time (e.g., 1d, 2h, 30m)", required=False)
+    async def remember(self, ctx, fact: str, expires_in: str = None):
+        """Remember a piece of information"""
+        await ctx.response.defer(ephemeral=True)
+        
+        # Determine guild/user based on SHARED_CHAT_HISTORY setting
+        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
+        else:
+            guild_id = ctx.author.id
+            
+        # Parse expiration time
+        expires_at = None
+        if expires_in:
+            try:
+                from datetime import datetime, timedelta
+                now = datetime.utcnow()
+                if expires_in.endswith('d'):
+                    days = int(expires_in[:-1])
+                    expires_at = now + timedelta(days=days)
+                elif expires_in.endswith('h'):
+                    hours = int(expires_in[:-1])
+                    expires_at = now + timedelta(hours=hours)
+                elif expires_in.endswith('m'):
+                    minutes = int(expires_in[:-1])
+                    expires_at = now + timedelta(minutes=minutes)
+                else:
+                    raise ValueError("Invalid time format")
+            except:
+                await ctx.respond("⚠️ Invalid expiration format. Use number followed by d, h, or m (e.g., 1d, 2h, 30m)")
+                return
+        
+        try:
+            fact_id = await self.DBConn.add_fact(guild_id, ctx.author.id, fact, source=f"user_command/{ctx.author.id}", expires_at=expires_at)
+            response = f"✅ I'll remember that (Fact ID: {fact_id})"
+            if expires_at:
+                response += f"\n⏰ Expires: {expires_at.strftime('%Y-%m-%d %H:%M')} UTC"
+            await ctx.respond(response)
+        except Exception as e:
+            await ctx.respond(f"❌ Failed to remember: {str(e)}")
+            logging.error("Error remembering fact: %s", e)
 
 
 def setup(bot):
