@@ -80,6 +80,25 @@ python scripts/test_memory_fix.py
 
 ---
 
+#### `test_auto_return.py`
+
+Tests the auto-return tool manager functionality.
+
+```bash
+python scripts/test_auto_return.py
+```
+
+**What it does:**
+
+- Tests AutoReturnManager creation and initialization
+- Validates tool switching with timeout functionality
+- Tests timeout extension and cancellation
+- Verifies cleanup and status reporting
+
+**Use when:** You want to test the auto-return system or validate its functionality
+
+---
+
 #### `security_check.py`
 
 Scans your repository for potential security issues.

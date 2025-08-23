@@ -540,6 +540,244 @@ class Misc(commands.Cog):
 
         await ctx.respond("✅ Done!")
 
+    @commands.slash_command(
+        name="timeout_status",
+        description="Check the remaining time before auto-return to default tool.",
+        contexts={
+            discord.InteractionContextType.guild,
+            discord.InteractionContextType.bot_dm,
+        },
+        integration_types={
+            discord.IntegrationType.guild_install,
+            discord.IntegrationType.user_install,
+        },
+    )
+    async def timeout_status(self, ctx):
+        """Check the remaining time before auto-return to default tool."""
+        await ctx.response.defer(ephemeral=True)
+
+        # Determine guild/user based on SHARED_CHAT_HISTORY setting
+        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
+        else:
+            guild_id = ctx.author.id
+
+        # Check if AutoReturnManager is available
+        if not hasattr(self.bot, "auto_return_manager") or not self.bot.auto_return_manager:
+            await ctx.respond("❌ Auto-return system is not available")
+            return
+
+        # Get current tool and remaining time
+        current_tool = await self.bot.auto_return_manager.get_current_tool(guild_id)
+        remaining_time = await self.bot.auto_return_manager.get_remaining_time(guild_id)
+
+        if current_tool is None:
+            await ctx.respond("✅ Currently using default tool (no auto-return scheduled)")
+        else:
+            # Format remaining time
+            if remaining_time is not None:
+                minutes = remaining_time // 60
+                seconds = remaining_time % 60
+                
+                if minutes > 0:
+                    time_str = f"{minutes}m {seconds}s" if seconds > 0 else f"{minutes}m"
+                else:
+                    time_str = f"{seconds}s"
+                
+                await ctx.respond(
+                    f"⏰ **Current Tool:** {current_tool}\n"
+                    f"🕐 **Time Remaining:** {time_str}\n"
+                    f"🧠 **Will Return To:** {self.bot.auto_return_manager.default_tool}"
+                )
+            else:
+                await ctx.respond(
+                    f"⏰ **Current Tool:** {current_tool}\n"
+                    f"❓ **Time Remaining:** Unknown\n"
+                    f"🧠 **Will Return To:** {self.bot.auto_return_manager.default_tool}"
+                )
+
+    @commands.slash_command(
+        name="extend_timeout",
+        description="Extend the current tool timeout by additional time.",
+        contexts={
+            discord.InteractionContextType.guild,
+            discord.InteractionContextType.bot_dm,
+        },
+        integration_types={
+            discord.IntegrationType.guild_install,
+            discord.IntegrationType.user_install,
+        },
+    )
+    @discord.option(
+        "additional_time",
+        description="Additional time to add (e.g., '5m', '2h', '30s')",
+        required=True,
+    )
+    async def extend_timeout(self, ctx, additional_time: str):
+        """Extend the current tool timeout by additional time."""
+        await ctx.response.defer(ephemeral=True)
+
+        # Determine guild/user based on SHARED_CHAT_HISTORY setting
+        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
+        else:
+            guild_id = ctx.author.id
+
+        # Check if AutoReturnManager is available
+        if not hasattr(self.bot, "auto_return_manager") or not self.bot.auto_return_manager:
+            await ctx.respond("❌ Auto-return system is not available")
+            return
+
+        # Parse additional time
+        try:
+            additional_seconds = self._parse_time_input(additional_time)
+            if additional_seconds is None:
+                await ctx.respond(
+                    "⚠️ Invalid time format. Please use formats like '5m', '2h', '30s'"
+                )
+                return
+        except Exception as e:
+            await ctx.respond(f"⚠️ Error parsing time: {str(e)}")
+            return
+
+        # Check if there's an active tool
+        current_tool = await self.bot.auto_return_manager.get_current_tool(guild_id)
+        if current_tool is None:
+            await ctx.respond("❌ No active tool timeout to extend")
+            return
+
+        # Extend the timeout
+        try:
+            await self.bot.auto_return_manager.extend_timeout(guild_id, additional_seconds)
+            
+            # Get new remaining time
+            new_remaining_time = await self.bot.auto_return_manager.get_remaining_time(guild_id)
+            
+            if new_remaining_time is not None:
+                minutes = new_remaining_time // 60
+                seconds = new_remaining_time % 60
+                
+                if minutes > 0:
+                    time_str = f"{minutes}m {seconds}s" if seconds > 0 else f"{minutes}m"
+                else:
+                    time_str = f"{seconds}s"
+                
+                await ctx.respond(
+                    f"⏰ **Timeout Extended!**\n"
+                    f"🛠️ **Current Tool:** {current_tool}\n"
+                    f"🕐 **New Time Remaining:** {time_str}\n"
+                    f"🧠 **Will Return To:** {self.bot.auto_return_manager.default_tool}"
+                )
+            else:
+                await ctx.respond(
+                    f"⏰ **Timeout Extended!**\n"
+                    f"🛠️ **Current Tool:** {current_tool}\n"
+                    f"🕐 **New Time Remaining:** Unknown\n"
+                    f"🧠 **Will Return To:** {self.bot.auto_return_manager.default_tool}"
+                )
+                
+        except Exception as e:
+            await ctx.respond(f"❌ Failed to extend timeout: {str(e)}")
+            logging.error(f"Error extending timeout: {e}")
+
+    @commands.slash_command(
+        name="return_to_default",
+        description="Immediately return to the default tool.",
+        contexts={
+            discord.InteractionContextType.guild,
+            discord.InteractionContextType.bot_dm,
+        },
+        integration_types={
+            discord.IntegrationType.guild_install,
+            discord.IntegrationType.user_install,
+        },
+    )
+    async def return_to_default(self, ctx):
+        """Immediately return to the default tool."""
+        await ctx.response.defer(ephemeral=True)
+
+        # Determine guild/user based on SHARED_CHAT_HISTORY setting
+        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
+        else:
+            guild_id = ctx.author.id
+
+        # Check if AutoReturnManager is available
+        if not hasattr(self.bot, "auto_return_manager") or not self.bot.auto_return_manager:
+            await ctx.respond("❌ Auto-return system is not available")
+            return
+
+        # Check if there's an active tool
+        current_tool = await self.bot.auto_return_manager.get_current_tool(guild_id)
+        if current_tool is None:
+            await ctx.respond("✅ Already using default tool")
+            return
+
+        # Cancel the timer and return to default
+        try:
+            await self.bot.auto_return_manager.cancel_timer(guild_id)
+            
+            # Set the tool back to default in the database
+            if hasattr(self.bot, "DBConn") and self.bot.DBConn is not None:
+                await self.bot.DBConn.set_tool_config(guild_id=guild_id, tool=self.bot.auto_return_manager.default_tool)
+            
+            await ctx.respond(
+                f"🧠 **Returned to Default Tool!**\n"
+                f"✅ Now using: {self.bot.auto_return_manager.default_tool}\n"
+                f"⏰ Auto-return timer cancelled"
+            )
+            
+        except Exception as e:
+            await ctx.respond(f"❌ Failed to return to default: {str(e)}")
+            logging.error(f"Error returning to default: {e}")
+
+    @commands.slash_command(
+        name="auto_return_status",
+        description="Check the status of the auto-return system.",
+        contexts={
+            discord.InteractionContextType.guild,
+            discord.InteractionContextType.bot_dm,
+        },
+        integration_types={
+            discord.IntegrationType.guild_install,
+            discord.IntegrationType.user_install,
+        },
+    )
+    async def auto_return_status(self, ctx):
+        """Check the status of the auto-return system."""
+        await ctx.response.defer(ephemeral=True)
+
+        # Check if AutoReturnManager is available
+        if not hasattr(self.bot, "auto_return_manager") or not self.bot.auto_return_manager:
+            await ctx.respond("❌ Auto-return system is not available")
+            return
+
+        # Get system status
+        status = self.bot.auto_return_manager.get_status()
+        
+        # Format timeouts for display
+        timeout_info = []
+        for tool, timeout in status["tool_timeouts"].items():
+            if tool != "default":
+                minutes = timeout // 60
+                seconds = timeout % 60
+                if minutes > 0:
+                    time_str = f"{minutes}m {seconds}s" if seconds > 0 else f"{minutes}m"
+                else:
+                    time_str = f"{seconds}s"
+                timeout_info.append(f"• **{tool}**: {time_str}")
+        
+        timeout_info.sort()
+        
+        await ctx.respond(
+            f"🧠 **Auto-Return System Status**\n\n"
+            f"✅ **Default Tool:** {status['default_tool']}\n"
+            f"⏰ **Active Timers:** {status['active_timers']}\n"
+            f"🔄 **Active Switches:** {status['active_switches']}\n\n"
+            f"**Tool Timeouts:**\n" + "\n".join(timeout_info) + "\n"
+            f"• **Default**: {status['tool_timeouts']['default'] // 60}m {status['tool_timeouts']['default'] % 60}s"
+        )
+
 
 def setup(bot):
     bot.add_cog(Misc(bot))

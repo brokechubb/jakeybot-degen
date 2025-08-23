@@ -12,6 +12,7 @@ import socket
 import yaml
 import motor.motor_asyncio
 from core.ai.history import History
+from core.services.auto_return_manager import AutoReturnManager
 
 # Go to project root directory
 chdir(Path(__file__).parent.resolve())
@@ -73,6 +74,14 @@ class InitBot(ServicesInitBot):
             logging.error(f"Failed to initialize shared database connection: {e}")
             self.DBConn = None
 
+        # Initialize AutoReturnManager
+        try:
+            self.auto_return_manager = AutoReturnManager(self)
+            logging.info("AutoReturnManager initialized successfully")
+        except Exception as e:
+            logging.error(f"Failed to initialize AutoReturnManager: {e}")
+            self.auto_return_manager = None
+
         # Initialize services
         self.loop.create_task(self.start_services())
         logging.info("Services initialized successfully")
@@ -91,6 +100,11 @@ class InitBot(ServicesInitBot):
         # Close services
         await self.stop_services()
         logging.info("Services stopped successfully")
+
+        # Cleanup AutoReturnManager
+        if hasattr(self, "auto_return_manager") and self.auto_return_manager:
+            await self.auto_return_manager.cleanup()
+            logging.info("AutoReturnManager cleanup completed")
 
         # Remove temp files
         if Path(environ.get("TEMP_DIR", "temp")).exists():

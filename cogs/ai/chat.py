@@ -341,6 +341,8 @@ class Chat(commands.Cog):
     # Slash Command: feature
     #######################################################
     @commands.slash_command(
+        name="feature",
+        description="Integrate tools to chat! Setting chat features will clear your history!",
         contexts={
             discord.InteractionContextType.guild,
             discord.InteractionContextType.bot_dm,
@@ -403,19 +405,60 @@ class Chat(commands.Cog):
                 value=_openrouter_model,
             )
 
-            if capability is None:
-                await ctx.respond(
-                    "✅ Features disabled and chat is reset to reflect the changes"
-                )
+            # Use AutoReturnManager if available and capability is not None
+            if capability is not None and hasattr(self.bot, "auto_return_manager") and self.bot.auto_return_manager:
+                try:
+                    # Switch tool with timeout using AutoReturnManager
+                    await self.bot.auto_return_manager.switch_tool_with_timeout(
+                        guild_id=guild_id, 
+                        new_tool=capability, 
+                        user_id=ctx.author.id
+                    )
+                    
+                    # Get timeout for this tool
+                    timeout = self.bot.auto_return_manager.tool_timeouts.get(capability, self.bot.auto_return_manager.tool_timeouts["default"])
+                    timeout_minutes = timeout // 60
+                    timeout_seconds = timeout % 60
+                    
+                    if timeout_minutes > 0:
+                        timeout_str = f"{timeout_minutes}m {timeout_seconds}s" if timeout_seconds > 0 else f"{timeout_minutes}m"
+                    else:
+                        timeout_str = f"{timeout_seconds}s"
+                    
+                    if not _cur_feature:
+                        await ctx.respond(
+                            f"✅ Feature **{capability}** enabled successfully!\n"
+                            f"⏰ Will automatically return to {self.bot.auto_return_manager.default_tool} in {timeout_str}"
+                        )
+                    else:
+                        await ctx.respond(
+                            f"✅ Feature **{capability}** enabled successfully and chat is reset!\n"
+                            f"⏰ Will automatically return to {self.bot.auto_return_manager.default_tool} in {timeout_str}"
+                        )
+                except Exception as e:
+                    logging.error(f"Error using AutoReturnManager: {e}")
+                    # Fall back to normal response
+                    if not _cur_feature:
+                        await ctx.respond(f"✅ Feature **{capability}** enabled successfully")
+                    else:
+                        await ctx.respond(
+                            f"✅ Feature **{capability}** enabled successfully and chat is reset to reflect the changes"
+                        )
             else:
-                if not _cur_feature:
+                # Normal response without auto-return
+                if capability is None:
                     await ctx.respond(
-                        f"✅ Feature **{capability}** enabled successfully"
+                        "✅ Features disabled and chat is reset to reflect the changes"
                     )
                 else:
-                    await ctx.respond(
-                        f"✅ Feature **{capability}** enabled successfully and chat is reset to reflect the changes"
-                    )
+                    if not _cur_feature:
+                        await ctx.respond(
+                            f"✅ Feature **{capability}** enabled successfully"
+                        )
+                    else:
+                        await ctx.respond(
+                            f"✅ Feature **{capability}** enabled successfully and chat is reset to reflect the changes"
+                        )
 
     @feature.error
     async def feature_on_error(
