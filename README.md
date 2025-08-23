@@ -278,14 +278,7 @@ sudo pacman -S python311 python311-pip python311-venv
 python3.11 --version
 ```
 
-### Docker (Recommended)
-
-```bash
-docker pull zavocc/jakey:sugilite
-docker run -it --env-file dev.env --rm zavocc/jakey:sugilite
-```
-
-### Manual Setup
+### Setup
 
 ```bash
 # Create virtual environment with Python 3.11
