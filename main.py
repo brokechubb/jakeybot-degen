@@ -10,6 +10,8 @@ import logging
 import re
 import socket
 import yaml
+import motor.motor_asyncio
+from core.ai.history import History
 
 # Go to project root directory
 chdir(Path(__file__).parent.resolve())
@@ -57,6 +59,19 @@ class InitBot(ServicesInitBot):
         else:
             environ["TEMP_DIR"] = "temp"
             mkdir(environ.get("TEMP_DIR"))
+
+        # Initialize shared database connection
+        try:
+            self.DBConn = History(
+                bot=self,
+                db_conn=motor.motor_asyncio.AsyncIOMotorClient(
+                    environ.get("MONGO_DB_URL")
+                ),
+            )
+            logging.info("Shared database connection initialized successfully")
+        except Exception as e:
+            logging.error(f"Failed to initialize shared database connection: {e}")
+            self.DBConn = None
 
         # Initialize services
         self.loop.create_task(self.start_services())

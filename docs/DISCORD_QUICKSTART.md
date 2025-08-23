@@ -22,6 +22,65 @@ JakeyBot: "Your name is Sarah and you love playing Minecraft!"
 - ✅ Important dates
 - ❌ Commands, temporary requests
 
+## ⏰ **New: Personal Reminder System**
+
+### **Set Reminders with Natural Language**
+
+```
+You: "/remind 1h take a break"
+JakeyBot: "⏰ Reminder set! I'll remind you in 1 hour to take a break"
+
+You: "/remind tomorrow 10am daily standup"
+JakeyBot: "⏰ Reminder set! I'll remind you tomorrow at 10 AM about daily standup"
+```
+
+**Time Formats Supported:**
+- **Minutes**: "30m", "15m"
+- **Hours**: "1h", "2h", "12h"
+- **Days**: "1d", "2d", "1w"
+- **Natural**: "tomorrow 10am", "next week", "in 2 hours"
+
+**Features:**
+- ✅ **Automatic delivery** when reminders are due
+- ✅ **Personal reminders** - only you see them
+- ✅ **Flexible time parsing** - understands natural language
+- ✅ **Works everywhere** - both slash commands and prefix commands
+
+## 🕐 **New: Time & Date Commands**
+
+### **Get Current Time & DST Status**
+
+```
+You: "/time"
+JakeyBot: "The current time is 2025-08-23 14:30:25 EDT-0400. Daylight Saving Time is currently active."
+```
+
+**What You Get:**
+- Current date and time
+- Timezone information
+- Daylight Saving Time status
+- Both slash (`/time`) and prefix (`$time`) commands
+
+## 🧠 **Memory System Management**
+
+### **Debug Memory Issues**
+
+```
+You: "/memory_debug"
+JakeyBot: [Shows memory system status, database connection, and any issues]
+```
+
+### **Fix Search Problems**
+
+```
+You: "/memory_reindex"
+JakeyBot: "🔄 Memory system reindexing... This may take a moment."
+```
+
+**When to Use:**
+- **`/memory_debug`** - Check if memory is working properly
+- **`/memory_reindex`** - Fix search issues or missing information
+
 ## 🎨 **Generate Images Instantly**
 
 ### **Create Images from Text**
@@ -80,10 +139,18 @@ JakeyBot: "💱 1,000 EUR = 1,085 USD"
 
 ## 🎯 **Essential Commands**
 
+### **Core Commands**
 - `/ask`        Ask any question      `/ask What's the best pizza topping?`
 - `/feature`    Enable/disable tools  `/feature Memory`
 - `/sweep`      Clear conversation    `/sweep`
 - `/model set`  Switch AI models      `/model set gemini`
+
+### **New Utility Commands**
+- `/time`       Display current time   `/time`
+- `/remind`     Set a reminder         `/remind time_in:1h message:Take a break`
+- `/memory_debug` Debug memory system  `/memory_debug`
+- `/memory_reindex` Fix memory issues  `/memory_reindex`
+- `/quickstart` Show this guide        `/quickstart`
 
 ## 🎭 **Understanding JakeyBot's Personality**
 
@@ -125,6 +192,12 @@ JakeyBot: "sure, but don't blame me if you fail 😂"
 - **Be consistent** with terms
 - **Update preferences** when things change
 
+### **Reminder Best Practices**
+
+- **Use natural language**: "tomorrow 10am" vs "24h"
+- **Be specific**: "pay rent" vs "reminder"
+- **Set reasonable times**: Avoid very short or very long reminders
+
 ## 🔒 **Privacy & Data**
 
 ### **What JakeyBot Remembers**
@@ -132,6 +205,7 @@ JakeyBot: "sure, but don't blame me if you fail 😂"
 - Conversation context for better responses
 - Personal preferences for personalization
 - Tool usage for functionality
+- **Personal reminders** (only visible to you)
 
 ### **What JakeyBot Doesn't Store**
 
@@ -141,7 +215,7 @@ JakeyBot: "sure, but don't blame me if you fail 😂"
 
 ### **Data Control**
 
-- **Clear conversations**: Use`/sweep`
+- **Clear conversations**: Use `/sweep`
 - **Memory management**: Information is per-user/server
 - **Privacy concerns**: Contact server admins
 
@@ -150,13 +224,14 @@ JakeyBot: "sure, but don't blame me if you fail 😂"
 ### **Server-Specific Features**
 
 - Ask server admins about custom commands
-- Check`/feature` for available tools
+- Check `/feature` for available tools
 - Learn about server-specific memory settings
 
 ### **Getting Support**
 
 1. **Server admins** - For technical issues
-2. **Community support** - Ask your fellow degens.
+2. **Community support** - Ask your fellow degens
+3. **Memory debugging** - Use `/memory_debug` to check system status
 
 ---
 

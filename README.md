@@ -65,6 +65,7 @@ source venv/bin/activate
 - **Pre-commit hooks** (scans for API keys)
 - **Security check script** (comprehensive scanning)
 - **Environment setup** (secure configuration)
+- **Removed dangerous commands** (admin execute command removed for security)
 
 ## 🎭 Jakey's Personality
 
@@ -93,6 +94,14 @@ source venv/bin/activate
 - `/mimic` - User impersonation
 - `/feature` - Enable/disable tools (one at a time)
 
+### New Utility Commands
+
+- **⏰ `/remind <time> <message>`** - Set personal reminders (e.g., "1h", "30m", "tomorrow 10am")
+- **🕐 `/time`** - Display current time and DST status
+- **🧠 `/memory_debug`** - Debug memory system status
+- **🔄 `/memory_reindex`** - Force reindex memory system
+- **📚 `/quickstart`** - Display quickstart guide (with aliases)
+
 ### Special Capabilities
 
 - **💰 Token Prices**: "What's BONK price?" → "💰 Current BONK: $0.000012 USD"
@@ -100,6 +109,7 @@ source venv/bin/activate
 - **🏈 Sports**: Analysis, odds, predictions
 - **💸 Crypto**: Airdrops, tips, blockchain knowledge
 - **🧠 Memory**: Automatically remembers and recalls user information across conversations
+- **⏰ Reminders**: Personal reminder system with natural language time parsing
 
 ### Available Tools
 
@@ -123,6 +133,7 @@ The bot now features an intelligent memory system that automatically remembers a
 - **Automatic Detection**: The bot automatically detects when users share personal information and stores it
 - **Smart Recall**: When you ask questions, the bot searches its memory for relevant information
 - **Natural Integration**: Memory recall happens seamlessly during normal conversations
+- **Enhanced Database**: Shared database connection for better performance and reliability
 
 ### Examples
 
@@ -135,18 +146,45 @@ The bot now features an intelligent memory system that automatically remembers a
 
 - `/remember <fact>` - Manually store information
 - `/feature Memory` - Enable the Memory tool for automatic operation
+- `/memory_debug` - Check memory system status
+- `/memory_reindex` - Fix search issues by reindexing
+
+## ⏰ Reminder System
+
+New personal reminder system with natural language time parsing:
+
+### Usage
+
+- **`/remind 1h take a break`** - Remind in 1 hour
+- **`/remind 30m check crypto prices`** - Remind in 30 minutes  
+- **`/remind tomorrow 10am daily standup`** - Remind tomorrow at 10 AM
+- **`/remind 2d pay rent`** - Remind in 2 days
+
+### Features
+
+- **Natural Language**: Understands "1h", "30m", "tomorrow 10am", "next week"
+- **Automatic Delivery**: Bot automatically sends reminders when due
+- **Personal**: Each user's reminders are private and separate
+- **Flexible**: Works with both slash commands and prefix commands
 
 ## 🆕 Latest Updates
 
-### 🔧 Critical Fixes (August 2025)
+### 🔧 Critical Fixes & Improvements (August 2025)
 
 - **Image Editing Fixed!** - Resolved critical bugs preventing image generation/editing
 - **Tool Execution** - Fixed Gemini API tool calling issues
 - **Discord Attachments** - Improved URL handling for image editing
 - **Python Compatibility** - Fixed audioop module issues with newer Python versions
+- **Gemini API Enhanced** - Added quota retry logic and improved safety settings
+- **Database Connection** - Shared database connection across all bot components for better performance
+- **Security Improvements** - Removed dangerous admin execute command
 
 ### 🚀 New Features
 
+- **⏰ Reminder System** - Personal reminders with natural language time parsing
+- **🕐 Time Commands** - Current time and DST status display
+- **🧠 Memory Debugging** - New commands to debug and fix memory system issues
+- **🔄 Memory Reindexing** - Force reindex to fix search problems
 - **🧠 Memory Tool** - Automatically remembers and recalls user information
 - **🛠️ Management Scripts** - Comprehensive tool and AI model management
 - **🔒 Enhanced Security** - Improved security checking and environment setup
@@ -222,6 +260,7 @@ python scripts/set_default_tool.py <tool_name>
 - **🚨 Pre-commit blocking** of sensitive files
 - **📋 Comprehensive scanning** for credentials
 - **📚 Security documentation** & guides
+- **🚫 Removed dangerous commands** (admin execute command removed)
 
 **Never commit `dev.env`** — it's automatically ignored!
 
@@ -302,6 +341,7 @@ source venv/bin/activate
 - **audioop module errors** → Use Python 3.11
 - **Tool not working** → Check with `python scripts/manage_tools.py`
 - **Memory not working** → Run `python scripts/setup_memory.py`
+- **Reminders not working** → Check database connection with `/memory_debug`
 
 ---
 

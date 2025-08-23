@@ -15,9 +15,89 @@ Welcome to JakeyBot! This guide will help you get the most out of your interacti
 | Command | Description | Example |
 |---------|-------------|---------|
 | `/ask` | Ask JakeyBot a question | `/ask What's the weather like?` |
+| `/time` | Displays the current time and DST status | `/time` |
+| `/remind` | Set a reminder for yourself | `/remind time_in:1h message:Take a break` |
 | `/sweep` | Clear conversation history | `/sweep` |
 | `/model set` | Switch AI models | `/model set gemini` |
 | `/feature` | Enable/disable tools | `/feature Memory` |
+
+### **New Utility Commands**
+
+| Command | Description | Example |
+|---------|-------------|---------|
+| `/memory_debug` | Debug memory system status | `/memory_debug` |
+| `/memory_reindex` | Fix memory search issues | `/memory_reindex` |
+| `/quickstart` | Show quickstart guide | `/quickstart` |
+
+## ⏰ **Personal Reminder System**
+
+### **What is the Reminder System?**
+
+JakeyBot now includes a **personal reminder system** that lets you set reminders for yourself using natural language! It's perfect for remembering important tasks, meetings, or just taking breaks.
+
+### **How to Use Reminders**
+
+**Basic Reminder Syntax:**
+```
+/remind time_in:<time> message:<what to remind you about>
+```
+
+**Examples:**
+
+```
+/remind time_in:1h message:Take a break from coding
+/remind time_in:30m message:Check crypto prices
+/remind time_in:tomorrow 10am message:Daily standup meeting
+/remind time_in:2d message:Pay rent
+```
+
+### **Time Formats Supported**
+
+**Simple Formats:**
+- **Minutes**: `30m`, `15m`, `45m`
+- **Hours**: `1h`, `2h`, `12h`
+- **Days**: `1d`, `2d`, `1w`
+
+**Natural Language:**
+- `tomorrow 10am`
+- `next week`
+- `in 2 hours`
+- `next Monday`
+
+### **Reminder Features**
+
+- ✅ **Automatic delivery** - Bot sends reminders when due
+- ✅ **Personal reminders** - Only you can see your reminders
+- ✅ **Natural language** - Understands human-like time expressions
+- ✅ **Flexible commands** - Works with both `/remind` and `$remind`
+- ✅ **Background processing** - Bot checks reminders every minute
+
+### **Reminder Best Practices**
+
+1. **Be specific**: "pay rent" vs "reminder"
+2. **Use natural language**: "tomorrow 10am" vs "24h"
+3. **Set reasonable times**: Avoid very short or very long reminders
+4. **Clear messages**: Make sure the reminder message is clear
+
+## 🕐 **Time & Date Commands**
+
+### **Current Time Display**
+
+Get the current time and timezone information:
+
+**Command:** `/time` or `$time`
+
+**What You Get:**
+- Current date and time
+- Timezone information (EDT, PST, etc.)
+- Daylight Saving Time status
+- Both slash and prefix command support
+
+**Example Output:**
+```
+The current time is 2025-08-23 14:30:25 EDT-0400. 
+Daylight Saving Time is currently active.
+```
 
 ## 🧠 **Memory System - Your Personal AI Assistant**
 
@@ -62,10 +142,26 @@ JakeyBot: "Your name is Alex and you love playing guitar!"
 - Non-personal information
 - Sensitive data
 
-### **Manual Memory Commands**
+### **Memory Management Commands**
 
 - **`/remember <fact>`** - Manually store information
 - **`/feature Memory`** - Enable the Memory tool
+- **`/memory_debug`** - Check memory system status
+- **`/memory_reindex`** - Fix search issues by reindexing
+
+### **Memory Debugging**
+
+**When to Use `/memory_debug`:**
+- Check if memory is working properly
+- Verify database connection status
+- See memory system statistics
+- Troubleshoot memory issues
+
+**When to Use `/memory_reindex`:**
+- Fix search problems
+- Resolve missing information issues
+- Improve search accuracy
+- After database changes
 
 ## 🎨 **Image Generation & Editing**
 
@@ -203,6 +299,12 @@ JakeyBot: [Executes code to create password]
 - **Be consistent** - Use the same terms for things
 - **Update preferences** - Tell JakeyBot when things change
 
+### **Reminder Best Practices**
+
+- **Use natural language**: "tomorrow 10am" vs "24h"
+- **Be specific**: "pay rent" vs "reminder"
+- **Set reasonable times**: Avoid very short or very long reminders
+
 ## 🚨 **Troubleshooting**
 
 ### **Common Issues**
@@ -224,6 +326,13 @@ JakeyBot: [Executes code to create password]
 - Ensure Memory tool is enabled: `/feature Memory`
 - Try sharing some information first
 - Check if the bot has database access
+- Use `/memory_debug` to check system status
+
+**Reminders not working:**
+
+- Check database connection with `/memory_debug`
+- Verify the reminder was set correctly
+- Ensure the bot has permission to send messages
 
 ### **Getting Help**
 
@@ -231,6 +340,7 @@ JakeyBot: [Executes code to create password]
 2. **Verify permissions** - Bot needs Send Messages, Read Message History
 3. **Ask server admins** - They can check bot configuration
 4. **Use `/feature`** - See what tools are available
+5. **Debug memory** - Use `/memory_debug` for memory issues
 
 ## 🎭 **Understanding JakeyBot's Personality**
 
@@ -260,6 +370,7 @@ JakeyBot: "sure, but don't blame me if you fail the test 😂"
 - **Conversation context** - For better responses
 - **Personal preferences** - To personalize your experience
 - **Tool usage** - To improve functionality
+- **Personal reminders** - Only visible to you
 
 ### **What JakeyBot Doesn't Store**
 
@@ -320,6 +431,14 @@ Your server may have additional features enabled:
 - `/sweep` - Clear history
 - `/remember <fact>` - Store information
 
+### **New Utility Commands**
+
+- `/time` - Display current time
+- `/remind <time> <message>` - Set personal reminder
+- `/memory_debug` - Debug memory system
+- `/memory_reindex` - Fix memory issues
+- `/quickstart` - Show quickstart guide
+
 ### **Popular Tools**
 
 - **Memory** - Personal information recall
@@ -333,6 +452,8 @@ Your server may have additional features enabled:
 - **Use natural language** - talk normally
 - **Enable Memory tool** for personalization
 - **Switch tools** based on what you need
+- **Set reminders** for important tasks
+- **Debug memory** if something's not working
 
 ---
 

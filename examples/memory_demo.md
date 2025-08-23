@@ -10,6 +10,43 @@ The Memory tool provides three main functions:
 2. **`recall_fact`** - Searches for and retrieves relevant information
 3. **`list_facts`** - Lists stored information by category
 
+## 🆕 New Memory Management Commands
+
+### Memory Debugging
+
+**`/memory_debug`** - Check memory system status and troubleshoot issues:
+
+```
+User: /memory_debug
+Jakey: 🧠 Memory System Status:
+✅ Database connection: Active
+📊 Total facts stored: 47
+🔍 Search index: Healthy
+⏰ Last backup: 2 hours ago
+```
+
+**Use when:**
+- Memory isn't working properly
+- Want to check system health
+- Troubleshooting issues
+- Monitoring system status
+
+### Memory Reindexing
+
+**`/memory_reindex`** - Fix search problems by rebuilding the search index:
+
+```
+User: /memory_reindex
+Jakey: 🔄 Memory system reindexing... This may take a moment.
+✅ Reindexing complete! Search should now work properly.
+```
+
+**Use when:**
+- Search isn't finding stored information
+- Memory recall is inconsistent
+- After database changes
+- Improving search accuracy
+
 ## 📝 Example Conversations
 
 ### Example 1: Remembering User Information
@@ -38,6 +75,27 @@ The Memory tool provides three main functions:
 **User (in a new conversation):** "What do you know about me?"
 **Jakey:** "Based on what I remember: Your name is Jimmy, you love pizza, and your favorite color is blue!"
 
+### Example 5: Memory Debugging
+
+**User:** "Why isn't the memory working?"
+**Jakey:** "Let me check the memory system status for you..."
+
+**User:** /memory_debug
+**Jakey:** "🧠 Memory System Status:
+❌ Database connection: Failed
+📊 Total facts stored: 0
+🔍 Search index: Unavailable
+⚠️ Issue: MongoDB connection timeout"
+
+### Example 6: Memory Reindexing
+
+**User:** "I can't find the information I shared earlier"
+**Jakey:** "Let me reindex the memory system to fix the search issues..."
+
+**User:** /memory_reindex
+**Jakey:** "🔄 Memory system reindexing... This may take a moment.
+✅ Reindexing complete! Try asking about your information again."
+
 ## 🔧 Technical Implementation
 
 ### Automatic Memory Detection
@@ -53,12 +111,14 @@ The bot automatically detects when users share personal information by:
 - **Structured Storage** - Facts are stored with categories, timestamps, and expiration dates
 - **User Association** - Each fact is linked to the user who shared it
 - **Guild Isolation** - Facts are separated by Discord server (unless shared history is enabled)
+- **Enhanced Database** - Shared database connection across all bot components for better performance
 
 ### Smart Recall
 
 - **Semantic Search** - The bot searches memory using natural language queries
 - **Relevance Ranking** - Most relevant facts are returned first
 - **Context Integration** - Retrieved facts are seamlessly integrated into responses
+- **Search Optimization** - Automatic indexing and reindexing for optimal performance
 
 ## 🚀 Usage Examples
 
@@ -71,6 +131,14 @@ Simply share information naturally in conversation:
 - "I enjoy hiking and photography"
 - "I have a dog named Max"
 
+### Memory Management
+
+Use the new commands to manage and troubleshoot memory:
+
+- **`/memory_debug`** - Check system status
+- **`/memory_reindex`** - Fix search issues
+- **`/feature Memory`** - Enable memory tool
+
 ### For Bot Administrators
 
 The Memory tool can be enabled via:
@@ -78,6 +146,7 @@ The Memory tool can be enabled via:
 1. **Environment Variable:** Set `DEFAULT_TOOL=Memory` in your `.env` file
 2. **Slash Command:** Use `/feature Memory` to enable it for a specific guild
 3. **Automatic Integration:** The tool works seamlessly with existing AI models
+4. **Management Scripts:** Use `python scripts/setup_memory.py` for server-wide setup
 
 ## 📊 Memory Categories
 
@@ -99,39 +168,45 @@ The bot automatically categorizes information:
 
 ### Search Limits
 
-- **Default Recall:** 3 facts per search
-- **Maximum Recall:** 10 facts per search
-- **List Facts:** Up to 20 facts per category
+- **Max Results:** 10 facts per search
+- **Search Depth:** Full database scan
+- **Performance:** Optimized with automatic indexing
 
-## 🔒 Privacy & Security
+### Database Options
 
-- **User Isolation** - Facts are only accessible to the user who shared them
-- **Guild Separation** - Facts are isolated by Discord server
-- **Expiration Control** - Users can set how long information is stored
-- **Manual Deletion** - Users can remove stored information if needed
+- **Shared Connection:** All bot components use the same database connection
+- **Automatic Backup:** Regular backups to prevent data loss
+- **Health Monitoring:** Built-in health checks and status reporting
 
-## 🎉 Benefits
+## 🆘 Troubleshooting
 
-1. **Personalized Experience** - The bot remembers your preferences and details
-2. **Contextual Responses** - Answers are tailored to your specific situation
-3. **Long-term Memory** - Information persists across conversations and sessions
-4. **Natural Interaction** - No need to manually input information repeatedly
-5. **Privacy Respect** - Information is stored securely and isolated by user/guild
+### Common Issues
 
-## 🚧 Limitations
+**Memory not working:**
+1. Check if Memory tool is enabled: `/feature Memory`
+2. Debug system status: `/memory_debug`
+3. Check database connection
+4. Contact server administrator
 
-- **Model Dependency** - Requires AI models that support tool calling
-- **Storage Limits** - Facts are stored in MongoDB with potential size constraints
-- **Search Accuracy** - Depends on the quality of the semantic search implementation
-- **Expiration Management** - Expired facts are automatically cleaned up but may persist in search results temporarily
+**Search not finding information:**
+1. Try `/memory_reindex` to rebuild search index
+2. Check if information was actually stored
+3. Verify search query matches stored facts
+4. Use `/memory_debug` to check system health
 
-## 🔮 Future Enhancements
+**Database connection issues:**
+1. Run `/memory_debug` to see connection status
+2. Check MongoDB configuration
+3. Verify network connectivity
+4. Contact server administrator
 
-Potential improvements for the Memory tool:
+### Getting Help
 
-- **Advanced Categorization** - AI-powered automatic categorization
-- **Memory Consolidation** - Merging related facts and removing duplicates
-- **Memory Analytics** - Insights into what information is most/least useful
-- **Export/Import** - Ability to backup and restore memory data
-- **Memory Sharing** - Option to share certain facts with other users
-- **Memory Visualization** - Dashboard showing stored information and relationships
+- **Use `/memory_debug`** for system status
+- **Try `/memory_reindex`** for search issues
+- **Check tool status** with `/feature`
+- **Contact server admins** for persistent issues
+
+---
+
+**🧠 The Memory tool makes JakeyBot truly personal by remembering your preferences and information across conversations. Use the new debugging commands to keep it running smoothly!**

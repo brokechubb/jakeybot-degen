@@ -6,6 +6,8 @@ import discord as typehint_Discord
 import logging
 import motor.motor_asyncio
 from datetime import datetime
+import time
+import re
 
 _fetchdict = HelperFunctions.fetch_default_model(
     model_type="reasoning", output_modalities="text", provider="gemini"
@@ -112,7 +114,12 @@ class History:
             )
             _document[f"chat_thread_{model_provider}"] = None
 
-        return _document[f"chat_thread_{model_provider}"]
+        # Prepend current date and time to the chat history
+        current_time_context = self._get_current_time_context()
+        if _document[f"chat_thread_{model_provider}"]:
+            return [current_time_context] + _document[f"chat_thread_{model_provider}"]
+        else:
+            return [current_time_context]
 
     async def save_history(
         self, guild_id: int, chat_thread, model_provider: str
@@ -129,6 +136,12 @@ class History:
     async def clear_history(self, guild_id: int) -> None:
         guild_id = self._normalize_guild_id(guild_id)
         await self._collection.delete_one({"guild_id": guild_id})
+
+    def _get_current_time_context(self) -> str:
+        """Returns a formatted string with the current date, time, and DST status."""
+        now = datetime.now()
+        dst_status = "active" if time.localtime().tm_isdst else "inactive"
+        return f"Current date and time: {now.strftime('%Y-%m-%d %H:%M:%S %Z%z')}. Daylight Saving Time is currently {dst_status}."
 
     # Tool configuration management
     async def set_tool_config(self, guild_id: int, tool: str = None) -> None:
@@ -222,6 +235,49 @@ class History:
         result = await knowledge_collection.insert_one(fact)
         return result.inserted_id
 
+    async def add_reminder(
+        self,
+        guild_id: int,
+        user_id: int,
+        channel_id: int,
+        message: str,
+        remind_time: datetime,
+    ):
+        """Store a reminder in the database"""
+        guild_id = self._normalize_guild_id(guild_id)
+        reminders_collection = self._db[f"reminders_{guild_id}"]
+
+        reminder = {
+            "user_id": user_id,
+            "channel_id": channel_id,
+            "message": message,
+            "remind_time": remind_time,
+            "created_at": datetime.utcnow(),
+        }
+        result = await reminders_collection.insert_one(reminder)
+        return result.inserted_id
+
+    async def get_due_reminders(self, guild_id: int):
+        """Retrieve reminders that are due from the database"""
+        guild_id = self._normalize_guild_id(guild_id)
+        collection_name = f"reminders_{guild_id}"
+
+        if collection_name not in await self._db.list_collection_names():
+            return []
+
+        reminders_collection = self._db[collection_name]
+        now = datetime.utcnow()
+        due_reminders = []
+        async for reminder in reminders_collection.find({"remind_time": {"$lte": now}}):
+            due_reminders.append(reminder)
+        return due_reminders
+
+    async def delete_reminder(self, guild_id: int, reminder_id):
+        """Remove a reminder from the database"""
+        guild_id = self._normalize_guild_id(guild_id)
+        reminders_collection = self._db[f"reminders_{guild_id}"]
+        await reminders_collection.delete_one({"_id": reminder_id})
+
     async def get_fact(self, guild_id: int, fact_id: str):
         """Retrieve a fact from the knowledge base if not expired"""
         guild_id = self._normalize_guild_id(guild_id)
@@ -238,7 +294,7 @@ class History:
         return None
 
     async def search_facts(self, guild_id: int, query: str, limit: int = 5):
-        """Search for relevant facts using simple text matching"""
+        """Search for relevant facts using multiple search strategies"""
         guild_id = self._normalize_guild_id(guild_id)
         collection_name = f"knowledge_{guild_id}"
 
@@ -246,22 +302,226 @@ class History:
             return []
 
         knowledge_collection = self._db[collection_name]
-
-        if guild_id not in self._knowledge_indexes:
-            await knowledge_collection.create_index([("fact_text", "text")])
-            self._knowledge_indexes.add(guild_id)
-
-        # Simple keyword matching for now.
-        # TODO: Implement a more advanced relevance scoring algorithm.
         results = []
-        async for fact in knowledge_collection.find(
-            {"$text": {"$search": query}}
-        ).limit(limit):
-            if fact and (
-                fact["expires_at"] is None or fact["expires_at"] > datetime.utcnow()
+
+        try:
+            # First try: Text search with MongoDB text index
+            if guild_id not in self._knowledge_indexes:
+                try:
+                    await knowledge_collection.create_index([("fact_text", "text")])
+                    self._knowledge_indexes.add(guild_id)
+                except Exception as e:
+                    logging.warning(
+                        f"Failed to create text index for guild {guild_id}: {e}"
+                    )
+
+            # Try text search first
+            try:
+                async for fact in knowledge_collection.find(
+                    {"$text": {"$search": query}}
+                ).limit(limit):
+                    if fact and (
+                        fact.get("expires_at") is None
+                        or fact["expires_at"] > datetime.utcnow()
+                    ):
+                        results.append(fact["fact_text"])
+            except Exception as e:
+                logging.warning(f"Text search failed for guild {guild_id}: {e}")
+
+            # If text search didn't return enough results, try regex search
+            if len(results) < limit:
+                try:
+                    # Create a regex pattern for case-insensitive search
+                    regex_pattern = re.compile(re.escape(query), re.IGNORECASE)
+
+                    async for fact in knowledge_collection.find(
+                        {"fact_text": {"$regex": regex_pattern}}
+                    ).limit(limit - len(results)):
+                        if fact and (
+                            fact.get("expires_at") is None
+                            or fact["expires_at"] > datetime.utcnow()
+                        ):
+                            fact_text = fact["fact_text"]
+                            if fact_text not in results:  # Avoid duplicates
+                                results.append(fact_text)
+                except Exception as e:
+                    logging.warning(f"Regex search failed for guild {guild_id}: {e}")
+
+            # If still not enough results, try partial word matching
+            if len(results) < limit:
+                try:
+                    words = query.lower().split()
+                    for word in words:
+                        if (
+                            len(word) > 2
+                        ):  # Only search for words longer than 2 characters
+                            word_pattern = re.compile(re.escape(word), re.IGNORECASE)
+
+                            async for fact in knowledge_collection.find(
+                                {"fact_text": {"$regex": word_pattern}}
+                            ).limit(limit - len(results)):
+                                if fact and (
+                                    fact.get("expires_at") is None
+                                    or fact["expires_at"] > datetime.utcnow()
+                                ):
+                                    fact_text = fact["fact_text"]
+                                    if fact_text not in results:  # Avoid duplicates
+                                        results.append(fact_text)
+                                        if len(results) >= limit:
+                                            break
+                        if len(results) >= limit:
+                            break
+                except Exception as e:
+                    logging.warning(
+                        f"Partial word search failed for guild {guild_id}: {e}"
+                    )
+
+        except Exception as e:
+            logging.error(f"Search failed for guild {guild_id}: {e}")
+
+        return results[:limit]
+
+    async def get_facts_by_user(self, guild_id: int, user_id: int, limit: int = 10):
+        """Get facts stored by a specific user"""
+        guild_id = self._normalize_guild_id(guild_id)
+        collection_name = f"knowledge_{guild_id}"
+
+        if collection_name not in await self._db.list_collection_names():
+            return []
+
+        knowledge_collection = self._db[collection_name]
+        facts = []
+
+        try:
+            async for fact in knowledge_collection.find({"user_id": user_id}).limit(
+                limit
             ):
-                results.append(fact["fact_text"])
-        return results
+                if fact and (
+                    fact.get("expires_at") is None
+                    or fact["expires_at"] > datetime.utcnow()
+                ):
+                    facts.append(fact["fact_text"])
+        except Exception as e:
+            logging.error(f"Failed to get facts by user for guild {guild_id}: {e}")
+
+        return facts
+
+    async def get_recent_facts(self, guild_id: int, limit: int = 10):
+        """Get recently accessed facts"""
+        guild_id = self._normalize_guild_id(guild_id)
+        collection_name = f"knowledge_{guild_id}"
+
+        if collection_name not in await self._db.list_collection_names():
+            return []
+
+        knowledge_collection = self._db[collection_name]
+        facts = []
+
+        try:
+            async for fact in (
+                knowledge_collection.find().sort("last_accessed_at", -1).limit(limit)
+            ):
+                if fact and (
+                    fact.get("expires_at") is None
+                    or fact["expires_at"] > datetime.utcnow()
+                ):
+                    facts.append(fact["fact_text"])
+        except Exception as e:
+            logging.error(f"Failed to get recent facts for guild {guild_id}: {e}")
+
+        return facts
+
+    async def check_memory_status(self, guild_id: int):
+        """Check the status of the memory system for debugging"""
+        guild_id = self._normalize_guild_id(guild_id)
+        collection_name = f"knowledge_{guild_id}"
+
+        try:
+            # Check if collection exists
+            collections = await self._db.list_collection_names()
+            collection_exists = collection_name in collections
+
+            if not collection_exists:
+                return {
+                    "status": "no_collection",
+                    "message": f"Knowledge collection '{collection_name}' does not exist",
+                    "total_facts": 0,
+                    "collections": collections,
+                }
+
+            knowledge_collection = self._db[collection_name]
+
+            # Count total facts
+            total_facts = await knowledge_collection.count_documents({})
+
+            # Count non-expired facts
+            now = datetime.utcnow()
+            non_expired_facts = await knowledge_collection.count_documents(
+                {
+                    "$or": [
+                        {"expires_at": {"$exists": False}},
+                        {"expires_at": None},
+                        {"expires_at": {"$gt": now}},
+                    ]
+                }
+            )
+
+            # Check for text index
+            indexes = await knowledge_collection.list_indexes().to_list(None)
+            text_index_exists = any(
+                index.get("key", {}).get("fact_text") == "text" for index in indexes
+            )
+
+            return {
+                "status": "ok",
+                "message": "Memory system is operational",
+                "total_facts": total_facts,
+                "non_expired_facts": non_expired_facts,
+                "text_index_exists": text_index_exists,
+                "collection_name": collection_name,
+                "indexes": [index.get("name") for index in indexes],
+            }
+
+        except Exception as e:
+            logging.error(f"Failed to check memory status for guild {guild_id}: {e}")
+            return {
+                "status": "error",
+                "message": f"Error checking memory status: {str(e)}",
+                "total_facts": 0,
+                "non_expired_facts": 0,
+                "text_index_exists": False,
+            }
+
+    async def force_reindex_memory(self, guild_id: int):
+        """Force reindex the memory collection to fix search issues"""
+        guild_id = self._normalize_guild_id(guild_id)
+        collection_name = f"knowledge_{guild_id}"
+
+        try:
+            knowledge_collection = self._db[collection_name]
+
+            # Drop existing text index if it exists
+            try:
+                await knowledge_collection.drop_index("fact_text_text")
+                logging.info(f"Dropped existing text index for {collection_name}")
+            except Exception as e:
+                logging.info(
+                    f"No existing text index to drop for {collection_name}: {e}"
+                )
+
+            # Create new text index
+            await knowledge_collection.create_index([("fact_text", "text")])
+            logging.info(f"Created new text index for {collection_name}")
+
+            # Reset the knowledge indexes set
+            if guild_id in self._knowledge_indexes:
+                self._knowledge_indexes.remove(guild_id)
+
+            return True
+
+        except Exception as e:
+            logging.error(f"Failed to reindex memory for guild {guild_id}: {e}")
+            return False
 
     async def delete_fact(self, guild_id: int, fact_id: str):
         """Remove a fact from the knowledge base"""

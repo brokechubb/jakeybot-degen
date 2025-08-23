@@ -119,6 +119,43 @@ After enabling the Memory tool, restart JakeyBot for the changes to take effect.
 - `1w` = 1 week
 - `never` = permanent
 
+## 🆕 New Memory Management Commands
+
+### Memory Debugging
+
+**`/memory_debug`** - Check memory system status and troubleshoot issues:
+
+```
+User: /memory_debug
+Jakey: 🧠 Memory System Status:
+✅ Database connection: Active
+📊 Total facts stored: 47
+🔍 Search index: Healthy
+⏰ Last backup: 2 hours ago
+```
+
+**Use when:**
+- Memory isn't working properly
+- Want to check system health
+- Troubleshooting issues
+- Monitoring system status
+
+### Memory Reindexing
+
+**`/memory_reindex`** - Fix search problems by rebuilding the search index:
+
+```
+User: /memory_reindex
+Jakey: 🔄 Memory system reindexing... This may take a moment.
+✅ Reindexing complete! Search should now work properly.
+```
+
+**Use when:**
+- Search isn't finding stored information
+- Memory recall is inconsistent
+- After database changes
+- Improving search accuracy
+
 ## 🎯 Pro Tips
 
 ### 1. **Natural Conversation**
@@ -175,6 +212,9 @@ python scripts/set_default_tool.py Memory
 ```bash
 # Run comprehensive tests
 python scripts/test_memory.py
+
+# Test memory fixes and improvements
+python scripts/test_memory_fix.py
 ```
 
 ## 🚨 Troubleshooting
@@ -189,19 +229,27 @@ python scripts/test_memory.py
 
    Look for "Memory" in the enabled tools.
 
-2. **Verify Configuration:**
+2. **Debug Memory System:**
+
+   ```
+   /memory_debug
+   ```
+
+   This will show you the current system status and any issues.
+
+3. **Verify Configuration:**
 
    ```bash
    python scripts/setup_memory.py
    ```
 
-3. **Check Database:**
+4. **Check Database:**
    Ensure MongoDB is running and accessible.
 
-4. **Model Compatibility:**
+5. **Model Compatibility:**
    Memory tool requires AI models that support tool calling.
 
-5. **Use Management Scripts:**
+6. **Use Management Scripts:**
 
    ```bash
    # Check tool health
@@ -217,6 +265,21 @@ python scripts/test_memory.py
 - **"Database connection failed"** → Check MongoDB connection string
 - **"No facts found"** → Try sharing some information first
 - **"Memory not working"** → Restart bot after configuration changes
+- **"Search not working"** → Try `/memory_reindex` to fix search issues
+
+### Advanced Troubleshooting
+
+**Search Issues:**
+1. Use `/memory_debug` to check system status
+2. Try `/memory_reindex` to rebuild search index
+3. Check if information was actually stored
+4. Verify search query matches stored facts
+
+**Database Issues:**
+1. Run `/memory_debug` to see connection status
+2. Check MongoDB configuration
+3. Verify network connectivity
+4. Contact server administrator
 
 ## 📚 Advanced Usage
 
@@ -235,6 +298,7 @@ I'm a developer [interests]
 - Facts are automatically cleaned up when expired
 - You can manually delete information if needed
 - Memory is isolated by user and Discord server
+- Enhanced database connection for better performance
 
 ### Integration with Other Tools
 
@@ -243,6 +307,7 @@ Memory works seamlessly with:
 - All AI models that support tool calling
 - Existing knowledge base commands
 - Chat history and context systems
+- New reminder system and time commands
 
 ## 🎉 You're Ready
 
@@ -252,6 +317,7 @@ The Memory tool is now active and will automatically:
 - Recall relevant details when you ask questions
 - Provide personalized responses based on your preferences
 - Maintain privacy and data isolation
+- Provide debugging tools for troubleshooting
 
 Start sharing information naturally and watch JakeyBot remember and recall it in future conversations!
 
@@ -262,6 +328,7 @@ Start sharing information naturally and watch JakeyBot remember and recall it in
 - **Issues:** Check the troubleshooting section above
 - **Management Scripts:** Use the provided scripts for advanced management
 - **Support:** Join the JakeyBot community for help
+- **Debugging:** Use `/memory_debug` and `/memory_reindex` commands
 
 ## 🔍 Quick Commands Reference
 
@@ -269,9 +336,16 @@ Start sharing information naturally and watch JakeyBot remember and recall it in
 # Setup and Configuration
 python scripts/setup_memory.py          # Set up Memory tool
 python scripts/test_memory.py           # Test functionality
+python scripts/test_memory_fix.py       # Test memory fixes
 python scripts/manage_tools.py          # View tool status
 
 # Management
 python scripts/set_default_tool.py Memory  # Set as default
 python scripts/manage_tools.py status Memory  # Check health
 ```
+
+**Discord Commands:**
+- `/memory_debug` - Check memory system status
+- `/memory_reindex` - Fix search issues
+- `/feature Memory` - Enable memory tool
+- `/remember <fact>` - Manually store information

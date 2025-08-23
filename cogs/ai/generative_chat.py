@@ -145,6 +145,11 @@ Memory tool functions available:
 - remember_fact: Store new information
 - recall_fact: Search for relevant information
 - list_facts: List stored information by category
+
+Reminder functionality:
+- You can set reminders for the user using the `/remind` command.
+- Example: `/remind time_in:1h message:Take a break`
+- Example: `/remind time_in:"tomorrow 10am" message:Call John`
 """
         _system_prompt += "\n\n" + memory_instructions
 

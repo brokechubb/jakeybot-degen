@@ -16,18 +16,27 @@ class Chat(commands.Cog):
         self.bot: discord.Bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
 
-        # Initialize the MongoDB connection and History management
-        try:
-            self.DBConn: History = History(
-                bot=bot,
-                db_conn=motor.motor_asyncio.AsyncIOMotorClient(
-                    environ.get("MONGO_DB_URL")
-                ),
-            )
-        except Exception as e:
-            raise e(
-                f"Failed to connect to MongoDB: {e}...\n\nPlease set MONGO_DB_URL in dev.env"
-            )
+        # Use the shared database connection from the bot
+        if hasattr(bot, "DBConn") and bot.DBConn is not None:
+            self.DBConn: History = bot.DBConn
+            logging.info("Chat cog using shared database connection")
+        else:
+            # Fallback: create our own connection if shared one is not available
+            try:
+                self.DBConn: History = History(
+                    bot=bot,
+                    db_conn=motor.motor_asyncio.AsyncIOMotorClient(
+                        environ.get("MONGO_DB_URL")
+                    ),
+                )
+                logging.info("Chat cog created fallback database connection")
+            except Exception as e:
+                logging.error(
+                    f"Failed to initialize database connection in Chat cog: {e}"
+                )
+                raise e(
+                    f"Failed to connect to MongoDB: {e}...\n\nPlease set MONGO_DB_URL in dev.env"
+                )
 
         # Initialize the chat system
         self._ask_event = BaseChat(bot, self.author, self.DBConn)
@@ -424,11 +433,11 @@ class Chat(commands.Cog):
             "An error has occurred while executing feature command, reason: ",
             exc_info=True,
         )
-        
+
     ####################################################################################
     # Knowledge Management Commands
     ####################################################################################
-    
+
     @commands.slash_command(
         contexts={
             discord.InteractionContextType.guild,
@@ -440,40 +449,51 @@ class Chat(commands.Cog):
         },
     )
     @discord.option("fact", description="The fact to remember", required=True)
-    @discord.option("expires_in", description="Expiration time (e.g., 1d, 2h, 30m)", required=False)
+    @discord.option(
+        "expires_in", description="Expiration time (e.g., 1d, 2h, 30m)", required=False
+    )
     async def remember(self, ctx, fact: str, expires_in: str = None):
         """Remember a piece of information"""
         await ctx.response.defer(ephemeral=True)
-        
+
         # Determine guild/user based on SHARED_CHAT_HISTORY setting
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
             guild_id = ctx.guild.id if ctx.guild else ctx.author.id
         else:
             guild_id = ctx.author.id
-            
+
         # Parse expiration time
         expires_at = None
         if expires_in:
             try:
                 from datetime import datetime, timedelta
+
                 now = datetime.utcnow()
-                if expires_in.endswith('d'):
+                if expires_in.endswith("d"):
                     days = int(expires_in[:-1])
                     expires_at = now + timedelta(days=days)
-                elif expires_in.endswith('h'):
+                elif expires_in.endswith("h"):
                     hours = int(expires_in[:-1])
                     expires_at = now + timedelta(hours=hours)
-                elif expires_in.endswith('m'):
+                elif expires_in.endswith("m"):
                     minutes = int(expires_in[:-1])
                     expires_at = now + timedelta(minutes=minutes)
                 else:
                     raise ValueError("Invalid time format")
             except:
-                await ctx.respond("⚠️ Invalid expiration format. Use number followed by d, h, or m (e.g., 1d, 2h, 30m)")
+                await ctx.respond(
+                    "⚠️ Invalid expiration format. Use number followed by d, h, or m (e.g., 1d, 2h, 30m)"
+                )
                 return
-        
+
         try:
-            fact_id = await self.DBConn.add_fact(guild_id, ctx.author.id, fact, source=f"user_command/{ctx.author.id}", expires_at=expires_at)
+            fact_id = await self.DBConn.add_fact(
+                guild_id,
+                ctx.author.id,
+                fact,
+                source=f"user_command/{ctx.author.id}",
+                expires_at=expires_at,
+            )
             response = f"✅ I'll remember that (Fact ID: {fact_id})"
             if expires_at:
                 response += f"\n⏰ Expires: {expires_at.strftime('%Y-%m-%d %H:%M')} UTC"

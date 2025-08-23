@@ -62,6 +62,24 @@ python scripts/test_memory.py
 
 ---
 
+#### `test_memory_fix.py`
+
+Tests memory system fixes and improvements.
+
+```bash
+python scripts/test_memory_fix.py
+```
+
+**What it does:**
+
+- Tests memory system fixes and improvements
+- Validates database connection and functionality
+- Checks memory tool performance
+
+**Use when:** You want to test memory system fixes or validate improvements
+
+---
+
 #### `security_check.py`
 
 Scans your repository for potential security issues.
@@ -101,184 +119,210 @@ python scripts/flush_db.py
 
 ---
 
-#### `set_default_tool.py`
+#### `backup_database.py`
 
-Sets the default tool for all existing users in the database.
+Creates a complete backup of your database.
 
 ```bash
-python scripts/set_default_tool.py <tool_name>
-python scripts/set_default_tool.py Memory
-python scripts/set_default_tool.py ImageGen
-python scripts/set_default_tool.py None
+python scripts/backup_database.py
 ```
 
 **What it does:**
 
-- Updates all existing users to use a specific tool
-- Shows current tool distribution statistics
-- Dynamically detects available tools
+- Exports all database collections to JSON files
+- Creates timestamped backup files
+- Stores backups in `database_backups/` directory
+- Includes user data, conversation history, and knowledge base
 
-**Use when:** You want to change the default tool for all existing users
+**Use when:** Before major updates or when you want to preserve your data
 
 ---
 
-### 🛠️ Management & Monitoring
+#### `check_databases.py`
 
-#### `manage_tools.py`
-
-Manages and monitors tool status.
+Checks the status and health of your databases.
 
 ```bash
-python scripts/manage_tools.py                    # Show all tools status
-python scripts/manage_tools.py status <tool>     # Show specific tool status
-python scripts/manage_tools.py enable <tool>     # Show enable command
-python scripts/manage_tools.py disable            # Show disable command
+python scripts/check_databases.py
 ```
 
 **What it does:**
 
-- Shows status of all available tools
-- Displays tool file completeness
-- Shows database usage statistics
-- Provides management guidance
+- Verifies database connections
+- Checks collection counts and sizes
+- Reports database health status
+- Identifies potential issues
 
-**Use when:** You want to check tool status or get management help
+**Use when:** Troubleshooting database problems or monitoring system health
+
+---
+
+#### `database_dump.py`
+
+Creates detailed dumps of specific database collections.
+
+```bash
+python scripts/database_dump.py
+```
+
+**What it does:**
+
+- Exports specific collections to CSV/JSON formats
+- Creates detailed analysis reports
+- Generates data summaries
+- Useful for data analysis and debugging
+
+**Use when:** You need detailed analysis of specific data or debugging issues
+
+---
+
+#### `reset_database.py`
+
+Resets specific parts of your database.
+
+```bash
+python scripts/reset_database.py
+```
+
+**What it does:**
+
+- Resets specific collections or data types
+- Preserves other data while clearing selected areas
+- Safer alternative to complete database flush
+- Interactive confirmation for each reset operation
+
+**Use when:** You need to clear specific data without losing everything
+
+---
+
+### 🛠️ Tool & Model Management
+
+#### `manage_tools.py`
+
+Manages and checks the status of available tools.
+
+```bash
+python scripts/manage_tools.py
+python scripts/manage_tools.py status <tool_name>
+```
+
+**What it does:**
+
+- Lists all available tools
+- Shows tool status and configuration
+- Checks tool dependencies
+- Provides tool management options
+
+**Use when:** You want to check tool status or troubleshoot tool issues
 
 ---
 
 #### `manage_ai_models.py`
 
-Manages and monitors AI model configuration.
+Manages and checks AI model configurations.
 
 ```bash
-python scripts/manage_ai_models.py                    # Show all models
-python scripts/manage_ai_models.py status <model>     # Show model status
-python scripts/manage_ai_models.py config <model>     # Show config help
+python scripts/manage_ai_models.py
+python scripts/manage_ai_models.py config <model_name>
 ```
 
 **What it does:**
 
-- Shows status of all AI models
-- Checks configuration completeness
-- Provides setup guidance for each model
-- Shows required environment variables
+- Lists all available AI models
+- Shows model configurations and status
+- Checks API key availability
+- Provides model management options
 
-**Use when:** You want to check AI model status or get configuration help
+**Use when:** You want to check model status or troubleshoot model issues
+
+---
+
+#### `set_default_tool.py`
+
+Sets a default tool for all users.
+
+```bash
+python scripts/set_default_tool.py <tool_name>
+```
+
+**What it does:**
+
+- Sets a default tool for all existing users
+- Updates user preferences in bulk
+- Useful for server-wide tool configuration
+- Supports all available tools
+
+**Use when:** You want to change the default tool for all users
 
 ---
 
 ## 🚀 Quick Start
 
-1. **Initial Setup:**
+### **First Time Setup**
 
+1. **Set up environment:**
    ```bash
    python scripts/setup_env.py
-   # Edit your .env file with API keys
+   ```
+
+2. **Configure API keys** in the generated `dev.env` file
+
+3. **Set up Memory tool:**
+   ```bash
+   python scripts/setup_memory.py
+   ```
+
+4. **Verify security:**
+   ```bash
    python scripts/security_check.py
    ```
 
-2. **Enable Memory Tool:**
+### **Regular Maintenance**
 
-   ```bash
-   python scripts/setup_memory.py
-   python scripts/test_memory.py
-   ```
+- **Check database health:** `python scripts/check_databases.py`
+- **Backup data:** `python scripts/backup_database.py`
+- **Test memory system:** `python scripts/test_memory.py`
 
-3. **Check System Status:**
+### **Troubleshooting**
 
-   ```bash
-   python scripts/manage_tools.py
-   python scripts/manage_ai_models.py
-   ```
+- **Tool issues:** `python scripts/manage_tools.py`
+- **Model problems:** `python scripts/manage_ai_models.py`
+- **Memory issues:** `python scripts/test_memory_fix.py`
 
-4. **Change Default Tool:**
+---
 
-   ```bash
-   python scripts/set_default_tool.py <tool_name>
-   ```
+## ⚠️ **Important Notes**
 
-## 🔒 Security Notes
+### **Security**
 
-- **Never commit your `.env` file** to version control
-- Run `security_check.py` before committing code
-- Keep API keys secure and private
-- Use environment variables for all sensitive information
+- **Never commit** `dev.env` files
+- **Always run** `security_check.py` before committing
+- **Backup data** before major changes
+- **Test scripts** in development environment first
 
-## 🛠️ Tool Management
+### **Database Operations**
 
-### Available Tools
+- **Backup first** before any destructive operations
+- **Test scripts** on development data
+- **Verify permissions** before running database scripts
+- **Monitor logs** during database operations
 
-The scripts automatically detect tools from your `tools/` directory:
+### **Tool Management**
 
-- **Memory** - Conversation memory and fact recall
-- **ImageGen** - AI image generation
-- **ExaSearch** - Web search capabilities
-- **GitHub** - GitHub repository access
-- **YouTube** - YouTube search and analysis
-- **AudioTools** - Audio manipulation
-- **IdeationTools** - Canvas and artifacts
-- **CryptoPrice** - Live cryptocurrency prices
-- **CurrencyConverter** - Live currency conversion
-- **CodeExecution** - Python code execution
+- **One tool active** per conversation
+- **Test tools** after configuration changes
+- **Check dependencies** before enabling tools
+- **Monitor performance** when switching tools
 
-### AI Models
+---
 
-The scripts automatically detect AI models from your `aimodels/` directory:
+## 📚 **Additional Resources**
 
-- **OpenAI** - GPT models
-- **Claude** - Anthropic models
-- **Gemini** - Google models
-- **Kimi** - Moonshot models
-- **XAI** - Grok models
-- **OpenRouter** - Multiple model access
-- **Azure Foundry** - Azure OpenAI models
+- **[Main README](../README.md)** - Complete project overview
+- **[Configuration Guide](../docs/CONFIG.md)** - Detailed setup instructions
+- **[Security Guide](../docs/SECURITY.md)** - Security best practices
+- **[Tools Documentation](../docs/TOOLS.md)** - Tool usage and configuration
 
-## 📚 Documentation
+---
 
-- **Configuration Guide:** `docs/CONFIG.md`
-- **Security Guide:** `docs/SECURITY.md`
-- **Tools Documentation:** `docs/TOOLS.md`
-- **Memory Implementation:** `docs/MEMORY_IMPLEMENTATION.md`
-
-## 🆘 Troubleshooting
-
-### Common Issues
-
-1. **"No .env file found"**
-   - Run `python scripts/setup_env.py` first
-
-2. **"MONGO_DB_URL not set"**
-   - Check your `.env` file for MongoDB connection string
-
-3. **"Tool files missing"**
-   - Ensure the tool is properly installed in `tools/` directory
-
-4. **"Import errors"**
-   - Make sure you're running from the JakeyBot root directory
-   - Check that all dependencies are installed
-
-### Getting Help
-
-- Check the documentation in the `docs/` directory
-- Run scripts with no arguments to see usage information
-- Use the status commands to diagnose issues:
-
-  ```bash
-  python scripts/manage_tools.py
-  python scripts/manage_ai_models.py
-  ```
-
-## 🔄 Script Dependencies
-
-All scripts require:
-
-- Python 3.7+
-- `python-dotenv` package
-- `motor` package (for database scripts)
-- Proper working directory (JakeyBot root)
-
-Install dependencies with:
-
-```bash
-pip install python-dotenv motor
-```
+**🔧 These scripts help you manage and maintain your JakeyBot instance effectively. Always backup your data before making major changes!**

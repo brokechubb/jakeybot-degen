@@ -4,6 +4,12 @@ from os import environ
 import discord
 import logging
 import requests
+import datetime
+import time
+import asyncio
+import re
+import motor.motor_asyncio
+from core.ai.history import History
 
 
 class Misc(commands.Cog):
@@ -13,9 +19,310 @@ class Misc(commands.Cog):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
 
+        # Use the shared database connection from the bot
+        if hasattr(bot, "DBConn") and bot.DBConn is not None:
+            self.DBConn = bot.DBConn
+            logging.info("Misc cog using shared database connection")
+        else:
+            # Fallback: create our own connection if shared one is not available
+            try:
+                self.DBConn: History = History(
+                    bot=bot,
+                    db_conn=motor.motor_asyncio.AsyncIOMotorClient(
+                        environ.get("MONGO_DB_URL")
+                    ),
+                )
+                logging.info("Misc cog created fallback database connection")
+            except Exception as e:
+                logging.error(
+                    f"Failed to initialize database connection in Misc cog: {e}"
+                )
+                self.DBConn = None
+
+        # Only start reminder checker if we have a database connection
+        if self.DBConn:
+            self.bot.loop.create_task(self._check_reminders())
+            logging.info("Reminder checker started")
+        else:
+            logging.warning("Reminder checker not started - no database connection")
+
+    async def _check_reminders(self):
+        await self.bot.wait_until_ready()
+        while not self.bot.is_closed():
+            for guild in self.bot.guilds:
+                guild_id = guild.id
+                due_reminders = await self.DBConn.get_due_reminders(guild_id)
+                for reminder in due_reminders:
+                    channel = self.bot.get_channel(reminder["channel_id"])
+                    if channel:
+                        await channel.send(
+                            f"⏰ Reminder for <@{reminder['user_id']}>: {reminder['message']}"
+                        )
+                    await self.DBConn.delete_reminder(guild_id, reminder["_id"])
+            await asyncio.sleep(60)  # Check every minute
+
     @commands.slash_command(
-        name="help",
-        aliases=["quickstart", "jakeyhelp"],
+        name="remind",
+        description="Set a reminder for yourself.",
+        contexts={
+            discord.InteractionContextType.guild,
+            discord.InteractionContextType.private_channel,
+        },
+        integration_types={
+            discord.IntegrationType.guild_install,
+            discord.IntegrationType.user_install,
+        },
+    )
+    @discord.option(
+        "time_in",
+        description="When to remind you (e.g., '1h', '30m', 'tomorrow 10am')",
+        required=True,
+    )
+    @discord.option("message", description="What to remind you about", required=True)
+    async def remind_me(self, ctx, time_in: str, message: str):
+        """Set a reminder for yourself."""
+        await ctx.response.defer(ephemeral=True)
+
+        try:
+            remind_time = self._parse_time_input(time_in)
+            if remind_time is None:
+                await ctx.respond(
+                    "⚠️ Invalid time format. Please use formats like '1h', '30m', 'tomorrow 10am'."
+                )
+                return
+
+            if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+                guild_id = ctx.guild.id if ctx.guild else ctx.author.id
+            else:
+                guild_id = ctx.author.id
+
+            reminder_id = await self.DBConn.add_reminder(
+                guild_id=guild_id,
+                user_id=ctx.author.id,
+                channel_id=ctx.channel.id,
+                message=message,
+                remind_time=remind_time,
+            )
+            await ctx.respond(
+                f"✅ I'll remind you about '{message}' at {remind_time.strftime('%Y-%m-%d %H:%M:%S')}."
+            )
+        except Exception as e:
+            await ctx.respond(f"❌ Failed to set reminder: {str(e)}")
+            logging.error("Error setting reminder: %s", e)
+
+    def _parse_time_input(self, time_input: str) -> datetime.datetime:
+        now = datetime.datetime.now()
+        time_input = time_input.lower()
+
+        if time_input.endswith("m"):
+            minutes = int(time_input[:-1])
+            return now + datetime.timedelta(minutes=minutes)
+        elif time_input.endswith("h"):
+            hours = int(time_input[:-1])
+            return now + datetime.timedelta(hours=hours)
+        elif time_input.endswith("d"):
+            days = int(time_input[:-1])
+            return now + datetime.timedelta(days=days)
+        elif "tomorrow" in time_input:
+            tomorrow = now + datetime.timedelta(days=1)
+            if " " in time_input:
+                time_part = time_input.split(" ", 1)[1]
+                try:
+                    hour = int(time_part.replace("am", "").replace("pm", "").strip())
+                    if "pm" in time_part and hour < 12:
+                        hour += 12
+                    elif "am" in time_part and hour == 12:  # 12am is midnight
+                        hour = 0
+                    return tomorrow.replace(
+                        hour=hour, minute=0, second=0, microsecond=0
+                    )
+                except ValueError:
+                    pass  # Fall through to default if time part is invalid
+            return tomorrow.replace(
+                hour=9, minute=0, second=0, microsecond=0
+            )  # Default to 9am tomorrow
+
+        # Basic parsing for specific time (e.g., "10am", "2pm")
+        match = re.match(r"(\d+)(am|pm)", time_input)
+        if match:
+            hour = int(match.group(1))
+            ampm = match.group(2)
+            if ampm == "pm" and hour < 12:
+                hour += 12
+            elif ampm == "am" and hour == 12:  # 12am is midnight
+                hour = 0
+
+            # If the target time is already past today, set for tomorrow
+            target_time = now.replace(hour=hour, minute=0, second=0, microsecond=0)
+            if target_time <= now:
+                target_time += datetime.timedelta(days=1)
+            return target_time
+
+        return None
+
+    @commands.slash_command(
+        name="time",
+        description="Displays the current time and DST status.",
+        contexts={
+            discord.InteractionContextType.guild,
+            discord.InteractionContextType.private_channel,
+        },
+        integration_types={
+            discord.IntegrationType.guild_install,
+            discord.IntegrationType.user_install,
+        },
+    )
+    async def current_time_slash(self, ctx):
+        """Displays the current time and DST status."""
+        now = datetime.datetime.now()
+        dst_status = "active" if time.localtime().tm_isdst else "inactive"
+        await ctx.respond(
+            f"The current time is {now.strftime('%Y-%m-%d %H:%M:%S %Z%z')}. Daylight Saving Time is currently {dst_status}."
+        )
+
+    @commands.command(
+        name="time", description="Displays the current time and DST status."
+    )
+    async def current_time_prefix(self, ctx):
+        """Displays the current time and DST status."""
+        now = datetime.datetime.now()
+        dst_status = "active" if time.localtime().tm_isdst else "inactive"
+        await ctx.send(
+            f"The current time is {now.strftime('%Y-%m-%d %H:%M:%S %Z%z')}. Daylight Saving Time is currently {dst_status}."
+        )
+
+    @commands.slash_command(
+        name="memory_debug",
+        description="Debug the memory system and check its status.",
+        contexts={
+            discord.InteractionContextType.guild,
+            discord.InteractionContextType.private_channel,
+        },
+        integration_types={
+            discord.IntegrationType.guild_install,
+            discord.IntegrationType.user_install,
+        },
+    )
+    async def memory_debug(self, ctx):
+        """Debug the memory system and check its status."""
+        await ctx.response.defer(ephemeral=True)
+
+        if not self.DBConn:
+            await ctx.respond("❌ Database connection not available")
+            return
+
+        try:
+            # Determine guild/user ID
+            if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+                guild_id = ctx.guild.id if ctx.guild else ctx.author.id
+            else:
+                guild_id = ctx.author.id
+
+            # Check memory status
+            status = await self.DBConn.check_memory_status(guild_id)
+
+            # Create embed with debug information
+            embed = discord.Embed(
+                title="🧠 Memory System Debug",
+                color=discord.Color.blue()
+                if status["status"] == "ok"
+                else discord.Color.red(),
+            )
+
+            embed.add_field(name="Status", value=status["status"].upper(), inline=True)
+
+            embed.add_field(name="Message", value=status["message"], inline=True)
+
+            if status["status"] == "ok":
+                embed.add_field(
+                    name="Total Facts", value=str(status["total_facts"]), inline=True
+                )
+
+                embed.add_field(
+                    name="Non-expired Facts",
+                    value=str(status["non_expired_facts"]),
+                    inline=True,
+                )
+
+                embed.add_field(
+                    name="Text Index",
+                    value="✅ Exists" if status["text_index_exists"] else "❌ Missing",
+                    inline=True,
+                )
+
+                embed.add_field(
+                    name="Collection", value=status["collection_name"], inline=False
+                )
+
+                if status["indexes"]:
+                    embed.add_field(
+                        name="Indexes", value=", ".join(status["indexes"]), inline=False
+                    )
+
+            # Add database connection info
+            embed.add_field(
+                name="Database",
+                value=f"Connected: {'✅' if self.DBConn else '❌'}",
+                inline=True,
+            )
+
+            embed.add_field(
+                name="Shared Connection",
+                value="✅" if hasattr(self.bot, "DBConn") and self.bot.DBConn else "❌",
+                inline=True,
+            )
+
+            await ctx.respond(embed=embed)
+
+        except Exception as e:
+            await ctx.respond(f"❌ Error during memory debug: {str(e)}")
+            logging.error(f"Memory debug error: {e}")
+
+    @commands.slash_command(
+        name="memory_reindex",
+        description="Force reindex the memory system to fix search issues.",
+        contexts={
+            discord.InteractionContextType.guild,
+            discord.InteractionContextType.private_channel,
+        },
+        integration_types={
+            discord.IntegrationType.guild_install,
+            discord.IntegrationType.user_install,
+        },
+    )
+    async def memory_reindex(self, ctx):
+        """Force reindex the memory system to fix search issues."""
+        await ctx.response.defer(ephemeral=True)
+
+        if not self.DBConn:
+            await ctx.respond("❌ Database connection not available")
+            return
+
+        try:
+            # Determine guild/user ID
+            if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+                guild_id = ctx.guild.id if ctx.guild else ctx.author.id
+            else:
+                guild_id = ctx.author.id
+
+            # Force reindex
+            success = await self.DBConn.force_reindex_memory(guild_id)
+
+            if success:
+                await ctx.respond(
+                    "✅ Memory system reindexed successfully! Search should work better now."
+                )
+            else:
+                await ctx.respond(
+                    "❌ Failed to reindex memory system. Check logs for details."
+                )
+
+        except Exception as e:
+            await ctx.respond(f"❌ Error during memory reindex: {str(e)}")
+            logging.error(f"Memory reindex error: {e}")
+
+    @commands.slash_command(
+        name="quickstart",
         description="Display the JakeyBot Quickstart Guide",
         contexts={discord.InteractionContextType.guild},
         integration_types={discord.IntegrationType.guild_install},
@@ -232,32 +539,6 @@ class Misc(commands.Cog):
         await webhook.delete()
 
         await ctx.respond("✅ Done!")
-
-    @mimic.error
-    async def on_command_error(self, ctx: commands.Context, error: DiscordException):
-        if isinstance(error, commands.MissingRequiredArgument) or isinstance(
-            error, commands.BadUnionArgument
-        ):
-            await ctx.respond(
-                "⚠️ Please specify a valid discord user (or user id) and message to mimic!\n**Syntax:** `$mimic <user/user id> <message>`"
-            )
-        elif isinstance(error, commands.CommandInvokeError) or isinstance(
-            error, commands.MissingPermissions
-        ):
-            await ctx.respond(
-                "❌ Sorry, webhooks are not enabled in this channel. Please enable webhooks in this channel to use this command."
-            )
-        elif isinstance(error, commands.NoPrivateMessage):
-            await ctx.respond(
-                "❌ Sorry, this feature is not supported in DMs. Please use this command inside the guild."
-            )
-        elif isinstance(error, commands.ApplicationCommandInvokeError):
-            await ctx.respond("⚠️ Please input a member")
-        else:
-            logging.error(
-                "An error has occurred while executing mimic command, reason: ",
-                exc_info=True,
-            )
 
 
 def setup(bot):

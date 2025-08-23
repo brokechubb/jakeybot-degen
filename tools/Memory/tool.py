@@ -20,17 +20,33 @@ class Tool(ToolManifest):
         self.tool_schema = self.tool_schema_basic
         self.tool_schema_openai = self.tool_schema_openai
 
-        # Initialize history database connection
-        try:
-            from core.services.helperfunctions import HelperFunctions
-            from motor.motor_asyncio import AsyncIOMotorClient
-            from os import environ
+        # Try to get the shared database connection from the bot
+        # This is the proper way to access the shared database connection
+        if hasattr(discord_bot, "DBConn") and isinstance(discord_bot.DBConn, History):
+            self.history_db = discord_bot.DBConn
+            logging.info("Memory tool using shared database connection")
+        else:
+            # Fallback: try to get from cogs if available
+            try:
+                # Look for the Misc cog which has the database connection
+                misc_cog = discord_bot.get_cog("Misc")
+                if misc_cog and hasattr(misc_cog, "DBConn"):
+                    self.history_db = misc_cog.DBConn
+                    logging.info("Memory tool using database connection from Misc cog")
+                else:
+                    # Last resort: create a new connection
+                    from core.services.helperfunctions import HelperFunctions
+                    from motor.motor_asyncio import AsyncIOMotorClient
+                    from os import environ
 
-            db_conn = AsyncIOMotorClient(environ.get("MONGO_DB_URL"))
-            self.history_db = History(bot=discord_bot, db_conn=db_conn)
-        except Exception as e:
-            logging.error(f"Failed to initialize Memory tool database connection: {e}")
-            self.history_db = None
+                    db_conn = AsyncIOMotorClient(environ.get("MONGO_DB_URL"))
+                    self.history_db = History(bot=discord_bot, db_conn=db_conn)
+                    logging.info("Memory tool created new database connection")
+            except Exception as e:
+                logging.error(
+                    f"Failed to initialize Memory tool database connection: {e}"
+                )
+                self.history_db = None
 
     async def _tool_function_remember_fact(
         self, fact: str, category: str = None, expires_in: str = None
@@ -113,8 +129,29 @@ class Tool(ToolManifest):
             # Limit the search results
             limit = min(max(1, limit), 10)
 
-            # Search for facts
+            # First try to search for facts
             facts = await self.history_db.search_facts(guild_id, query, limit=limit)
+
+            # If no facts found, try getting recent facts as a fallback
+            if not facts:
+                facts = await self.history_db.get_recent_facts(guild_id, limit=limit)
+                if facts:
+                    return (
+                        f"🤔 I couldn't find facts matching '{query}', but here are some recent things I remember:\n"
+                        + "\n".join(f"- {fact}" for fact in facts)
+                    )
+
+            # If still no facts, try getting facts by the current user
+            if not facts:
+                user_id = self.discord_ctx.author.id
+                facts = await self.history_db.get_facts_by_user(
+                    guild_id, user_id, limit=limit
+                )
+                if facts:
+                    return (
+                        f"🤔 I couldn't find facts matching '{query}', but here are some things you've told me:\n"
+                        + "\n".join(f"- {fact}" for fact in facts)
+                    )
 
             if not facts:
                 return f"🤔 I couldn't find any facts matching '{query}' in my memory"
