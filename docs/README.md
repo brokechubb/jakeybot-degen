@@ -93,6 +93,12 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 - `/feature <tool>` - Enable tools
 - `/sweep` - Clear conversation
 - `/remember <fact>` - Store information
+- `/jakey_engage` - Make Jakey actively engage in the current channel
+- `/jakey_disengage` - Stop Jakey's active engagement
+- `/create_bet <title> <options>` - Create a new betting pool
+- `/cancel_bet` - Cancel the current betting pool
+- `/trivia` - Start a trivia game
+- `/cancel_trivia` - Cancel the current trivia game
 
 ### **Popular Tools**
 
@@ -100,6 +106,8 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 - **🎨 ImageGen** - AI image creation
 - **🔍 ExaSearch** - Web search
 - **💰 CryptoPrice** - Live crypto prices
+- **🎲 GamblingGames** - Betting pools and trivia
+- **🗣️ Engagement** - Active channel participation
 
 ### **Management Scripts for Admins**
 
@@ -107,6 +115,7 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 - `python scripts/manage_tools.py` - Check tool status
 - `python scripts/security_check.py` - Verify security
 - `python scripts/set_default_tool.py <tool>` - Set default tool
+- `pip install PyNaCl` - Install for voice support
 
 ## 🔍 **Finding Specific Information**
 
@@ -127,6 +136,9 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 **Troubleshooting help?**
 → [FAQ.md](./FAQ.md) has common issues and solutions
 
+**New engagement features?**
+→ Check the new commands like `/jakey_engage`, `/create_bet`, and `/trivia`!
+
 ## 🆘 **Getting Help**
 
 ### **For Users**
@@ -135,6 +147,7 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 2. **Ask server administrators** for server-specific issues
 3. **Use `/feature` command** to see available tools
 4. **Try `/ask` command** for general questions
+5. **Explore new commands** like `/jakey_engage`, `/create_bet`, and `/trivia` for more interaction!
 
 ### **For Administrators**
 
@@ -142,6 +155,8 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 2. **Use management scripts** to diagnose issues
 3. **Check security documentation** for best practices
 4. **Review configuration guide** for setup issues
+5. **Ensure `PyNaCl` is installed** for voice support.
+6. **Verify API keys** for OpenAI, OpenRouter, and Azure Blob Storage in `dev.env`.
 
 ### **For Developers**
 
@@ -149,6 +164,7 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 2. **Use test scripts** to verify functionality
 3. **Check security guidelines** before making changes
 4. **Review tool patterns** for consistency
+5. **Explore new cogs** `cogs/engagement.py` and `cogs/gambling_games.py` for implementation details.
 
 ## 📊 **Documentation Status**
 
@@ -163,6 +179,7 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 | MEMORY_QUICKSTART.md | ✅ Complete | August 2025 | All Users |
 | MEMORY_IMPLEMENTATION.md | ✅ Complete | August 2025 | Developers |
 | CURRENCY_CONVERTER.md | ✅ Complete | August 2025 | All Users |
+| README.md | ✅ Complete | August 2025 | All Users |
 
 ## 🔄 **Keeping Documentation Updated**
 
@@ -173,6 +190,10 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 - ✅ **Updated all documentation with new features**
 - ✅ **Added management script references**
 - ✅ **Improved troubleshooting sections**
+- ✅ **Introduced new engagement features**: Active channel participation, betting pools, and trivia games.
+- ✅ **Updated `requirements.txt`** with `PyNaCl` for voice support.
+- ✅ **Resolved `cogs.misc` loading error** by removing conflicting help commands.
+- ✅ **Provided guidance** for API key and Azure Blob Storage configuration.
 
 ### **Documentation Maintenance**
 

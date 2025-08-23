@@ -53,64 +53,61 @@ class GeminiUtils(commands.Cog):
         """Get user avatar"""
         await ctx.response.defer(ephemeral=True)
 
-        user = await self.bot.fetch_user(user.id if user else ctx.author.id)
-        avatar_url = user.avatar.url if user.avatar else "https://cdn.discordapp.com/embed/avatars/0.png"
+        try:
+            user = await self.bot.fetch_user(user.id if user else ctx.author.id)
+            avatar_url = user.avatar.url if user.avatar else "https://cdn.discordapp.com/embed/avatars/0.png"
 
-        # Generate image descriptions
-        _description = None
-        if describe:
-            try:
-                _filedata = None
-                _mime_type = None
-                # Download the image as files like
-                # Maximum file size is 3MB so check it
-                async with self.bot._aiohttp_main_client_session.head(avatar_url) as _response:
-                    if int(_response.headers.get("Content-Length")) > 1500000:
-                        raise Exception("Max file size reached")
-                
-                # Save it as bytes so base64 can read it
-                async with self.bot._aiohttp_main_client_session.get(avatar_url) as response:
-                    # Get mime type
-                    _mime_type = response.headers.get("Content-Type")
-                    _filedata = await response.content.read()
-                
-                # Check filedata
-                if not _filedata:
-                    raise Exception("No file data")
-                
-                # Generate description
-                _infer = Completions(model_name=self._default_text_model, discord_ctx=ctx, discord_bot=self.bot)
-                _description = await _infer.completion([
-                    "Generate image descriptions but one sentence short to describe, straight to the point",
-                    types.Part.from_bytes(
-                        data=_filedata,
-                        mime_type=_mime_type
-                    )
-                ])
-            except Exception as e:
-                logging.error("An error occurred while generating image descriptions: %s", e)
-                if "Max file size reached" in str(e):
-                    _description = "Image file size is too large, please use smaller images."
-                else:
+            # Generate image descriptions
+            _description = None
+            if describe:
+                try:
+                    _filedata = None
+                    _mime_type = None
+                    # Download the image as files like
+                    # Maximum file size is 3MB so check it
+                    await HelperFunctions.check_file_size(self.bot, avatar_url, 1500000)
+                    
+                    # Save it as bytes so base64 can read it
+                    async with self.bot._aiohttp_main_client_session.get(avatar_url) as response:
+                        # Get mime type
+                        _mime_type = response.headers.get("Content-Type")
+                        _filedata = await response.content.read()
+                    
+                    # Check filedata
+                    if not _filedata:
+                        raise Exception("No file data")
+                    
+                    # Generate description
+                    _infer = Completions(model_name=self._default_text_model, discord_ctx=ctx, discord_bot=self.bot)
+                    _description = await _infer.completion([
+                        "Generate image descriptions but one sentence short to describe, straight to the point",
+                        types.Part.from_bytes(
+                            data=_filedata,
+                            mime_type=_mime_type
+                        )
+                    ])
+                except CustomErrorMessage as e:
+                    _description = str(e)
+                except Exception as e:
+                    logging.error("An error occurred while generating image descriptions: %s", e)
                     _description = "Failed to generate image descriptions, check console for more info."
 
-        # Embed
-        embed = discord.Embed(
-            title=f"{user.name}'s Avatar",
-            description=_description,
-            color=discord.Color.random()
-        )
-        embed.set_image(url=avatar_url)
-        if _description: embed.set_footer(text="Using Gemini 2.5 Flash Thinking to generate descriptions, result may not be accurate")
-        await ctx.respond(embed=embed, ephemeral=True)
+            # Embed
+            embed = discord.Embed(
+                title=f"{user.name}'s Avatar",
+                description=_description,
+                color=discord.Color.random()
+            )
+            embed.set_image(url=avatar_url)
+            if _description: embed.set_footer(text="Using Gemini 2.5 Flash Thinking to generate descriptions, result may not be accurate")
+            await ctx.respond(embed=embed, ephemeral=True)
 
-        # Free up memory
-        del _filedata
-
-    @show.error
-    async def on_application_command_error(self, ctx: commands.Context, error: DiscordException):
-        await ctx.respond("❌ Something went wrong, please try again later.")
-        logging.error("An error has occurred while executing avatar command, reason: ", exc_info=True)
+            # Free up memory
+            if '_filedata' in locals():
+                del _filedata
+        except Exception as e:
+            logging.error("An error has occurred while executing show command, reason: %s", e, exc_info=True)
+            await ctx.respond("❌ Something went wrong, please try again later.", ephemeral=True)
 
 
     # Remix avatar command
@@ -137,74 +134,67 @@ class GeminiUtils(commands.Cog):
         """Remix user avatar using Gemini 2.0 Flash native image generation (EXPERIMENTAL)"""
         await ctx.response.defer(ephemeral=True)
 
-        _user = await self.bot.fetch_user(user.id if user else ctx.author.id)
-        if not _user.avatar:
-            raise CustomErrorMessage("You don't have an avatar to be remix")
-        else:
-            _avatar_url = _user.avatar.url
+        try:
+            _user = await self.bot.fetch_user(user.id if user else ctx.author.id)
+            if not _user.avatar:
+                raise CustomErrorMessage("You don't have an avatar to be remix")
+            else:
+                _avatar_url = _user.avatar.url
 
-        _filedata = None
-        _mime_type = None
-        # Download the image as files like
-        # Maximum file size is 3MB so check it
-        async with self.bot._aiohttp_main_client_session.head(_avatar_url) as _response:
-            if int(_response.headers.get("Content-Length")) > 1500000:
-                raise CustomErrorMessage("Reduce the file size of the image to less than 1.5MB")
-        
-        # Save it as bytes so base64 can read it
-        async with self.bot._aiohttp_main_client_session.get(_avatar_url) as response:
-            # Get mime type
-            _mime_type = response.headers.get("Content-Type")
-            _filedata = await response.content.read()
-        
-        # Check filedata
-        if not _filedata:
-            raise Exception("No file data")
-        
-        # Get the style
-        _style_preprompt = await ModelsList.get_remix_styles_async(style=style)
-        
-        # Craft prompt
-        _crafted_prompt = f"Transform this image provided with the style of {_style_preprompt}."
+            _filedata = None
+            _mime_type = None
+            # Download the image as files like
+            # Maximum file size is 3MB so check it
+            await HelperFunctions.check_file_size(self.bot, _avatar_url, 1500000)
+            
+            # Save it as bytes so base64 can read it
+            async with self.bot._aiohttp_main_client_session.get(_avatar_url) as response:
+                # Get mime type
+                _mime_type = response.headers.get("Content-Type")
+                _filedata = await response.content.read()
+            
+            # Check filedata
+            if not _filedata:
+                raise Exception("No file data")
+            
+            # Get the style
+            _style_preprompt = await ModelsList.get_remix_styles_async(style=style)
+            
+            # Craft prompt
+            _crafted_prompt = f"Transform this image provided with the style of {_style_preprompt}."
 
-        _infer = Completions(model_name=self._default_imagegen_model, discord_ctx=ctx, discord_bot=self.bot)
+            _infer = Completions(model_name=self._default_imagegen_model, discord_ctx=ctx, discord_bot=self.bot)
 
-        # Update params with image response modalities
-        _infer._genai_params["response_modalities"] = ["Image", "Text"]
-        _infer._genai_params["temperature"] = temperature
-        _completion_data = await _infer.completion([
-            "Only transform if the style requested here is different from the original image."
-            "If the style is the same, DO NOT create an image, instead you must send message as 'I cannot restyle an image with already similar style'. Anyway, let's proceed",
-            _crafted_prompt,
-            types.Part.from_bytes(
-                data=_filedata,
-                mime_type=_mime_type
-            )
-        ], return_text=False)
+            # Update params with image response modalities
+            _infer._genai_params["response_modalities"] = ["Image", "Text"]
+            _infer._genai_params["temperature"] = temperature
+            _completion_data = await _infer.completion([
+                "Only transform if the style requested here is different from the original image."
+                "If the style is the same, DO NOT create an image, instead you must send message as 'I cannot restyle an image with already similar style'. Anyway, let's proceed",
+                _crafted_prompt,
+                types.Part.from_bytes(
+                    data=_filedata,
+                    mime_type=_mime_type
+                )
+            ], return_text=False)
 
-        
-        _imagedata = None
-        for _parts in _completion_data.candidates[0].content.parts:
-            if _parts.inline_data:
-                if _parts.inline_data.mime_type.startswith("image"):
-                    _imagedata = _parts.inline_data.data
-                    break
+            
+            _imagedata = None
+            for _parts in _completion_data.candidates[0].content.parts:
+                if _parts.inline_data:
+                    if _parts.inline_data.mime_type.startswith("image"):
+                        _imagedata = _parts.inline_data.data
+                        break
 
-        if not _imagedata:
-            raise CustomErrorMessage("Failed to generate image, try using different styles or safe avatar images.")
+            if not _imagedata:
+                raise CustomErrorMessage("Failed to generate image, try using different styles or safe avatar images.")
 
-        await ctx.respond("Ok, here's a remixed version of your avatar:", file=discord.File(fp=io.BytesIO(_imagedata), filename="generated_avatar.png"), ephemeral=True)
-
-    @remix.error
-    async def on_application_command_error(self, ctx: commands.Context, error: DiscordException):
-        _error = getattr(error, "original", error)
-
-        if isinstance(_error, CustomErrorMessage):
-            await ctx.respond(f"❌ {_error}")
-        else:
-            await ctx.respond("❌ Something went wrong, please try again later.")
-        
-        logging.error("An error has occurred while executing remix command, reason: ", exc_info=True)
+            await ctx.respond("Ok, here's a remixed version of your avatar:", file=discord.File(fp=io.BytesIO(_imagedata), filename="generated_avatar.png"), ephemeral=True)
+        except CustomErrorMessage as e:
+            await ctx.respond(f"❌ {e}", ephemeral=True)
+        except Exception as e:
+            logging.error("An error has occurred while executing remix command, reason: %s", e, exc_info=True)
+            await ctx.respond("❌ Something went wrong, please try again later.", ephemeral=True)
 
     ###############################################
     # Polls

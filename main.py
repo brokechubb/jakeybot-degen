@@ -13,6 +13,7 @@ import yaml
 import motor.motor_asyncio
 from core.ai.history import History
 from core.services.auto_return_manager import AutoReturnManager
+import google.generativeai as genai # Import Gemini API client
 
 # Go to project root directory
 chdir(Path(__file__).parent.resolve())
@@ -81,6 +82,23 @@ class InitBot(ServicesInitBot):
         except Exception as e:
             logging.error(f"Failed to initialize AutoReturnManager: {e}")
             self.auto_return_manager = None
+
+        # Configure Gemini API client globally
+        try:
+            gemini_api_key = environ.get("GEMINI_API_KEY")
+            gemini_api_key_status = "set" if gemini_api_key else "not set"
+            logging.info(f"GEMINI_API_KEY status during initialization: {gemini_api_key_status}")
+
+            if gemini_api_key:
+                genai.configure(api_key=gemini_api_key)
+                self._gemini_api_configured = True
+                logging.info("Gemini API configured successfully")
+            else:
+                self._gemini_api_configured = False
+                logging.warning("GEMINI_API_KEY not set; Gemini API will not be available for dynamic question generation.")
+        except Exception as e:
+            logging.error(f"Failed to configure Gemini API: {e}")
+            self._gemini_api_configured = False
 
         # Initialize services
         self.loop.create_task(self.start_services())

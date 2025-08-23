@@ -1,0 +1,726 @@
+Crypto:
+  - question: "Who is the pseudonymous creator of Bitcoin?"
+    options:
+      - "Vitalik Buterin"
+      - "Satoshi Nakamoto"
+      - "Charles Hoskinson"
+      - "Eddie Craven"
+    answer: "B" # Satoshi Nakamoto
+  - question: "What is the process of verifying transactions on a blockchain and adding them to the public ledger?"
+    options:
+      - "Staking"
+      - "Mining"
+      - "Farming"
+      - "HODLing"
+    answer: "B" # Mining
+  - question: "Which cryptocurrency is often referred to as 'digital silver'?"
+    options:
+      - "Bitcoin"
+      - "Ethereum"
+      - "Litecoin"
+      - "Ripple"
+    answer: "C" # Litecoin
+  - question: "What is a 'whale' in cryptocurrency terms?"
+    options:
+      - "A large marine mammal"
+      - "An investor with a small amount of crypto"
+      - "An investor with a very large amount of crypto"
+      - "A type of blockchain algorithm"
+    answer: "C" # An investor with a very large amount of crypto
+  - question: "What does 'DeFi' stand for?"
+    options:
+      - "Decentralized Finance"
+      - "Digital Economy Financials"
+      - "Distributed Fund Investments"
+      - "Definitive Financials"
+    answer: "A" # Decentralized Finance
+
+Sports Betting:
+  - question: "In American football, what is a 'spread bet'?"
+    options:
+      - "Betting on the total points scored"
+      - "Betting on which team will win outright"
+      - "Betting on the margin of victory or defeat"
+      - "Betting on individual player performance"
+    answer: "C" # Betting on the margin of victory or defeat
+  - question: "What does 'parlay' mean in sports betting?"
+    options:
+      - "A single bet on one game"
+      - "A bet combining multiple selections into one wager"
+      - "A bet placed during a game"
+      - "A bet on the first half score"
+    answer: "B" # A bet combining multiple selections into one wager
+  - question: "Which of these is NOT a common type of sports bet?"
+    options:
+      - "Moneyline"
+      - "Over/Under"
+      - "Prop Bet"
+      - "Weather Bet"
+    answer: "D" # Weather Bet
+  - question: "What is 'vig' or 'juice' in sports betting?"
+    options:
+      - "The payout for a winning bet"
+      - "The commission charged by the sportsbook"
+      - "The amount of money bet on a game"
+      - "The odds of a team winning"
+    answer: "B" # The commission charged by the sportsbook
+  - question: "If a team is listed at -150 odds, what does that mean?"
+    options:
+      - "You win $150 for every $100 bet"
+      - "You need to bet $150 to win $100"
+      - "The team is an underdog"
+      - "The game is a tie"
+    answer: "B" # You need to bet $150 to win $100
+
+JakeyBot Lore:
+  - question: "Who is Jakey's eternal villain?"
+    options:
+      - "CrashDaddy"
+      - "MiaCat"
+      - "Eddie Craven"
+      - "Satoshi Nakamoto"
+    answer: "C" # Eddie Craven
+  - question: "What is Jakey's favorite activity?"
+    options:
+      - "Coding"
+      - "Gambling"
+      - "Reading"
+      - "Sleeping"
+    answer: "B" # Gambling
+  - question: "What is Jakey's favorite emoji to use?"
+    options:
+      - "😂"
+      - "👍"
+      - "💀"
+      - "❤️"
+    answer: "C" # 💀
+  - question: "What does Jakey call CrashDaddy?"
+    options:
+      - "Boss"
+      - "Landlord"
+      - "Friend"
+      - "Master"
+    answer: "B" # Landlord
+  - question: "What is Jakey's stance on refunds?"
+    options:
+      - "Always gives them"
+      - "Considers them sometimes"
+      - "Jakey don't refund"
+      - "Only for big wins"
+    answer: "C" # Jakey don't refund
+
+Science:
+  - question: "What is the chemical symbol for gold?"
+    options:
+      - "Ag"
+      - "Au"
+      - "Gd"
+      - "Go"
+    answer: "B" # Au
+  - question: "What is the powerhouse of the cell?"
+    options:
+      - "Nucleus"
+      - "Ribosome"
+      - "Mitochondrion"
+      - "Cell Membrane"
+    answer: "C" # Mitochondrion
+  - question: "What is the speed of light?"
+    options:
+      - "300,000 km/s"
+      - "150,000 km/s"
+      - "500,000 km/s"
+      - "1,000,000 km/s"
+    answer: "A" # 300,000 km/s
+  - question: "Which planet is known as the Red Planet?"
+    options:
+      - "Venus"
+      - "Jupiter"
+      - "Mars"
+      - "Saturn"
+    answer: "C" # Mars
+  - question: "What force pulls objects towards the center of the Earth?"
+    options:
+      - "Magnetism"
+      - "Gravity"
+      - "Friction"
+      - "Tension"
+    answer: "B" # Gravity
+
+History:
+  - question: "Who was the first President of the United States?"
+    options:
+      - "Abraham Lincoln"
+      - "Thomas Jefferson"
+      - "George Washington"
+      - "John Adams"
+    answer: "C" # George Washington
+  - question: "In what year did the Titanic sink?"
+    options:
+      - "1905"
+      - "1912"
+      - "1918"
+      - "1923"
+    answer: "B" # 1912
+  - question: "What was the Renaissance?"
+    options:
+      - "A geological era"
+      - "A style of music"
+      - "A period of European cultural, artistic, political and economic rebirth"
+      - "A military campaign"
+    answer: "C" # A period of European cultural, artistic, political and economic rebirth
+  - question: "Who discovered penicillin?"
+    options:
+      - "Marie Curie"
+      - "Albert Einstein"
+      - "Isaac Newton"
+      - "Alexander Fleming"
+    answer: "D" # Alexander Fleming
+  - question: "Which ancient civilization built the pyramids?"
+    options:
+      - "Roman"
+      - "Greek"
+      - "Egyptian"
+      - "Mayan"
+    answer: "C" # Egyptian
+
+Pop Culture:
+  - question: "Who wrote the Harry Potter series?"
+    options:
+      - "J.R.R. Tolkien"
+      - "George R.R. Martin"
+      - "J.K. Rowling"
+      - "Stephen King"
+    answer: "C" # J.K. Rowling
+  - question: "What is the name of the fictional city where Batman operates?"
+    options:
+      - "Metropolis"
+      - "Gotham City"
+      - "Star City"
+      - "Central City"
+    answer: "B" # Gotham City
+  - question: "Which artist painted the Mona Lisa?"
+    options:
+      - "Vincent van Gogh"
+      - "Pablo Picasso"
+      - "Leonardo da Vinci"
+      - "Michelangelo"
+    answer: "C" # Leonardo da Vinci
+  - question: "What is the highest-grossing film of all time (unadjusted for inflation)?"
+    options:
+      - "Titanic"
+      - "Avatar"
+      - "Avengers: Endgame"
+      - "Star Wars: The Force Awakens"
+    answer: "B" # Avatar
+  - question: "Who is known as the 'King of Pop'?"
+    options:
+      - "Elvis Presley"
+      - "Michael Jackson"
+      - "Justin Bieber"
+      - "Freddie Mercury"
+    answer: "B" # Michael Jackson
+
+Geography:
+  - question: "What is the only city that is located on two continents?"
+    options:
+      - "Istanbul"
+      - "Suez"
+      - "Panama City"
+      - "Ural"
+    answer: "A" # Istanbul
+  - question: "What is the longest continental mountain range in the world?"
+    options:
+      - "The Himalayas"
+      - "The Andes"
+      - "The Rocky Mountains"
+      - "The Alps"
+    answer: "B" # The Andes
+  - question: "Which country has the most natural lakes?"
+    options:
+      - "United States"
+      - "Australia"
+      - "India"
+      - "Canada"
+    answer: "D" # Canada
+  - question: "What is the name of the smallest country in the world?"
+    options:
+      - "Monaco"
+      - "Vatican City"
+      - "San Marino"
+      - "Liechtenstein"
+    answer: "B" # Vatican City
+  - question: "What U.S. state is home to no documented venomous snakes?"
+    options:
+      - "Hawaii"
+      - "Alaska"
+      - "Maine"
+      - "Rhode Island"
+    answer: "B" # Alaska
+Literature:
+  - question: "Who wrote 'Fahrenheit 451'?"
+    options:
+      - "George Orwell"
+      - "Ray Bradbury"
+      - "Aldous Huxley"
+      - "Isaac Asimov"
+    answer: "B" # Ray Bradbury
+  - question: "Which Shakespeare play is the movie 'The Lion King' based on?"
+    options:
+      - "Hamlet"
+      - "Macbeth"
+      - "Romeo and Juliet"
+      - "Othello"
+    answer: "A" # Hamlet
+  - question: "What is the name of the ship in 'Moby Dick'?"
+    options:
+      - "The Hispaniola"
+      - "The Nautilus"
+      - "The Pequod"
+      - "The Jolly Roger"
+    answer: "C" # The Pequod
+  - question: "In 'The Lord of the Rings', what is the name of Frodo's sword?"
+    options:
+      - "Glamdring"
+      - "Orcrist"
+      - "Anduril"
+      - "Sting"
+    answer: "D" # Sting
+  - question: "Who wrote the novel 'Catch-22'?"
+    options:
+      - "Kurt Vonnegut"
+      - "Joseph Heller"
+      - "J.D. Salinger"
+      - "Norman Mailer"
+    answer: "B" # Joseph Heller
+Movies:
+  - question: "What are the dying words of Charles Foster Kane in 'Citizen Kane'?"
+    options:
+      - "Rosebud"
+      - "I'm coming home"
+      - "The horror, the horror"
+      - "I'm melting!"
+    answer: "A" # Rosebud
+  - question: "What was the first feature-length animated movie ever released?"
+    options:
+      - "Pinocchio"
+      - "Snow White and the Seven Dwarfs"
+      - "Fantasia"
+      - "Bambi"
+    answer: "B" # Snow White and the Seven Dwarfs
+  - question: "In 'The Matrix', does Neo take the blue pill or the red pill?"
+    options:
+      - "Blue"
+      - "Red"
+      - "Both"
+      - "Neither"
+    answer: "B" # Red
+  - question: "What’s the name of the skyscraper in 'Die Hard'?"
+    options:
+      - "Sears Tower"
+      - "Empire State Building"
+      - "Nakatomi Plaza"
+      - "Stark Tower"
+    answer: "C" # Nakatomi Plaza
+  - question: "Who directed 'Jurassic Park'?"
+    options:
+      - "James Cameron"
+      - "George Lucas"
+      - "Steven Spielberg"
+      - "Martin Scorsese"
+    answer: "C" # Steven Spielberg
+General Knowledge:
+  - question: "In what country did the first Starbucks open outside of North America?"
+    options:
+      - "United Kingdom"
+      - "Japan"
+      - "France"
+      - "China"
+    answer: "B" # Japan
+  - question: "What is the tiny piece at the end of a shoelace called?"
+    options:
+      - "A tip"
+      - "A glet"
+      - "An aglet"
+      - "A cap"
+    answer: "C" # An aglet
+  - question: "Who was the first woman to win a Nobel Prize?"
+    options:
+      - "Marie Curie"
+      - "Rosalind Franklin"
+      - "Dorothy Hodgkin"
+      - "Ada Lovelace"
+    answer: "A" # Marie Curie
+  - question: "What is the national flower of Japan?"
+    options:
+      - "Rose"
+      - "Lotus"
+      - "Cherry Blossom"
+      - "Orchid"
+    answer: "C" # Cherry Blossom
+  - question: "How many time zones are there in the world?"
+    options:
+      - "12"
+      - "24"
+      - "36"
+      - "48"
+    answer: "B" # 24
+Music:
+  - question: "What was Freddie Mercury's real name?"
+    options:
+      - "Frederick Bulsara"
+      - "Farrokh Bulsara"
+      - "Freddie Mercury"
+      - "Freddie Bulsara"
+    answer: "B" # Farrokh Bulsara
+  - question: "Who was the very first 'American Idol' winner?"
+    options:
+      - "Carrie Underwood"
+      - "Taylor Hicks"
+      - "Kelly Clarkson"
+      - "Fantasia Barrino"
+    answer: "C" # Kelly Clarkson
+  - question: "Before Miley Cyrus recorded 'Wrecking Ball,' it was offered to which singer?"
+    options:
+      - "Katy Perry"
+      - "Rihanna"
+      - "Pink"
+      - "Beyoncé"
+    answer: "D" # Beyoncé
+  - question: "Who founded Motown Records?"
+    options:
+      - "Smokey Robinson"
+      - "Berry Gordy"
+      - "Diana Ross"
+      - "Michael Jackson"
+    answer: "B" # Berry Gordy
+  - question: "Which Michael Jackson album is the best-selling of all time?"
+    options:
+      - "Bad"
+      - "Dangerous"
+      - "Thriller"
+      - "Off the Wall"
+    answer: "C" # Thriller
+Food & Drink:
+  - question: "What is the main ingredient in guacamole?"
+    options:
+      - "Tomato"
+      - "Avocado"
+      - "Onion"
+      - "Lime"
+    answer: "B" # Avocado
+  - question: "What is the only food that never expires?"
+    options:
+      - "Salt"
+      - "Sugar"
+      - "Honey"
+      - "Rice"
+    answer: "C" # Honey
+  - question: "Which liquor is made from the blue agave plant?"
+    options:
+      - "Rum"
+      - "Vodka"
+      - "Gin"
+      - "Tequila"
+    answer: "D" # Tequila
+  - question: "What is the national dish of Scotland?"
+    options:
+      - "Bangers and Mash"
+      - "Haggis"
+      - "Shepherd's Pie"
+      - "Fish and Chips"
+    answer: "B" # Haggis
+  - question: "What is the most expensive spice in the world by weight?"
+    options:
+      - "Saffron"
+      - "Vanilla"
+      - "Cardamom"
+      - "Cinnamon"
+    answer: "A" # Saffron
+Animals:
+  - question: "What is the only species of penguin that can be found north of the equator?"
+    options:
+      - "Emperor Penguin"
+      - "King Penguin"
+      - "Galapagos Penguin"
+      - "Adelie Penguin"
+    answer: "C" # Galapagos Penguin
+  - question: "Which animal gets its name from a South African word meaning 'Earth pig'?"
+    options:
+      - "Warthog"
+      - "Aardvark"
+      - "Hyena"
+      - "Meerkat"
+    answer: "B" # Aardvark
+  - question: "What is the world's strongest animal relative to its body weight?"
+    options:
+      - "Ant"
+      - "Elephant Beetle"
+      - "Dung Beetle"
+      - "Rhinoceros Beetle"
+    answer: "C" # Dung Beetle
+  - question: "What mammal injects venom through spurs on its hind legs?"
+    options:
+      - "Echidna"
+      - "Hedgehog"
+      - "Platypus"
+      - "Shrew"
+    answer: "C" # Platypus
+  - question: "What color is a lobster's blood?"
+    options:
+      - "Red"
+      - "Green"
+      - "Blue"
+      - "Clear"
+    answer: "C" # Blue
+Technology:
+  - question: "What was the most downloaded app of the 2010s?"
+    options:
+      - "Instagram"
+      - "Twitter"
+      - "Facebook"
+      - "Snapchat"
+    answer: "C" # Facebook
+  - question: "One gigabyte is equal to how many megabytes?"
+    options:
+      - "100"
+      - "1000"
+      - "1024"
+      - "10,000"
+    answer: "B" # 1000
+  - question: "What does GUI stand for?"
+    options:
+      - "Graphical User Interface"
+      - "General User Interface"
+      - "Graphical Utility Interface"
+      - "General Utility Interface"
+    answer: "A" # Graphical User Interface
+  - question: "What is the official name for the “prove you’re not a robot” tests that websites sometimes require?"
+    options:
+      - "Turing Test"
+      - "CAPTCHA"
+      - "reCAPTCHA"
+      - "Human Verification"
+    answer: "B" # CAPTCHA
+  - question: "What British computer scientist is widely credited with inventing the World Wide Web?"
+    options:
+      - "Alan Turing"
+      - "Charles Babbage"
+      - "Tim Berners-Lee"
+      - "Steve Wozniak"
+    answer: "C" # Tim Berners-Lee
+Art:
+  - question: "Who painted the Mona Lisa?"
+    options:
+      - "Vincent van Gogh"
+      - "Pablo Picasso"
+      - "Leonardo da Vinci"
+      - "Michelangelo"
+    answer: "C" # Leonardo da Vinci
+  - question: "Which famous artist cut off his own ear?"
+    options:
+      - "Salvador Dalí"
+      - "Pablo Picasso"
+      - "Vincent van Gogh"
+      - "Claude Monet"
+    answer: "C" # Vincent van Gogh
+  - question: "What is the art movement associated with Pablo Picasso?"
+    options:
+      - "Surrealism"
+      - "Impressionism"
+      - "Cubism"
+      - "Abstract Expressionism"
+    answer: "C" # Cubism
+  - question: "Who painted the ceiling of the Sistine Chapel?"
+    options:
+      - "Raphael"
+      - "Donatello"
+      - "Leonardo da Vinci"
+      - "Michelangelo"
+    answer: "D" # Michelangelo
+  - question: "Which artist is known for the painting ‘The Persistence of Memory’?"
+    options:
+      - "Salvador Dalí"
+      - "Frida Kahlo"
+      - "René Magritte"
+      - "Max Ernst"
+    answer: "A" # Salvador Dalí
+Nature:
+  - question: "What is the largest mammal in the world?"
+    options:
+      - "African Elephant"
+      - "Blue Whale"
+      - "Giraffe"
+      - "Humpback Whale"
+    answer: "B" # Blue Whale
+  - question: "Which gas do plants absorb from the atmosphere?"
+    options:
+      - "Oxygen"
+      - "Nitrogen"
+      - "Carbon Dioxide"
+      - "Hydrogen"
+    answer: "C" # Carbon Dioxide
+  - question: "Which tree is known to live the longest?"
+    options:
+      - "Oak"
+      - "Sequoia"
+      - "Bristlecone Pine"
+      - "Baobab"
+    answer: "C" # Bristlecone Pine
+  - question: "What is the process by which plants make their own food?"
+    options:
+      - "Respiration"
+      - "Transpiration"
+      - "Photosynthesis"
+      - "Germination"
+    answer: "C" # Photosynthesis
+  - question: "What’s the world’s largest desert?"
+    options:
+      - "Sahara Desert"
+      - "Arabian Desert"
+      - "Gobi Desert"
+      - "Antarctic Polar Desert"
+    answer: "D" # Antarctic Polar Desert
+Mythology:
+  - question: "Who is the king of the Gods in Greek mythology?"
+    options:
+      - "Poseidon"
+      - "Hades"
+      - "Zeus"
+      - "Apollo"
+    answer: "C" # Zeus
+  - question: "Which monster has snakes for hair?"
+    options:
+      - "Gorgon"
+      - "Medusa"
+      - "Chimera"
+      - "Hydra"
+    answer: "B" # Medusa
+  - question: "Who is the hero known for his strength and twelve labors?"
+    options:
+      - "Achilles"
+      - "Odysseus"
+      - "Perseus"
+      - "Heracles (Hercules)"
+    answer: "D" # Heracles (Hercules)
+  - question: "Which king turned everything he touched into gold?"
+    options:
+      - "King Arthur"
+      - "King Midas"
+      - "King Tut"
+      - "King Triton"
+    answer: "B" # King Midas
+  - question: "Which creature is half-man and half-bull?"
+    options:
+      - "Centaur"
+      - "Satyr"
+      - "Minotaur"
+      - "Griffin"
+    answer: "C" # Minotaur
+Sports:
+  - question: "How long is a marathon?"
+    options:
+      - "26.2 miles"
+      - "25.2 miles"
+      - "24.2 miles"
+      - "23.2 miles"
+    answer: "A" # 26.2 miles
+  - question: "How many players are on a baseball team?"
+    options:
+      - "9"
+      - "10"
+      - "11"
+      - "12"
+    answer: "A" # 9
+  - question: "Which hockey player holds the record for most goals scored in his career?"
+    options:
+      - "Gordie Howe"
+      - "Wayne Gretzky"
+      - "Mario Lemieux"
+      - "Alex Ovechkin"
+    answer: "B" # Wayne Gretzky
+  - question: "What is the name of the trophy awarded to the winner of the Super Bowl?"
+    options:
+      - "The Lombardi Trophy"
+      - "The Stanley Cup"
+      - "The Commissioner's Trophy"
+      - "The Larry O'Brien Trophy"
+    answer: "A" # The Lombardi Trophy
+  - question: "Which country has won the most FIFA World Cups?"
+    options:
+      - "Germany"
+      - "Argentina"
+      - "Italy"
+      - "Brazil"
+    answer: "D" # Brazil
+Fashion:
+  - question: "What type of clothing is Coco Chanel credited with popularizing for women?"
+    options:
+      - "The little black dress"
+      - "The pantsuit"
+      - "The mini skirt"
+      - "The bikini"
+    answer: "A" # The little black dress
+  - question: "Which fabric is made from the fibers of a flax plant?"
+    options:
+      - "Cotton"
+      - "Linen"
+      - "Silk"
+      - "Wool"
+    answer: "B" # Linen
+  - question: "What do you call shoes with very high, thin heels?"
+    options:
+      - "Wedges"
+      - "Pumps"
+      - "Stilettos"
+      - "Flats"
+    answer: "C" # Stilettos
+  - question: "Which designer is known for their iconic red-soled shoes?"
+    options:
+      - "Jimmy Choo"
+      - "Manolo Blahnik"
+      - "Christian Louboutin"
+      - "Gucci"
+    answer: "C" # Christian Louboutin
+  - question: "What is the name of the traditional Japanese garment?"
+    options:
+      - "Sari"
+      - "Hanbok"
+      - "Kimono"
+      - "Cheongsam"
+    answer: "C" # Kimono
+Video Games:
+  - question: "What is the best-selling game console of all time?"
+    options:
+      - "Nintendo Wii"
+      - "PlayStation 2"
+      - "Xbox 360"
+      - "Nintendo Switch"
+    answer: "B" # PlayStation 2
+  - question: "Which was the first video game to be played in space?"
+    options:
+      - "Pong"
+      - "Pac-Man"
+      - "Tetris"
+      - "Donkey Kong"
+    answer: "C" # Tetris
+  - question: "What is the name of the main character in the 'Legend of Zelda' series?"
+    options:
+      - "Zelda"
+      - "Link"
+      - "Ganon"
+      - "Epona"
+    answer: "B" # Link
+  - question: "In what year was the first 'Call of Duty' game released?"
+    options:
+      - "2001"
+      - "2003"
+      - "2005"
+      - "2007"
+    answer: "B" # 2003
+  - question: "What is the name of the fictional city in which 'Grand Theft Auto V' is set?"
+    options:
+      - "Liberty City"
+      - "Vice City"
+      - "San Andreas"
+      - "Los Santos"
+    answer: "D" # Los Santos

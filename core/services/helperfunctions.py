@@ -1,4 +1,5 @@
 from azure.storage.blob.aio import BlobServiceClient
+from core.exceptions import CustomErrorMessage
 from os import environ
 from typing import Literal
 from typing import TypedDict
@@ -114,3 +115,9 @@ class HelperFunctions:
             return _assistants_mode[assistant_name].strip().format(_emojis_list)
         else:
             return _assistants_mode[assistant_name].strip()
+
+    @staticmethod
+    async def check_file_size(bot: discord.Bot, url: str, max_size: int):
+        async with bot._aiohttp_main_client_session.head(url) as response:
+            if int(response.headers.get("Content-Length")) > max_size:
+                raise CustomErrorMessage(f"File size is too large, please use files smaller than {max_size / 1000000}MB")

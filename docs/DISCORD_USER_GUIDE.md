@@ -20,6 +20,12 @@ Welcome to JakeyBot! This guide will help you get the most out of your interacti
 | `/sweep` | Clear conversation history | `/sweep` |
 | `/model set` | Switch AI models | `/model set gemini` |
 | `/feature` | Enable/disable tools | `/feature Memory` |
+| `/jakey_engage` | Make Jakey actively engage in the current channel | `/jakey_engage` |
+| `/jakey_disengage` | Stop Jakey's active engagement | `/jakey_disengage` |
+| `/create_bet` | Create a new betting pool | `/create_bet title:Super Bowl options:Chiefs,49ers` |
+| `/cancel_bet` | Cancel the current betting pool | `/cancel_bet` |
+| `/trivia` | Start a trivia game | `/trivia` |
+| `/cancel_trivia` | Cancel the current trivia game | `/cancel_trivia` |
 
 ### **New Utility Commands**
 
@@ -445,6 +451,8 @@ Your server may have additional features enabled:
 - **ImageGen** - AI image creation
 - **ExaSearch** - Web search
 - **CryptoPrice** - Live crypto prices
+- **Engagement** - Active channel participation
+- **GamblingGames** - Betting pools and trivia
 
 ### **Pro Tips**
 
@@ -454,6 +462,8 @@ Your server may have additional features enabled:
 - **Switch tools** based on what you need
 - **Set reminders** for important tasks
 - **Debug memory** if something's not working
+- **Use `/jakey_engage`** to invite Jakey into the conversation
+- **Try `/create_bet` and `/trivia`** for interactive games!
 
 ---
 

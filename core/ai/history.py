@@ -528,3 +528,29 @@ class History:
         guild_id = self._normalize_guild_id(guild_id)
         knowledge_collection = self._db[f"knowledge_{guild_id}"]
         await knowledge_collection.delete_one({"_id": fact_id})
+
+    ####################################################################################
+    # Trivia Score Management
+    ####################################################################################
+
+    async def add_trivia_score(self, guild_id: int, user_id: int, score: int):
+        """Add or update a user's trivia score for a guild."""
+        guild_id = self._normalize_guild_id(guild_id)
+        trivia_scores_collection = self._db[f"trivia_scores_{guild_id}"]
+
+        await trivia_scores_collection.update_one(
+            {"user_id": user_id},
+            {"$inc": {"score": score}, "$set": {"last_updated": datetime.utcnow()}},
+            upsert=True
+        )
+        logging.info(f"User {user_id} in guild {guild_id} scored {score} trivia points.")
+
+    async def get_trivia_leaderboard(self, guild_id: int, limit: int = 10):
+        """Retrieve the top trivia scores for a guild."""
+        guild_id = self._normalize_guild_id(guild_id)
+        trivia_scores_collection = self._db[f"trivia_scores_{guild_id}"]
+
+        leaderboard = []
+        async for entry in trivia_scores_collection.find().sort("score", -1).limit(limit):
+            leaderboard.append(entry)
+        return leaderboard

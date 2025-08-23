@@ -5,6 +5,12 @@
 - `/help` - Show all available commands
 - `/feature <tool>` - Enable specific tools (ImageGen, ExaSearch, etc.)
 - `/quickstart` - Display this guide
+- `/jakey_engage` - Make Jakey actively engage in the current channel
+- `/jakey_disengage` - Stop Jakey's active engagement
+- `/create_bet <title> <options>` - Create a new betting pool
+- `/cancel_bet` - Cancel the current betting pool
+- `/trivia` - Start a trivia game
+- `/cancel_trivia` - Cancel the current trivia game
 
 ## 🛠️ Core Features
 
@@ -40,6 +46,8 @@
 - **CodeExecution**: Run Python code
 - **AudioTools**: Audio manipulation and generation
 - **YouTube**: Video summarization
+- **Engagement**: Active channel participation
+- **GamblingGames**: Betting pools and trivia
 
 ## ⚡ Quick Workflows
 
@@ -118,6 +126,8 @@ run this python code: print("Hello World")
 4. **Get Smart Tips**: Use `/smart_suggestions` for workflow optimization
 5. **Monitor Time**: Check `/timeout_status` to plan your work
 6. **Plan Your Workflow**: Since only one tool works at a time, plan your tool usage sequence
+7. **Use `/jakey_engage`** to invite Jakey into the conversation
+8. **Try `/create_bet` and `/trivia`** for interactive games!
 
 ---
 
