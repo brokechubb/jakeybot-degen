@@ -54,26 +54,42 @@ Jakey: 🔄 Memory system reindexing... This may take a moment.
 **User:** "My name is Jimmy"
 **Jakey:** "Nice to meet you, Jimmy! I'll remember that for our future conversations."
 
-*Behind the scenes:* The bot automatically calls `remember_fact` with the fact "My name is Jimmy" and category "personal_info"
+*Behind the scenes:* The bot automatically calls `remember_fact` with the fact "My name is Jimmy" and category "personal_info". The stored fact becomes: `[personal_info] [Jimmy] my name is Jimmy`
 
 ### Example 2: Recalling Information
 
 **User:** "What's my name?"
 **Jakey:** "Your name is Jimmy! I remembered that from our previous conversation."
 
-*Behind the scenes:* The bot calls `recall_fact` with query "name" and finds the stored information
+*Behind the scenes:* The bot calls `recall_fact` with query "name" and finds the stored information `[personal_info] [Jimmy] my name is Jimmy`
 
 ### Example 3: Remembering Preferences
 
 **User:** "I love pizza and my favorite color is blue"
 **Jakey:** "Great choices! I'll remember that you love pizza and your favorite color is blue."
 
-*Behind the scenes:* The bot stores multiple facts about your preferences
+*Behind the scenes:* The bot stores multiple facts about your preferences:
+- `[preferences] [Jimmy] I love pizza`
+- `[preferences] [Jimmy] my favorite color is blue`
 
-### Example 4: Future Conversation Recall
+### Example 4: Multiple Users with Similar Information
 
-**User (in a new conversation):** "What do you know about me?"
-**Jakey:** "Based on what I remember: Your name is Jimmy, you love pizza, and your favorite color is blue!"
+**User Jimmy:** "My name is Jimmy and I like pizza"
+**User Sarah:** "My name is Sarah and I also like pizza"
+
+*Behind the scenes:* The bot stores:
+- `[personal_info] [Jimmy] my name is Jimmy`
+- `[preferences] [Jimmy] I like pizza`
+- `[personal_info] [Sarah] my name is Sarah`
+- `[preferences] [Sarah] I also like pizza`
+
+**Later, when Jimmy asks:** "What do you know about me?"
+**Jakey:** "Based on what I remember: Your name is Jimmy and you like pizza!"
+
+**When Sarah asks:** "What do you know about me?"
+**Jakey:** "Based on what I remember: Your name is Sarah and you also like pizza!"
+
+The username prefixing ensures there's no confusion between different users' information!
 
 ### Example 5: Memory Debugging
 

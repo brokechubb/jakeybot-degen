@@ -139,6 +139,7 @@ The bot now features an intelligent memory system that automatically remembers a
 - **Smart Recall**: When you ask questions, the bot searches its memory for relevant information
 - **Natural Integration**: Memory recall happens seamlessly during normal conversations
 - **Enhanced Database**: Shared database connection for better performance and reliability
+- **Username Association**: All stored facts are prefixed with the username who shared them, preventing confusion between multiple users
 
 ### Examples
 
@@ -146,6 +147,7 @@ The bot now features an intelligent memory system that automatically remembers a
 - **Recalling Info**: "What's my name?" → Bot recalls "Your name is Jimmy"
 - **Preferences**: "I love pizza" → Bot remembers your food preference
 - **Future Conversations**: Bot will remember your preferences even in new conversations
+- **Multiple Users**: No confusion when multiple users share similar information (e.g., multiple users named "John" or who like "pizza")
 
 ### Manual Commands
 

@@ -69,7 +69,7 @@ Each guild gets its own knowledge collection: `knowledge_{guild_id}`
 {
   "_id": "ObjectId",
   "user_id": 123456789,
-  "fact_text": "[personal_info] My name is Jimmy",
+  "fact_text": "[personal_info] [Username] My name is Jimmy",
   "source": "memory_tool/123456789",
   "created_at": "2024-01-01T00:00:00Z",
   "last_accessed_at": "2024-01-01T00:00:00Z",
@@ -80,10 +80,12 @@ Each guild gets its own knowledge collection: `knowledge_{guild_id}`
 
 ### Key Features
 
-- **Categorization** - Facts are prefixed with category tags `[category]`
+- **Username Prefixing** - All facts are prefixed with `[Username]` to clearly associate information with specific users
+- **Categorization** - Facts are prefixed with category tags `[category]` after the username
 - **Expiration** - Optional TTL for temporary information
 - **Access Tracking** - Last accessed timestamp for analytics
 - **Source Tracking** - Identifies how the fact was stored
+- **User Isolation** - Each fact is linked to the user who shared it
 
 ## 🧠 AI Integration
 

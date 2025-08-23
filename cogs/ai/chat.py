@@ -526,6 +526,12 @@ class Chat(commands.Cog):
         else:
             guild_id = ctx.author.id
 
+        # Get username for prepending to fact
+        username = ctx.author.display_name or f"User{ctx.author.id}"
+
+        # Prepend username to fact text to associate information with specific user
+        fact_with_user = f"[{username}] {fact}"
+
         # Parse expiration time
         expires_at = None
         if expires_in:
@@ -554,7 +560,7 @@ class Chat(commands.Cog):
             fact_id = await self.DBConn.add_fact(
                 guild_id,
                 ctx.author.id,
-                fact,
+                fact_with_user,
                 source=f"user_command/{ctx.author.id}",
                 expires_at=expires_at,
             )

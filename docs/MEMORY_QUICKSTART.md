@@ -97,6 +97,26 @@ After enabling the Memory tool, restart JakeyBot for the changes to take effect.
 - Sensitive data
 - Temporary preferences
 
+### 🔍 **Username Association**
+
+**Important**: All stored facts are automatically prefixed with the username who shared them in the format `[Username] fact_text`.
+
+**Benefits:**
+- **Clear Attribution**: You can see exactly who shared what information
+- **No Confusion**: Multiple users can share similar information without conflicts
+- **Personal Context**: Names and preferences are clearly linked to specific users
+- **Better Recall**: The bot can distinguish between different users' information
+
+**Examples:**
+```
+[Jimmy] my name is Jimmy
+[Jimmy] I like pizza
+[Sarah] my name is Sarah  
+[Sarah] I love hiking
+```
+
+This prevents confusion when multiple users have similar names or preferences!
+
 ## 🔧 Manual Commands
 
 ### Store Information Manually

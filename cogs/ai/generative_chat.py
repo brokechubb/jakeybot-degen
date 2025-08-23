@@ -140,6 +140,9 @@ IMPORTANT MEMORY INSTRUCTIONS:
 10. Integrate recalled information seamlessly into your responses.
 11. Use the memory tool responses directly in your conversation - they are already formatted naturally.
 12. When the memory tool returns information, present it as if you naturally remembered it yourself.
+13. IMPORTANT: All stored facts are prefixed with the username in format [Username] fact_text. This ensures names and information are clearly associated with the specific user who shared them.
+14. When recalling information, you can see which user shared what information from the [Username] prefix.
+15. This prevents confusion when multiple users share similar information (e.g., multiple users named "John" or multiple users who like "pizza").
 
 Memory tool functions available:
 - remember_fact: Store new information

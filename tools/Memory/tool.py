@@ -64,6 +64,9 @@ class Tool(ToolManifest):
             )
             user_id = self.discord_ctx.author.id
 
+            # Get username for prepending to fact
+            username = self.discord_ctx.author.display_name or f"User{user_id}"
+
             # Parse expiration time
             expires_at = None
             if expires_in and expires_in.lower() != "never":
@@ -83,11 +86,14 @@ class Tool(ToolManifest):
                 except:
                     return "⚠️ Invalid expiration format. Use number followed by d, h, or m (e.g., 1d, 2h, 30m), or 'never' for permanent"
 
+            # Prepend username to fact text to associate information with specific user
+            fact_with_user = f"[{username}] {fact}"
+
             # Add category to fact text if provided
             if category:
-                fact_with_category = f"[{category}] {fact}"
+                fact_with_category = f"[{category}] {fact_with_user}"
             else:
-                fact_with_category = fact
+                fact_with_category = fact_with_user
 
             # Store the fact
             fact_id = await self.history_db.add_fact(
