@@ -180,8 +180,7 @@ class CustomHelp(commands.MinimalHelpCommand):
 
                 Welcome! here are the prefix commands that you can use!
                 
-                You can access my slash commands by just typing **/** and find the commands that is associated to me.
-                Slash commands are self documented, I will be constantly updated to update my slash command documentation
+                Use `/help` to view the QUICKSTART guide.
 
                 Use `{self.context.clean_prefix}{command_name} [command]` for more info on a command.
 

@@ -13,9 +13,26 @@ class Misc(commands.Cog):
         self.bot = bot
         self.author = environ.get("BOT_NAME", "Jakey Bot")
 
-    @commands.command(name="quickstart")
-    async def jakey_help(self, ctx):
+    @commands.slash_command(
+        name="help",
+        aliases=["quickstart", "jakeyhelp"],
+        description="Display the JakeyBot Quickstart Guide",
+        contexts={discord.InteractionContextType.guild},
+        integration_types={discord.IntegrationType.guild_install},
+    )
+    async def jakey_help_slash(self, ctx):
         """Display the JakeyBot Quickstart Guide"""
+        await self._send_help_guide(ctx)
+
+    @commands.command(
+        name="help", aliases=["quickstart", "jakeyhelp", "HELP", "QUICKSTART"]
+    )
+    async def jakey_help_prefix(self, ctx):
+        """Display the JakeyBot Quickstart Guide"""
+        await self._send_help_guide(ctx)
+
+    async def _send_help_guide(self, ctx):
+        """Helper method to send the help guide (used by both slash and prefix commands)"""
         # The raw GitHub URL for the file
         md_url = "https://raw.githubusercontent.com/brokechubb/JakeyBot/refs/heads/master/docs/DISCORD_QUICKSTART.md"
 
@@ -136,7 +153,14 @@ class Misc(commands.Cog):
                 embed.set_footer(
                     text=f"Page 1 of {len(chunks)} • Use the link above to view the full guide"
                 )
-                await ctx.send(embed=embed)
+
+                # Handle both slash and prefix command responses
+                if hasattr(ctx, "respond"):
+                    # Slash command
+                    await ctx.respond(embed=embed)
+                else:
+                    # Prefix command
+                    await ctx.send(embed=embed)
 
                 # Send remaining chunks as additional embeds
                 for i, chunk in enumerate(chunks[1:], 2):
@@ -149,12 +173,27 @@ class Misc(commands.Cog):
                     embed.set_footer(
                         text=f"Page {i} of {len(chunks)} • Use the link above to view the full guide"
                     )
-                    await ctx.send(embed=embed)
+
+                    # Handle both slash and prefix command responses
+                    if hasattr(ctx, "followup"):
+                        # Slash command
+                        await ctx.followup.send(embed=embed)
+                    else:
+                        # Prefix command
+                        await ctx.send(embed=embed)
 
         except requests.exceptions.RequestException as e:
-            await ctx.send(f"Error fetching the Markdown file: {e}")
+            error_msg = f"Error fetching the Markdown file: {e}"
+            if hasattr(ctx, "respond"):
+                await ctx.respond(error_msg)
+            else:
+                await ctx.send(error_msg)
         except Exception as e:
-            await ctx.send(f"An unexpected error occurred: {e}")
+            error_msg = f"An unexpected error occurred: {e}"
+            if hasattr(ctx, "respond"):
+                await ctx.respond(error_msg)
+            else:
+                await ctx.send(error_msg)
 
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild},
