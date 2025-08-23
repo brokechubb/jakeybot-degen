@@ -1,238 +1,109 @@
-# 🚀 Jakey "The Degen" Bot
+# Discord Quickstart Guide
 
-### 🧠 **Jakey's Memory - He remembers stuff**
+Get JakeyBot up and running in your Discord server in minutes!
 
-#### **How to Use Memory (No Commands Needed!):**
+## 🚀 Quick Setup
 
-**Just talk naturally:**
+### 1. Invite the Bot
+- Use the invite link provided by the bot owner
+- Grant necessary permissions (Send Messages, Use Slash Commands, etc.)
 
+### 2. Basic Commands
+Start with these essential commands:
+
+- `/help` - Show all available commands
+- `/feature <tool>` - Enable specific tools (ImageGen, ExaSearch, etc.)
+- `/quickstart` - Display this guide
+
+## 🛠️ Core Features
+
+### **AI Chat & Memory**
+- **Default Tool**: Memory (personalized conversations)
+- **Tool Switching**: Use `/feature <tool>` to access specialized tools
+- **Auto-Return**: Tools automatically return to Memory after timeout
+
+### **Smart Tool Management**
+- **Intelligent Suggestions**: Get optimization tips with `/smart_suggestions`
+- **Timeout Control**: 
+  - `/timeout_status` - Check remaining time
+  - `/extend_timeout <time>` - Add more time (e.g., `5m`, `2h`)
+  - `/return_to_default` - Switch back to Memory immediately
+- **System Status**: `/auto_return_status` for overview
+
+### **Popular Tools**
+- **ImageGen**: Generate and edit images
+- **ExaSearch**: Web search and research
+- **GitHub**: Repository analysis
+- **CodeExecution**: Run Python code
+- **AudioTools**: Audio manipulation and generation
+- **YouTube**: Video summarization
+
+## ⚡ Quick Workflows
+
+### **Image Generation**
 ```
-You: "My name is Sarah and I love playing Minecraft"
-JakeyBot: "Nice to meet you, Sarah! I'll remember that you love Minecraft."
-
-Later...
-You: "What do you know about me?"
-JakeyBot: "Your name is Sarah and you love playing Minecraft!"
+/feature ImageGen
+generate a cute cat playing with yarn
 ```
+*Auto-returns to Memory in 5 minutes*
 
-**What Gets Remembered:**
-
-- ✅ Names, hobbies, preferences
-- ✅ Skills and interests
-- ✅ Important dates
-- ❌ Commands, temporary requests
-
-## ⏰ **New: Personal Reminder System**
-
-### **Set Reminders with Natural Language**
-
+### **Web Research**
 ```
-You: "/remind 1h take a break"
-JakeyBot: "⏰ Reminder set! I'll remind you in 1 hour to take a break"
-
-You: "/remind tomorrow 10am daily standup"
-JakeyBot: "⏰ Reminder set! I'll remind you tomorrow at 10 AM about daily standup"
+/feature ExaSearch
+search for latest AI developments 2025
 ```
+*Auto-returns to Memory in 3 minutes*
 
-**Time Formats Supported:**
-- **Minutes**: "30m", "15m"
-- **Hours**: "1h", "2h", "12h"
-- **Days**: "1d", "2d", "1w"
-- **Natural**: "tomorrow 10am", "next week", "in 2 hours"
-
-**Features:**
-- ✅ **Automatic delivery** when reminders are due
-- ✅ **Personal reminders** - only you see them
-- ✅ **Flexible time parsing** - understands natural language
-- ✅ **Works everywhere** - both slash commands and prefix commands
-
-## 🕐 **New: Time & Date Commands**
-
-### **Get Current Time & DST Status**
-
+### **Code Execution**
 ```
-You: "/time"
-JakeyBot: "The current time is 2025-08-23 14:30:25 EDT-0400. Daylight Saving Time is currently active."
+/feature CodeExecution
+run this python code: print("Hello World")
 ```
+*Auto-returns to Memory in 10 minutes*
 
-**What You Get:**
-- Current date and time
-- Timezone information
-- Daylight Saving Time status
-- Both slash (`/time`) and prefix (`$time`) commands
+## 🧠 Smart Features
 
-## 🧠 **Memory System Management**
-
-### **Debug Memory Issues**
-
+### **Personal Reminders**
 ```
-You: "/memory_debug"
-JakeyBot: [Shows memory system status, database connection, and any issues]
-```
-
-### **Fix Search Problems**
-
-```
-You: "/memory_reindex"
-JakeyBot: "🔄 Memory system reindexing... This may take a moment."
+/remindme 2h check the crypto prices
+/remindme tomorrow 9am team meeting
 ```
 
-**When to Use:**
-- **`/memory_debug`** - Check if memory is working properly
-- **`/memory_reindex`** - Fix search issues or missing information
+### **Time & Date**
+- `/time` - Current time and DST status
+- `/date` - Current date and timezone
 
-## 🎨 **Generate Images Instantly**
+### **Memory Management**
+- `/memory_debug` - Troubleshoot memory issues
+- `/memory_reindex` - Optimize memory performance
 
-### **Create Images from Text**
+## 🔧 Advanced Usage
 
-```
-You: "Generate a cute puppy playing in a garden"
-JakeyBot: [Creates and sends the image]
+### **Tool Optimization**
+- Use `/smart_suggestions` for personalized tips
+- Extend sessions before timeouts
+- Plan workflows to maximize tool usage
 
-You: "Make a futuristic robot with glowing blue eyes"
-JakeyBot: [Generates the requested image]
-```
+### **Customization**
+- Tools auto-return to Memory (configurable default)
+- Timeout durations optimized per tool type
+- Activity-based intelligent suggestions
 
-### **Edit Existing Images**
+## 🆘 Need Help?
 
-1. **Upload an image** to Discord
-2. **Ask JakeyBot to edit it**: "Make this image more colorful"
-3. **Get the edited version** back
+- **Commands**: `/help` for full command list
+- **Quick Reference**: `/quickstart` for this guide
+- **Smart Tips**: `/smart_suggestions` for optimization advice
+- **System Status**: `/auto_return_status` for tool management overview
 
-## 🔍 **Get Real-Time Information**
+## 💡 Pro Tips
 
-### **Web Search**
-
-```
-You: "What's the latest news about AI?"
-JakeyBot: [Searches web and provides current info]
-
-You: "What's the weather in New York right now?"
-JakeyBot: [Gets real-time weather data]
-```
-
-### **YouTube Analysis**
-
-```
-You: "Summarize this video: [YouTube URL]"
-JakeyBot: [Analyzes and summarizes content]
-```
-
-## 💰 **Crypto & Currency Tools**
-
-### **Live Crypto Prices**
-
-```
-You: "What's Bitcoin's current price?"
-JakeyBot: "💰 Current BTC: $43,250 USD"
-
-You: "How much is 100 SOL worth?"
-JakeyBot: [Shows current conversion]
-```
-
-### **Currency Conversion**
-
-```
-You: "Convert 1000 EUR to USD"
-JakeyBot: "💱 1,000 EUR = 1,085 USD"
-```
-
-## 🎯 **Essential Commands**
-
-### **Core Commands**
-- `/ask`        Ask any question      `/ask What's the best pizza topping?`
-- `/feature`    Enable/disable tools  `/feature Memory`
-- `/sweep`      Clear conversation    `/sweep`
-- `/model set`  Switch AI models      `/model set gemini`
-
-### **New Utility Commands**
-- `/time`       Display current time   `/time`
-- `/remind`     Set a reminder         `/remind time_in:1h message:Take a break`
-- `/memory_debug` Debug memory system  `/memory_debug`
-- `/memory_reindex` Fix memory issues  `/memory_reindex`
-- `/quickstart` Show this guide        `/quickstart`
-
-## 🎭 **Understanding JakeyBot's Personality**
-
-### **What to Expect**
-
-- **Direct and honest** - No sugar-coating
-- **Crypto expert** - Knows about trading and betting
-- **Internet culture savvy** - Uses modern slang
-- **Slightly rude** - But in a fun way
-
-### **Personality Examples**
-
-```
-You: "Is this a good investment?"
-JakeyBot: "bro that's terrible fr 💀 but your money your problem"
-
-You: "Can you help with my homework?"
-JakeyBot: "sure, but don't blame me if you fail 😂"
-```
-
-## 🎉 **Pro Tips for Better Experience**
-
-### **Getting Better Responses**
-
-1. **Be specific**: "Generate a red sports car" vs "make a car"
-2. **Provide context**: "I need this for a presentation"
-3. **Use natural language**: Talk normally, not like a robot
-
-### **Tool Usage Strategy**
-
-- **Start with Memory** for personalization
-- **Switch to ImageGen** when you need images
-- **Use ExaSearch** for current information
-- **Return to Memory** to continue personalized chats
-
-### **Memory Optimization**
-
-- **Share information naturally** - don't force it
-- **Be consistent** with terms
-- **Update preferences** when things change
-
-### **Reminder Best Practices**
-
-- **Use natural language**: "tomorrow 10am" vs "24h"
-- **Be specific**: "pay rent" vs "reminder"
-- **Set reasonable times**: Avoid very short or very long reminders
-
-## 🔒 **Privacy & Data**
-
-### **What JakeyBot Remembers**
-
-- Conversation context for better responses
-- Personal preferences for personalization
-- Tool usage for functionality
-- **Personal reminders** (only visible to you)
-
-### **What JakeyBot Doesn't Store**
-
-- Sensitive personal information
-- Passwords or credentials
-- Private messages (unless you share them)
-
-### **Data Control**
-
-- **Clear conversations**: Use `/sweep`
-- **Memory management**: Information is per-user/server
-- **Privacy concerns**: Contact server admins
-
-## 📚 **Need More Help?**
-
-### **Server-Specific Features**
-
-- Ask server admins about custom commands
-- Check `/feature` for available tools
-- Learn about server-specific memory settings
-
-### **Getting Support**
-
-1. **Server admins** - For technical issues
-2. **Community support** - Ask your fellow degens
-3. **Memory debugging** - Use `/memory_debug` to check system status
+1. **Use Memory First**: Start with Memory tool for personalized conversations
+2. **Switch Tools Strategically**: Enable specialized tools only when needed
+3. **Extend Timeouts**: Use `/extend_timeout` for longer sessions
+4. **Get Smart Tips**: Use `/smart_suggestions` for workflow optimization
+5. **Monitor Time**: Check `/timeout_status` to plan your work
 
 ---
 
-**🎮 You're all set! JakeyBot is designed to be entertaining, helpful, and slightly chaotic. Have fun and enjoy the ride! 🚀**
+**🎯 That's it! JakeyBot is now ready to enhance your Discord server with AI-powered tools and intelligent suggestions.**
