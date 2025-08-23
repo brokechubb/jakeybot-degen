@@ -207,13 +207,26 @@ class Completions(ModelParams):
                     system_instruction=system_instruction,
                     return_text=False,
                 )
+            elif e.status_code == 429:
+                logging.warning(
+                    "Gemini API quota exceeded (429 RESOURCE_EXHAUSTED). Retrying after 30 seconds."
+                )
+                await self._discord_method_send(
+                    "> ⚠️ Gemini API quota exceeded. Retrying your request in 30 seconds..."
+                )
+                await asyncio.sleep(30)  # Wait for 30 seconds as suggested by the error
+                _response = await self.completion(
+                    prompt=_chat_thread,
+                    tool=_Tool["tool_schema"],
+                    system_instruction=system_instruction,
+                    return_text=False,
+                )
             else:
                 logging.error(
                     "2nd try: I think I found a problem related to the request: %s",
                     e.message,
                 )
                 raise e
-
         # Check if the response was blocked due to safety and other reasons than STOP
         # https://ai.google.dev/api/generate-content#FinishReason
         if hasattr(_response, "candidates") and _response.candidates:
