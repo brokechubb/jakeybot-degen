@@ -4,11 +4,7 @@ Get JakeyBot up and running in your Discord server in minutes!
 
 ## 🚀 Quick Setup
 
-### 1. Invite the Bot
-- Use the invite link provided by the bot owner
-- Grant necessary permissions (Send Messages, Use Slash Commands, etc.)
-
-### 2. Basic Commands
+### 1. Basic Commands
 Start with these essential commands:
 
 - `/help` - Show all available commands
@@ -21,6 +17,14 @@ Start with these essential commands:
 - **Default Tool**: Memory (personalized conversations)
 - **Tool Switching**: Use `/feature <tool>` to access specialized tools
 - **Auto-Return**: Tools automatically return to Memory after timeout
+
+### **🔄 One Tool at a Time System**
+**Important**: JakeyBot can only use **one tool at a time**. This ensures optimal performance and prevents conflicts.
+
+- **Current Tool**: Only one tool is active at any moment
+- **Tool Switching**: Use `/feature <tool>` to switch between tools
+- **Auto-Return**: After a timeout, tools automatically return to Memory
+- **Smart Management**: The system intelligently manages tool transitions
 
 ### **Smart Tool Management**
 - **Intelligent Suggestions**: Get optimization tips with `/smart_suggestions`
@@ -103,7 +107,8 @@ run this python code: print("Hello World")
 3. **Extend Timeouts**: Use `/extend_timeout` for longer sessions
 4. **Get Smart Tips**: Use `/smart_suggestions` for workflow optimization
 5. **Monitor Time**: Check `/timeout_status` to plan your work
+6. **Plan Your Workflow**: Since only one tool works at a time, plan your tool usage sequence
 
 ---
 
-**🎯 That's it! JakeyBot is now ready to enhance your Discord server with AI-powered tools and intelligent suggestions.**
+**🎯 That's it! JakeyBot is now ready to enhance your Discord server with AI-powered tools and intelligent suggestions. Remember: one tool at a time for optimal performance!**
