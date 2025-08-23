@@ -1,8 +1,6 @@
 # Discord Quickstart Guide
 
-### 1. Basic Commands
-
-Start with these essential commands:
+## Basic Commands
 
 - `/help` - Show all available commands
 - `/feature <tool>` - Enable specific tools (ImageGen, ExaSearch, etc.)
