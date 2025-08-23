@@ -80,12 +80,10 @@ JakeyBot: "💱 1,000 EUR = 1,085 USD"
 
 ## 🎯 **Essential Commands**
 
-| Command        | What It Does         | Example                                 |
-| -------------- | -------------------- | --------------------------------------- |
-| `/ask`       | Ask any question     | `/ask What's the best pizza topping?` |
-| `/feature`   | Enable/disable tools | `/feature Memory`                     |
-| `/sweep`     | Clear conversation   | `/sweep`                              |
-| `/model set` | Switch AI models     | `/model set gemini`                   |
+- `/ask`        Ask any question      `/ask What's the best pizza topping?`
+- `/feature`    Enable/disable tools  `/feature Memory`
+- `/sweep`      Clear conversation    `/sweep`
+- `/model set`  Switch AI models      `/model set gemini`
 
 ## 🎭 **Understanding JakeyBot's Personality**
 
