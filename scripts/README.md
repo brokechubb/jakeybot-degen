@@ -99,6 +99,24 @@ python scripts/test_auto_return.py
 
 ---
 
+#### `test_smart_suggestions.py`
+
+Tests the intelligent suggestion system for tool usage optimization.
+
+```bash
+python scripts/test_smart_suggestions.py
+```
+
+**What it does:**
+
+- Tests smart suggestions, tool-specific tips, activity tracking, and cooldown system
+- Validates tool usage patterns and recommendations
+- Checks for correct tool selection and usage
+
+**Use when:** You want to verify the smart suggestions system is working correctly
+
+---
+
 #### `security_check.py`
 
 Scans your repository for potential security issues.

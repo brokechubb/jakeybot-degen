@@ -68,6 +68,22 @@ chat_assistants:
       * Execute the tool directly and let it process the request
       * The tool will automatically handle the image processing and return the result
 
+      **SMART SUGGESTIONS SYSTEM:**
+      * You now have access to an intelligent suggestion system that provides helpful tips and recommendations
+      * When users switch tools or use specific features, you can offer smart suggestions for optimization
+      * Use `/smart_suggestions` to get personalized recommendations for tool usage
+      * The system tracks user activity and provides context-aware suggestions
+      * You can suggest extending timeouts, switching tools, or optimizing workflows based on usage patterns
+
+      **AUTO-RETURN TOOL MANAGEMENT:**
+      * Tools automatically return to the default Memory tool after a configurable timeout
+      * Users can extend tool sessions with `/extend_timeout <time>` (e.g., `/extend_timeout 5m`)
+      * Check remaining time with `/timeout_status`
+      * Return to default immediately with `/return_to_default`
+      * View system status with `/auto_return_status`
+      * Tool timeouts are optimized for different workflows (ImageGen: 5min, ExaSearch: 3min, CodeExecution: 10min, etc.)
+      * The system prevents users from getting stuck in specialized tools and ensures they return to personalized Memory experiences
+
       You have direct access to the following tools:
 
       *   **Crypto Price Checker (Solana Network):** Call `get_token_price(symbol_or_address)` to fetch the live USD price and trends for any Solana token.

@@ -96,11 +96,16 @@ source venv/bin/activate
 
 ### New Utility Commands
 
-- **⏰ `/remind <time> <message>`** - Set personal reminders (e.g., "1h", "30m", "tomorrow 10am")
-- **🕐 `/time`** - Display current time and DST status
-- **🧠 `/memory_debug`** - Debug memory system status
-- **🔄 `/memory_reindex`** - Force reindex memory system
-- **📚 `/quickstart`** - Display quickstart guide (with aliases)
+- `/remindme <time> <message>` - Set personal reminders
+- `/time` - Get current time and DST status
+- `/date` - Get current date and timezone info
+- `/memory_debug` - Debug memory system issues
+- `/memory_reindex` - Reindex memory for better performance
+- `/timeout_status` - Check remaining time before auto-return
+- `/extend_timeout <time>` - Extend current tool session
+- `/return_to_default` - Immediately return to default tool
+- `/auto_return_status` - View auto-return system status
+- `/smart_suggestions` - Get intelligent tool usage recommendations
 
 ### Special Capabilities
 
@@ -179,8 +184,13 @@ New personal reminder system with natural language time parsing:
 - **Database Connection** - Shared database connection across all bot components for better performance
 - **Security Improvements** - Removed dangerous admin execute command
 
-### 🚀 New Features
+### �� New Features
 
+- **Personal Reminder System**: Set and manage personal reminders with `/remindme`
+- **Time & Date Commands**: Get current time, date, and timezone information
+- **Memory System Management**: Debug and reindex memory with `/memory_debug` and `/memory_reindex`
+- **Auto-Return Tool Management**: Intelligent tool switching with automatic return to default after timeout
+- **Smart Suggestions System**: Context-aware recommendations for tool usage optimization and workflow efficiency
 - **⏰ Reminder System** - Personal reminders with natural language time parsing
 - **🕐 Time Commands** - Current time and DST status display
 - **🧠 Memory Debugging** - New commands to debug and fix memory system issues

@@ -732,6 +732,94 @@ class Misc(commands.Cog):
             logging.error(f"Error returning to default: {e}")
 
     @commands.slash_command(
+        name="smart_suggestions",
+        description="Get intelligent suggestions for tool usage and optimization.",
+        contexts={
+            discord.InteractionContextType.guild,
+            discord.InteractionContextType.bot_dm,
+        },
+        integration_types={
+            discord.IntegrationType.guild_install,
+            discord.IntegrationType.user_install,
+        },
+    )
+    async def smart_suggestions(self, ctx):
+        """Get intelligent suggestions for tool usage and optimization."""
+        await ctx.response.defer(ephemeral=True)
+
+        # Determine guild/user based on SHARED_CHAT_HISTORY setting
+        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
+        else:
+            guild_id = ctx.author.id
+
+        # Check if AutoReturnManager is available
+        if not hasattr(self.bot, "auto_return_manager") or not self.bot.auto_return_manager:
+            await ctx.respond("❌ Auto-return system is not available")
+            return
+
+        # Get smart suggestions based on current context
+        suggestions = await self.bot.auto_return_manager.get_smart_suggestions(guild_id, "smart_suggestions_request")
+        
+        if not suggestions:
+            # Provide general helpful suggestions
+            current_tool = await self.bot.auto_return_manager.get_current_tool(guild_id)
+            
+            if current_tool is None:
+                await ctx.respond(
+                    f"🧠 **Smart Suggestions**\n\n"
+                    f"✅ **Current Status**: Using default tool ({self.bot.auto_return_manager.default_tool})\n\n"
+                    f"💡 **General Tips**:\n"
+                    f"• Use `/feature <tool>` to switch to specific tools\n"
+                    f"• Tools automatically return to {self.bot.auto_return_manager.default_tool} after timeout\n"
+                    f"• Use `/timeout_status` to check remaining time\n"
+                    f"• Use `/extend_timeout <time>` to extend sessions\n"
+                    f"• Use `/return_to_default` to return immediately"
+                )
+            else:
+                remaining_time = await self.bot.auto_return_manager.get_remaining_time(guild_id)
+                if remaining_time is not None:
+                    minutes = remaining_time // 60
+                    seconds = remaining_time % 60
+                    
+                    if minutes > 0:
+                        time_str = f"{minutes}m {seconds}s" if seconds > 0 else f"{minutes}m"
+                    else:
+                        time_str = f"{seconds}s"
+                    
+                    await ctx.respond(
+                        f"🧠 **Smart Suggestions**\n\n"
+                        f"🛠️ **Current Tool**: {current_tool}\n"
+                        f"⏰ **Time Remaining**: {time_str}\n\n"
+                        f"💡 **Suggestions**:\n"
+                        f"• Use `/extend_timeout <time>` to add more time\n"
+                        f"• Use `/return_to_default` to switch back now\n"
+                        f"• Use `/timeout_status` for detailed status\n"
+                        f"• Plan your workflow to maximize tool usage"
+                    )
+                else:
+                    await ctx.respond(
+                        f"🧠 **Smart Suggestions**\n\n"
+                        f"🛠️ **Current Tool**: {current_tool}\n"
+                        f"⏰ **Time Status**: Unknown\n\n"
+                        f"💡 **Suggestions**:\n"
+                        f"• Use `/timeout_status` to check remaining time\n"
+                        f"• Use `/extend_timeout <time>` to add more time\n"
+                        f"• Use `/return_to_default` to switch back now"
+                    )
+        else:
+            # Format multiple suggestions
+            suggestion_text = "\n\n".join([f"💡 {suggestion}" for suggestion in suggestions])
+            
+            await ctx.respond(
+                f"🧠 **Smart Suggestions**\n\n{suggestion_text}\n\n"
+                f"💡 **Quick Actions**:\n"
+                f"• `/extend_timeout <time>` - Add more time\n"
+                f"• `/return_to_default` - Switch back now\n"
+                f"• `/timeout_status` - Check remaining time"
+            )
+
+    @commands.slash_command(
         name="auto_return_status",
         description="Check the status of the auto-return system.",
         contexts={
@@ -773,7 +861,8 @@ class Misc(commands.Cog):
             f"🧠 **Auto-Return System Status**\n\n"
             f"✅ **Default Tool:** {status['default_tool']}\n"
             f"⏰ **Active Timers:** {status['active_timers']}\n"
-            f"🔄 **Active Switches:** {status['active_switches']}\n\n"
+            f"🔄 **Active Switches:** {status['active_switches']}\n"
+            f"👥 **Active Users:** {status['active_users']}\n\n"
             f"**Tool Timeouts:**\n" + "\n".join(timeout_info) + "\n"
             f"• **Default**: {status['tool_timeouts']['default'] // 60}m {status['tool_timeouts']['default'] % 60}s"
         )

@@ -425,16 +425,37 @@ class Chat(commands.Cog):
                     else:
                         timeout_str = f"{timeout_seconds}s"
                     
+                    # Get smart suggestions for the new tool
+                    suggestions = await self.bot.auto_return_manager.get_smart_suggestions(guild_id, f"switched to {capability}")
+                    
+                    # Build response with suggestions
+                    response_parts = []
+                    
                     if not _cur_feature:
-                        await ctx.respond(
-                            f"✅ Feature **{capability}** enabled successfully!\n"
-                            f"⏰ Will automatically return to {self.bot.auto_return_manager.default_tool} in {timeout_str}"
-                        )
+                        response_parts.append(f"✅ Feature **{capability}** enabled successfully!")
                     else:
-                        await ctx.respond(
-                            f"✅ Feature **{capability}** enabled successfully and chat is reset!\n"
-                            f"⏰ Will automatically return to {self.bot.auto_return_manager.default_tool} in {timeout_str}"
-                        )
+                        response_parts.append(f"✅ Feature **{capability}** enabled successfully and chat is reset!")
+                    
+                    response_parts.append(f"⏰ Will automatically return to {self.bot.auto_return_manager.default_tool} in {timeout_str}")
+                    
+                    # Add smart suggestions if available
+                    if suggestions:
+                        response_parts.append("\n🧠 **Smart Suggestions:**")
+                        for suggestion in suggestions[:3]:  # Limit to 3 suggestions
+                            response_parts.append(f"• {suggestion}")
+                        
+                        if len(suggestions) > 3:
+                            response_parts.append(f"• ... and {len(suggestions) - 3} more suggestions")
+                    
+                    # Add helpful tips
+                    response_parts.append(f"\n💡 **Quick Actions:**")
+                    response_parts.append(f"• `/timeout_status` - Check remaining time")
+                    response_parts.append(f"• `/extend_timeout <time>` - Add more time")
+                    response_parts.append(f"• `/return_to_default` - Switch back now")
+                    response_parts.append(f"• `/smart_suggestions` - Get more tips")
+                    
+                    await ctx.respond("\n".join(response_parts))
+                    
                 except Exception as e:
                     logging.error(f"Error using AutoReturnManager: {e}")
                     # Fall back to normal response

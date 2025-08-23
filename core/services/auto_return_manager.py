@@ -9,7 +9,7 @@ to the Memory tool (or other default) for personalization.
 import asyncio
 import logging
 from datetime import datetime, timedelta
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Tuple
 from os import environ
 import discord
 
@@ -23,6 +23,7 @@ class AutoReturnManager:
     - Tool-specific timeout configurations
     - User activity monitoring
     - Configurable default tool
+    - Smart suggestions for tool usage
     """
     
     def __init__(self, bot: discord.Bot):
@@ -31,6 +32,8 @@ class AutoReturnManager:
         self.tool_timeouts = self._get_tool_timeouts()
         self.active_timers: Dict[int, asyncio.Task] = {}
         self.user_tool_switches: Dict[int, Dict] = {}
+        self.user_activity: Dict[int, Dict] = {}
+        self.suggestion_cooldowns: Dict[int, datetime] = {}
         
         logging.info(f"AutoReturnManager initialized with default tool: {self.default_tool}")
     
@@ -70,6 +73,13 @@ class AutoReturnManager:
                 "user_id": user_id
             }
             
+            # Initialize user activity tracking
+            self.user_activity[guild_id] = {
+                "message_count": 0,
+                "last_activity": datetime.utcnow(),
+                "tool_usage_patterns": []
+            }
+            
             # Get the timeout for this tool
             timeout = self.tool_timeouts.get(new_tool, self.tool_timeouts["default"])
             
@@ -82,6 +92,238 @@ class AutoReturnManager:
         except Exception as e:
             logging.error(f"Error switching tool with timeout: {e}")
             raise
+    
+    async def record_user_activity(self, guild_id: int, message_content: str) -> Optional[str]:
+        """
+        Record user activity and generate smart suggestions.
+        
+        Args:
+            guild_id: The guild or user ID
+            message_content: The content of the user's message
+            
+        Returns:
+            Optional suggestion string if a suggestion should be made
+        """
+        if guild_id not in self.user_activity:
+            return None
+        
+        # Update activity tracking
+        self.user_activity[guild_id]["message_count"] += 1
+        self.user_activity[guild_id]["last_activity"] = datetime.utcnow()
+        
+        # Check if we should make a suggestion (avoid spam)
+        if not self._should_make_suggestion(guild_id):
+            return None
+        
+        # Generate smart suggestions based on message content and activity
+        suggestion = self._generate_smart_suggestion(guild_id, message_content)
+        
+        if suggestion:
+            # Set cooldown to avoid spam
+            self.suggestion_cooldowns[guild_id] = datetime.utcnow()
+            return suggestion
+        
+        return None
+    
+    def _should_make_suggestion(self, guild_id: int) -> bool:
+        """Check if we should make a suggestion (avoid spam)."""
+        if guild_id not in self.suggestion_cooldowns:
+            return True
+        
+        cooldown = self.suggestion_cooldowns[guild_id]
+        time_since_last = (datetime.utcnow() - cooldown).total_seconds()
+        
+        # Minimum 2 minutes between suggestions
+        return time_since_last > 120
+    
+    def _generate_smart_suggestion(self, guild_id: int, message_content: str) -> Optional[str]:
+        """
+        Generate smart suggestions based on message content and user activity.
+        
+        Args:
+            guild_id: The guild or user ID
+            message_content: The content of the user's message
+            
+        Returns:
+            Optional suggestion string
+        """
+        if guild_id not in self.user_tool_switches:
+            return None
+        
+        current_tool = self.user_tool_switches[guild_id]["tool"]
+        remaining_time = self._calculate_remaining_time(guild_id)
+        message_count = self.user_activity[guild_id]["message_count"]
+        
+        # Suggestion 1: Low time remaining
+        if remaining_time and remaining_time < 60:  # Less than 1 minute
+            return f"⏰ **Time Alert**: You have less than 1 minute left with {current_tool}. Use `/extend_timeout <time>` to add more time, or `/return_to_default` to switch back now."
+        
+        # Suggestion 2: High activity (user is actively using the tool)
+        if message_count >= 5 and remaining_time and remaining_time < 120:  # Less than 2 minutes
+            return f"🔄 **Active Session**: You're actively using {current_tool} with {remaining_time//60}m {remaining_time%60}s remaining. Consider extending your session with `/extend_timeout 5m`."
+        
+        # Suggestion 3: Tool-specific suggestions based on content
+        tool_suggestion = self._get_tool_specific_suggestion(current_tool, message_content, remaining_time)
+        if tool_suggestion:
+            return tool_suggestion
+        
+        # Suggestion 4: General timeout reminder
+        if remaining_time and remaining_time < 180:  # Less than 3 minutes
+            return f"⏰ **Reminder**: {current_tool} will return to {self.default_tool} in {remaining_time//60}m {remaining_time%60}s. Use `/timeout_status` to check remaining time."
+        
+        return None
+    
+    def _get_tool_specific_suggestion(self, current_tool: str, message_content: str, remaining_time: Optional[int]) -> Optional[str]:
+        """
+        Generate tool-specific suggestions based on content and remaining time.
+        
+        Args:
+            current_tool: The currently active tool
+            message_content: The user's message content
+            remaining_time: Remaining time in seconds
+            
+        Returns:
+            Optional tool-specific suggestion
+        """
+        content_lower = message_content.lower()
+        
+        # ImageGen suggestions
+        if current_tool == "ImageGen":
+            if "edit" in content_lower or "modify" in content_lower:
+                if remaining_time and remaining_time < 120:
+                    return f"🎨 **Image Editing**: You're editing images with {remaining_time//60}m {remaining_time%60}s remaining. Consider extending with `/extend_timeout 3m` for more edits."
+            elif "generate" in content_lower or "create" in content_lower:
+                if remaining_time and remaining_time < 180:
+                    return f"🎨 **Image Generation**: Creating images takes time! You have {remaining_time//60}m {remaining_time%60}s remaining. Extend with `/extend_timeout 5m` for more generations."
+        
+        # ExaSearch suggestions
+        elif current_tool == "ExaSearch":
+            if "search" in content_lower or "find" in content_lower:
+                if remaining_time and remaining_time < 60:
+                    return f"🔍 **Web Search**: Quick searches with {remaining_time}s remaining. Use `/extend_timeout 2m` for more searches, or `/return_to_default` to go back to Memory."
+        
+        # GitHub suggestions
+        elif current_tool == "GitHub":
+            if "repo" in content_lower or "code" in content_lower or "file" in content_lower:
+                if remaining_time and remaining_time < 120:
+                    return f"📚 **GitHub Work**: Working with repositories takes time! You have {remaining_time//60}m {remaining_time%60}s remaining. Extend with `/extend_timeout 5m`."
+        
+        # CodeExecution suggestions
+        elif current_tool == "CodeExecution":
+            if "code" in content_lower or "run" in content_lower or "execute" in content_lower:
+                if remaining_time and remaining_time < 300:  # Less than 5 minutes
+                    return f"💻 **Coding Session**: Coding takes time! You have {remaining_time//60}m {remaining_time%60}s remaining. Extend with `/extend_timeout 10m` for longer coding sessions."
+        
+        # AudioTools suggestions
+        elif current_tool == "AudioTools":
+            if "audio" in content_lower or "voice" in content_lower or "sound" in content_lower:
+                if remaining_time and remaining_time < 120:
+                    return f"🎵 **Audio Work**: Audio processing takes time! You have {remaining_time//60}m {remaining_time%60}s remaining. Extend with `/extend_timeout 5m` for more audio work."
+        
+        # YouTube suggestions
+        elif current_tool == "YouTube":
+            if "video" in content_lower or "youtube" in content_lower or "summarize" in content_lower:
+                if remaining_time and remaining_time < 120:
+                    return f"📺 **Video Analysis**: Video analysis takes time! You have {remaining_time//60}m {remaining_time%60}s remaining. Extend with `/extend_timeout 5m` for more video work."
+        
+        return None
+    
+    def _calculate_remaining_time(self, guild_id: int) -> Optional[int]:
+        """Calculate remaining time for a guild/user (internal method)."""
+        if guild_id not in self.user_tool_switches:
+            return None
+        
+        switch_info = self.user_tool_switches[guild_id]
+        tool = switch_info["tool"]
+        switched_at = switch_info["switched_at"]
+        timeout = self.tool_timeouts.get(tool, self.tool_timeouts["default"])
+        
+        elapsed = (datetime.utcnow() - switched_at).total_seconds()
+        remaining = max(0, timeout - elapsed)
+        
+        return int(remaining)
+    
+    async def get_smart_suggestions(self, guild_id: int, message_content: str) -> List[str]:
+        """
+        Get a list of smart suggestions for a user.
+        
+        Args:
+            guild_id: The guild or user ID
+            message_content: The content of the user's message
+            
+        Returns:
+            List of suggestion strings
+        """
+        suggestions = []
+        
+        # Get activity-based suggestion
+        activity_suggestion = await self.record_user_activity(guild_id, message_content)
+        if activity_suggestion:
+            suggestions.append(activity_suggestion)
+        
+        # Get timeout-based suggestions
+        timeout_suggestions = self._get_timeout_suggestions(guild_id)
+        suggestions.extend(timeout_suggestions)
+        
+        # Get tool-optimization suggestions
+        optimization_suggestions = self._get_optimization_suggestions(guild_id, message_content)
+        suggestions.extend(optimization_suggestions)
+        
+        return suggestions
+    
+    def _get_timeout_suggestions(self, guild_id: int) -> List[str]:
+        """Get timeout-related suggestions."""
+        suggestions = []
+        
+        if guild_id not in self.user_tool_switches:
+            return suggestions
+        
+        current_tool = self.user_tool_switches[guild_id]["tool"]
+        remaining_time = self._calculate_remaining_time(guild_id)
+        
+        if remaining_time is None:
+            return suggestions
+        
+        # Critical time warning
+        if remaining_time < 30:
+            suggestions.append(f"🚨 **Critical**: {current_tool} will return to {self.default_tool} in {remaining_time} seconds! Use `/extend_timeout 5m` now!")
+        
+        # Low time warning
+        elif remaining_time < 60:
+            suggestions.append(f"⚠️ **Warning**: {current_tool} will return to {self.default_tool} in {remaining_time} seconds.")
+        
+        # Moderate time reminder
+        elif remaining_time < 180:
+            suggestions.append(f"⏰ **Reminder**: {current_tool} will return to {self.default_tool} in {remaining_time//60}m {remaining_time%60}s.")
+        
+        return suggestions
+    
+    def _get_optimization_suggestions(self, guild_id: int, message_content: str) -> List[str]:
+        """Get tool optimization suggestions."""
+        suggestions = []
+        
+        if guild_id not in self.user_tool_switches:
+            return suggestions
+        
+        current_tool = self.user_tool_switches[guild_id]["tool"]
+        content_lower = message_content.lower()
+        
+        # Tool-specific optimization tips
+        if current_tool == "ImageGen":
+            if "edit" in content_lower and "image" not in content_lower:
+                suggestions.append("💡 **Tip**: For image editing, make sure to attach an image first, then describe what you want to change.")
+            elif "generate" in content_lower and len(content_lower.split()) < 5:
+                suggestions.append("💡 **Tip**: Be more specific with image generation. Try: 'Generate a cute cat playing with yarn in a sunny garden'")
+        
+        elif current_tool == "ExaSearch":
+            if len(content_lower.split()) < 3:
+                suggestions.append("💡 **Tip**: More specific searches get better results. Try: 'latest news about AI developments in 2025'")
+        
+        elif current_tool == "CodeExecution":
+            if "error" in content_lower or "bug" in content_lower:
+                suggestions.append("💡 **Tip**: When debugging code, try to isolate the problem and test small parts first.")
+        
+        return suggestions
     
     async def cancel_timer(self, guild_id: int) -> None:
         """Cancel the auto-return timer for a specific guild/user."""
@@ -98,6 +340,9 @@ class AutoReturnManager:
             
             if guild_id in self.user_tool_switches:
                 del self.user_tool_switches[guild_id]
+            
+            if guild_id in self.user_activity:
+                del self.user_activity[guild_id]
             
             logging.info(f"Cancelled auto-return timer for guild {guild_id}")
     
@@ -128,18 +373,7 @@ class AutoReturnManager:
     
     async def get_remaining_time(self, guild_id: int) -> Optional[int]:
         """Get the remaining time before auto-return for a guild/user."""
-        if guild_id not in self.user_tool_switches:
-            return None
-        
-        switch_info = self.user_tool_switches[guild_id]
-        tool = switch_info["tool"]
-        switched_at = switch_info["switched_at"]
-        timeout = self.tool_timeouts.get(tool, self.tool_timeouts["default"])
-        
-        elapsed = (datetime.utcnow() - switched_at).total_seconds()
-        remaining = max(0, timeout - elapsed)
-        
-        return int(remaining)
+        return self._calculate_remaining_time(guild_id)
     
     async def get_current_tool(self, guild_id: int) -> Optional[str]:
         """Get the currently active tool for a guild/user."""
@@ -191,6 +425,8 @@ class AutoReturnManager:
                     del self.active_timers[guild_id]
                 if guild_id in self.user_tool_switches:
                     del self.user_tool_switches[guild_id]
+                if guild_id in self.user_activity:
+                    del self.user_activity[guild_id]
                 
                 logging.info(f"Auto-returned guild {guild_id} to {self.default_tool}")
                 
@@ -237,5 +473,6 @@ class AutoReturnManager:
             "default_tool": self.default_tool,
             "active_timers": len(self.active_timers),
             "tool_timeouts": self.tool_timeouts,
-            "active_switches": len(self.user_tool_switches)
+            "active_switches": len(self.user_tool_switches),
+            "active_users": len(self.user_activity)
         }
