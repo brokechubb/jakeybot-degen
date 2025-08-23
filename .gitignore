@@ -64,6 +64,10 @@ chat_history.db
 *.sqlite
 *.sqlite3
 
+# Database backups and dumps
+database_backups/
+database_dumps/
+
 # Logs
 chroma.log
 *.log
