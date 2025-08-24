@@ -1076,6 +1076,12 @@ class Misc(commands.Cog):
             # Log response structure for debugging
             logging.info(f"Response structure: candidates={len(response.candidates)}, content_parts={len(response.candidates[0].content.parts)}")
             logging.info(f"First candidate finish_reason: {response.candidates[0].finish_reason}")
+            
+            # Check if finish_reason indicates an error
+            if response.candidates[0].finish_reason != "STOP":
+                logging.warning(f"Generation may not have completed successfully. Finish reason: {response.candidates[0].finish_reason}")
+                if response.candidates[0].finish_reason == 1:
+                    logging.warning("Finish reason 1 typically indicates an error or incomplete generation")
 
             # Check for safety issues
             if response.candidates[0].finish_reason == "IMAGE_SAFETY":
@@ -1089,10 +1095,14 @@ class Misc(commands.Cog):
             images_sent = 0
             for index, part in enumerate(response.candidates[0].content.parts):
                 logging.info(f"Part {index}: type={type(part)}, has_inline_data={hasattr(part, 'inline_data')}")
+                logging.info(f"Part {index} attributes: {dir(part)}")
                 if hasattr(part, "inline_data") and part.inline_data:
                     logging.info(f"Part {index} inline_data: {part.inline_data}")
                     logging.info(f"Part {index} mime_type: {part.inline_data.mime_type}")
                     logging.info(f"Part {index} data length: {len(part.inline_data.data) if part.inline_data.data else 'None'}")
+                else:
+                    logging.warning(f"Part {index} has no inline_data or inline_data is False/None")
+                    logging.info(f"Part {index} content: {part}")
                     
                     # Create filename with timestamp
                     timestamp = datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
