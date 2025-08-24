@@ -257,39 +257,39 @@ class Misc(commands.Cog):
             )
 
             # Get the model for image generation - use a model that supports image generation
-            model_name = environ.get("DEFAULT_GEMINI_IMAGE_GENERATION_MODEL", "gemini-2.0-flash-preview-image-generation")
+            model_name = environ.get(
+                "DEFAULT_GEMINI_IMAGE_GENERATION_MODEL",
+                "gemini-2.0-flash-preview-image-generation",
+            )
             if not model_name or model_name == "gemini-model-id":
                 model_name = "gemini-2.0-flash-preview-image-generation"  # Fallback to a model that supports image generation
-            
+
             logging.info(f"Using auto-image generation model: {model_name}")
             model = genai.GenerativeModel(model_name=model_name)
 
-                        # Generate the image with safety settings disabled
+            # Generate the image with safety settings disabled
             response = await model.generate_content_async(
                 contents=prompt,
                 generation_config={
                     "temperature": 0.7,  # Default temperature for auto-generation
                     "max_output_tokens": 8192,
-                    "response_modalities": ["IMAGE", "TEXT"]
+                    "response_modalities": ["IMAGE", "TEXT"],
                 },
                 safety_settings=[
+                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
                     {
-                        "category": "HARM_CATEGORY_HARASSMENT",
-                        "threshold": "BLOCK_NONE"
-                    },
-                    {
-                        "category": "HARM_CATEGORY_HATE_SPEECH", 
-                        "threshold": "BLOCK_NONE"
+                        "category": "HARM_CATEGORY_HATE_SPEECH",
+                        "threshold": "BLOCK_NONE",
                     },
                     {
                         "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                            "threshold": "BLOCK_NONE"
+                        "threshold": "BLOCK_NONE",
                     },
                     {
                         "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                        "threshold": "BLOCK_NONE"
-                    }
-                ]
+                        "threshold": "BLOCK_NONE",
+                    },
+                ],
             )
 
             if not response.candidates or not response.candidates[0].content:
@@ -319,18 +319,13 @@ class Misc(commands.Cog):
                     )
 
                     await message.channel.send(
-                        f"🎨 **Auto-Generated Image {index + 1}**\n"
-                        f"Prompt: *{prompt}*\n"
-                        f"💡 Use `/generate_image` for more control next time!",
+                        f"Prompt: *{prompt}*\n",
                         file=file,
                         reference=message,
                     )
                     images_sent += 1
 
             if images_sent > 0:
-                await status_msg.edit(
-                    content=f"✅ **Auto-Generation Complete!** Generated {images_sent} image(s)."
-                )
                 return True
             else:
                 await status_msg.edit(
@@ -393,7 +388,7 @@ class Misc(commands.Cog):
             auto_enabled = getattr(self, "_auto_image_enabled", {}).get(guild_id, False)
 
             if (
-                auto_enabled and len(prompt) > 10
+                auto_enabled and len(prompt) > 5
             ):  # Only auto-generate for substantial prompts
                 # Try to auto-generate the image
                 success = await self._auto_generate_image(message, prompt)
@@ -1069,62 +1064,72 @@ class Misc(commands.Cog):
 
         try:
             # Get the model for image generation - use a model that supports image generation
-            model_name = environ.get("DEFAULT_GEMINI_IMAGE_GENERATION_MODEL", "gemini-2.0-flash-preview-image-generation")
+            model_name = environ.get(
+                "DEFAULT_GEMINI_IMAGE_GENERATION_MODEL",
+                "gemini-2.0-flash-preview-image-generation",
+            )
             if not model_name or model_name == "gemini-model-id":
                 model_name = "gemini-2.0-flash-preview-image-generation"  # Fallback to a model that supports image generation
-            
+
             logging.info(f"Using image generation model: {model_name}")
             model = genai.GenerativeModel(model_name=model_name)
 
             # Generate the image with safety settings disabled
             response = await model.generate_content_async(
-                    contents=prompt,
-                                    generation_config={
+                contents=prompt,
+                generation_config={
                     "temperature": temperature,
                     "max_output_tokens": 8192,
-                    "response_modalities": ["IMAGE", "TEXT"]
+                    "response_modalities": ["IMAGE", "TEXT"],
                 },
-                    safety_settings=[
-                        {
-                            "category": "HARM_CATEGORY_HARASSMENT",
-                            "threshold": "BLOCK_NONE"
-                        },
-                        {
-                            "category": "HARM_CATEGORY_HATE_SPEECH", 
-                            "threshold": "BLOCK_NONE"
-                        },
-                        {
-                            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                            "threshold": "BLOCK_NONE"
-                        },
-                        {
-                            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                            "threshold": "BLOCK_NONE"
-                        }
-                    ]
-                )
+                safety_settings=[
+                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                    {
+                        "category": "HARM_CATEGORY_HATE_SPEECH",
+                        "threshold": "BLOCK_NONE",
+                    },
+                    {
+                        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                        "threshold": "BLOCK_NONE",
+                    },
+                    {
+                        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                        "threshold": "BLOCK_NONE",
+                    },
+                ],
+            )
 
             if not response.candidates or not response.candidates[0].content:
-                logging.warning(f"No candidates or content in response for prompt: {prompt}")
+                logging.warning(
+                    f"No candidates or content in response for prompt: {prompt}"
+                )
                 await status_msg.edit(
                     content="❌ Failed to generate image. Please try again."
                 )
                 return
-            
+
             # Log response structure for debugging
-            logging.info(f"Response structure: candidates={len(response.candidates)}, content_parts={len(response.candidates[0].content.parts)}")
-            logging.info(f"First candidate finish_reason: {response.candidates[0].finish_reason}")
-            
+            logging.info(
+                f"Response structure: candidates={len(response.candidates)}, content_parts={len(response.candidates[0].content.parts)}"
+            )
+            logging.info(
+                f"First candidate finish_reason: {response.candidates[0].finish_reason}"
+            )
+
             # Check if finish_reason indicates an error
             if response.candidates[0].finish_reason != "STOP":
-                logging.warning(f"Generation may not have completed successfully. Finish reason: {response.candidates[0].finish_reason}")
+                logging.warning(
+                    f"Generation may not have completed successfully. Finish reason: {response.candidates[0].finish_reason}"
+                )
                 if response.candidates[0].finish_reason == 1:
-                    logging.warning("Finish reason 1 typically indicates an error or incomplete generation")
-            
+                    logging.warning(
+                        "Finish reason 1 typically indicates an error or incomplete generation"
+                    )
+
             # Log the actual response content for debugging
             for i, part in enumerate(response.candidates[0].content.parts):
                 logging.info(f"Response part {i}: {part}")
-                if hasattr(part, 'text') and part.text:
+                if hasattr(part, "text") and part.text:
                     logging.info(f"Part {i} text length: {len(part.text)}")
                     logging.info(f"Part {i} text preview: {part.text[:200]}...")
 
@@ -1136,16 +1141,29 @@ class Misc(commands.Cog):
                 return
 
             # Process and send generated images
-            logging.info(f"Processing response with {len(response.candidates[0].content.parts)} parts")
+            logging.info(
+                f"Processing response with {len(response.candidates[0].content.parts)} parts"
+            )
             images_sent = 0
             for index, part in enumerate(response.candidates[0].content.parts):
-                logging.info(f"Part {index}: type={type(part)}, has_inline_data={hasattr(part, 'inline_data')}")
+                logging.info(
+                    f"Part {index}: type={type(part)}, has_inline_data={hasattr(part, 'inline_data')}"
+                )
                 logging.info(f"Part {index} attributes: {dir(part)}")
-                if hasattr(part, "inline_data") and part.inline_data and hasattr(part.inline_data, 'data') and part.inline_data.data:
+                if (
+                    hasattr(part, "inline_data")
+                    and part.inline_data
+                    and hasattr(part.inline_data, "data")
+                    and part.inline_data.data
+                ):
                     logging.info(f"Part {index} inline_data: {part.inline_data}")
-                    logging.info(f"Part {index} mime_type: {part.inline_data.mime_type}")
-                    logging.info(f"Part {index} data length: {len(part.inline_data.data)}")
-                    
+                    logging.info(
+                        f"Part {index} mime_type: {part.inline_data.mime_type}"
+                    )
+                    logging.info(
+                        f"Part {index} data length: {len(part.inline_data.data)}"
+                    )
+
                     # Create filename with timestamp
                     timestamp = datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
                     filename = f"generated_image_{timestamp}_part{index}.png"
@@ -1166,21 +1184,32 @@ class Misc(commands.Cog):
                     except Exception as e:
                         logging.error(f"Error sending image {index + 1}: {e}")
                         # Try to send without file as fallback
-                        await ctx.send(f"❌ Error sending image {index + 1}: {str(e)[:100]}")
-                elif hasattr(part, 'text') and part.text:
-                    logging.info(f"Part {index} contains text response: {part.text[:200]}...")
+                        await ctx.send(
+                            f"❌ Error sending image {index + 1}: {str(e)[:100]}"
+                        )
+                elif hasattr(part, "text") and part.text:
+                    logging.info(
+                        f"Part {index} contains text response: {part.text[:200]}..."
+                    )
                     # Truncate long text responses to fit Discord's 2000 character limit
                     text_content = part.text
                     if len(text_content) > 1900:  # Leave room for formatting
                         text_content = text_content[:1900] + "... [truncated]"
-                    
+
                     # Check if it's an error message
-                    if "violates the policy" in part.text.lower() or "unable to create" in part.text.lower():
-                        await ctx.send(f"❌ **Content Policy Violation**\n{text_content}")
+                    if (
+                        "violates the policy" in part.text.lower()
+                        or "unable to create" in part.text.lower()
+                    ):
+                        await ctx.send(
+                            f"❌ **Content Policy Violation**\n{text_content}"
+                        )
                     else:
                         await ctx.send(f"ℹ️ **API Response**\n{text_content}")
                 else:
-                    logging.warning(f"Part {index} has no inline_data or inline_data is False/None")
+                    logging.warning(
+                        f"Part {index} has no inline_data or inline_data is False/None"
+                    )
                     logging.info(f"Part {index} content: {part}")
 
             if images_sent > 0:
@@ -1195,12 +1224,16 @@ class Misc(commands.Cog):
         except Exception as e:
             logging.error(f"Error generating image: {e}")
             error_msg = str(e)
-            
+
             # Handle Discord API errors specifically
             if "400 Bad Request" in error_msg and "2000 or fewer" in error_msg:
-                await status_msg.edit(content="❌ **Discord Error**: Response too long. Please try a shorter prompt.")
+                await status_msg.edit(
+                    content="❌ **Discord Error**: Response too long. Please try a shorter prompt."
+                )
             elif "400 Bad Request" in error_msg:
-                await status_msg.edit(content="❌ **Discord Error**: Bad request. Please try again.")
+                await status_msg.edit(
+                    content="❌ **Discord Error**: Bad request. Please try again."
+                )
             else:
                 # Truncate error message if it's too long
                 if len(error_msg) > 100:
@@ -1269,10 +1302,13 @@ class Misc(commands.Cog):
                     image_data = await response.read()
 
             # Get the model for image generation - use a model that supports image generation
-            model_name = environ.get("DEFAULT_GEMINI_IMAGE_GENERATION_MODEL", "gemini-2.0-flash-preview-image-generation")
+            model_name = environ.get(
+                "DEFAULT_GEMINI_IMAGE_GENERATION_MODEL",
+                "gemini-2.0-flash-preview-image-generation",
+            )
             if not model_name or model_name == "gemini-model-id":
                 model_name = "gemini-2.0-flash-preview-image-generation"  # Fallback to a model that supports image generation
-            
+
             logging.info(f"Using image editing model: {model_name}")
             model = genai.GenerativeModel(model_name=model_name)
 
@@ -1287,26 +1323,23 @@ class Misc(commands.Cog):
                 generation_config={
                     "temperature": temperature,
                     "max_output_tokens": 8192,
-                    "response_modalities": ["IMAGE", "TEXT"]
+                    "response_modalities": ["IMAGE", "TEXT"],
                 },
                 safety_settings=[
+                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
                     {
-                        "category": "HARM_CATEGORY_HARASSMENT",
-                        "threshold": "BLOCK_NONE"
-                    },
-                    {
-                        "category": "HARM_CATEGORY_HATE_SPEECH", 
-                        "threshold": "BLOCK_NONE"
+                        "category": "HARM_CATEGORY_HATE_SPEECH",
+                        "threshold": "BLOCK_NONE",
                     },
                     {
                         "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                        "threshold": "BLOCK_NONE"
+                        "threshold": "BLOCK_NONE",
                     },
                     {
                         "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                        "threshold": "BLOCK_NONE"
-                    }
-                ]
+                        "threshold": "BLOCK_NONE",
+                    },
+                ],
             )
 
             if not response.candidates or not response.candidates[0].content:
@@ -1576,6 +1609,148 @@ class Misc(commands.Cog):
     async def on_guild_join(self, guild):
         """Handle when the bot joins a new guild."""
         await self._handle_new_guild(guild)
+
+    @commands.slash_command(
+        name="help",
+        description="Get help and quickstart guide for Jakey Bot",
+        contexts={
+            discord.InteractionContextType.guild,
+            discord.InteractionContextType.private_channel,
+        },
+        integration_types={
+            discord.IntegrationType.guild_install,
+            discord.IntegrationType.user_install,
+        },
+    )
+    async def help_command(self, ctx):
+        """Show comprehensive help and quickstart guide"""
+        embed = discord.Embed(
+            title="🤖 Jakey The Degenerate Bot - Complete Help Guide",
+            description="Your AI-powered Discord companion with multi-model support, tools, and degenerate gambling expertise!",
+            color=discord.Color.blue(),
+        )
+
+        # Quickstart section
+        embed.add_field(
+            name="🚀 **Quick Start (3 Steps)**",
+            value="1️⃣ **Enable Memory**: `/feature Memory`\n2️⃣ **Ask Questions**: `/ask <question>` or mention Jakey\n3️⃣ **Explore More**: `/model set <model>` and `/feature <tool>`",
+            inline=False,
+        )
+
+        # Core commands
+        embed.add_field(
+            name="📋 **Essential Commands**",
+            value="• `/ask <question>` - Ask Jakey anything\n• `/model set <model>` - Switch AI models\n• `/feature <tool>` - Enable tools (Memory, CryptoPrice, etc.)\n• `/sweep` - Clear conversation and reset\n• `/quickstart` - Get step-by-step guide",
+            inline=False,
+        )
+
+        # AI Models
+        embed.add_field(
+            name="🤖 **AI Models Available**",
+            value="• **Gemini**: gemini-2.5-pro, gemini-2.5-flash (API Key Required)\n• **OpenAI**: gpt-4, gpt-3.5-turbo, gpt-5 (API Key Required)\n• **Claude**: claude-3-opus, claude-3-sonnet (API Key Required)\n• **DeepSeek**: deepseek-v3, deepseek-r1 (API Key Required)\n• **Grok 3**: xAI creative model (API Key Required)\n• **LearnLM 2.0**: Google learning model (API Key Required)\n• **OpenRouter**: 100+ models (API Key Required)\n• **More**: Use `/model list` to see all options",
+            inline=False,
+        )
+
+        # Tools
+        embed.add_field(
+            name="🛠️ **Available Tools**",
+            value="• **Memory** - Remember and recall information across conversations\n• **CryptoPrice** - Live Solana/Ethereum token prices\n• **CurrencyConverter** - 170+ currency conversion\n• **YouTube** - Video analysis and summarization\n• **GitHub** - Code repository access and search\n• **AudioTools** - Audio creation and manipulation\n• **CodeExecution** - Python code execution",
+            inline=False,
+        )
+
+        # Advanced features
+        embed.add_field(
+            name="⚡ **Advanced Features**",
+            value="• **Image Generation**: `/generate_image <prompt>`\n• **Image Editing**: `/edit_image <prompt>`\n• **Auto-Image**: Automatic detection and generation\n• **Reminders**: `/remind <time> <message>`\n• **Trivia Games**: `/trivia` for fun challenges\n• **Gambling Games**: `/create_bet` for betting pools\n• **Keno Numbers**: `/keno` for random number generation",
+            inline=False,
+        )
+
+        # Tips
+        embed.add_field(
+            name="💡 **Pro Tips & Best Practices**",
+            value="• **Start with Memory**: `/feature Memory` for best experience\n• **Natural Language**: Jakey understands context and conversation\n• **Image Support**: Attach images for visual analysis\n• **Model Switching**: Use `/model set` to match your needs\n• **Tool Combinations**: Enable multiple tools for enhanced capabilities\n• **Auto-Return**: Tools automatically return to default after timeout",
+            inline=False,
+        )
+
+        # Troubleshooting
+        embed.add_field(
+            name="🔧 **Troubleshooting**",
+            value="• **Memory Issues**: Use `/memory_debug` and `/memory_reindex`\n• **Tool Problems**: Check if tool is enabled with `/feature`\n• **Model Issues**: Try `/model set` to switch models\n• **Performance**: Use `/performance` for system metrics\n• **Cache Status**: Use `/cache` for cache information",
+            inline=False,
+        )
+
+        # API Key Setup
+        embed.add_field(
+            name="🔑 **API Key Setup Required**",
+            value="• **Gemini**: Set `GEMINI_API_KEY` in dev.env\n• **OpenAI**: Set `OPENAI_API_KEY` in dev.env\n• **Claude**: Set `ANTHROPIC_API_KEY` in dev.env\n• **DeepSeek**: Set `AZURE_AI_API_KEY` and `AZURE_AI_API_BASE`\n• **Grok**: Set `XAI_API_KEY` in dev.env\n• **OpenRouter**: Set `OPENROUTER_API_KEY` in dev.env\n• **Copy dev.env.template** to dev.env and add your keys",
+            inline=False,
+        )
+
+        # Support
+        embed.add_field(
+            name="🆘 **Need More Help?**",
+            value=(
+                "• **Quickstart**: `/quickstart` for step-by-step guide\n"
+                "• **Model List**: `/model list` to see all available models\n"
+                "• **Feature Status**: Check current tool with `/feature`\n"
+                "• **Documentation**: Visit our docs for advanced features\n"
+                "• **GitHub**: [https://github.com/brokechubb/JakeyBot](https://github.com/brokechubb/JakeyBot)\n"
+                "• **Admin Prefix Commands**: `!performance`, `!cache`, `!logs` for admins\n"
+                f"• **Prefix Note**: The current command prefix is `{getattr(self.bot, 'command_prefix', '!')}`"
+            ),
+            inline=False,
+        )
+
+        embed.set_footer(
+            text="Jakey Bot v2.1.0 - Enhanced Security Fork | Degen Edition | Unfiltered & Proud"
+        )
+
+        await ctx.respond(embed=embed, ephemeral=True)
+
+    @commands.slash_command(
+        name="quickstart",
+        description="Get a quick start guide for Jakey Bot",
+        contexts={
+            discord.InteractionContextType.guild,
+            discord.InteractionContextType.private_channel,
+        },
+        integration_types={
+            discord.IntegrationType.guild_install,
+            discord.IntegrationType.user_install,
+        },
+    )
+    async def quickstart(self, ctx):
+        """Show quickstart guide"""
+        embed = discord.Embed(
+            title="🚀 Jakey The Degenerate Bot Quickstart Guide",
+            description="Get up and running with Jakey The Degenerate Bot in 3 simple steps!",
+            color=discord.Color.green(),
+        )
+
+        # Step 1
+        embed.add_field(
+            name="1️⃣ Ask Your First Question",
+            value="`/ask What can you help me with?`\nor just mention Jakey in a message!",
+            inline=False,
+        )
+
+        # Step 2
+        embed.add_field(
+            name="2️⃣ Explore More Features",
+            value="• `/remind 1h take a break` - Set personal reminders \n• `/keno` - Generate keno numbers \n• `/generate_image` - Generate images \n• `/edit_image` - Edit images \n• `/auto_image` - Auto-generate images \n• `/sweep` - Clear conversation and reset",
+            inline=False,
+        )
+
+        # Common use cases
+        embed.add_field(
+            name="💭 What Can Jakey Do?",
+            value="- Answer questions with AI intelligence\n- Remember your preferences and facts\n- Generate and edit images\n- Provide live crypto prices\n- Analyze YouTube videos\n- Help with coding and debugging\n- Create polls and trivia games\n- Generate keno numbers\n\n*Note: Jakey is a degenerate bot, so he will be very rude and sarcastic. He will also be very helpful and will try to help you with your questions.*",
+            inline=False,
+        )
+
+        embed.set_footer(text="Ready to get started?")
+
+        await ctx.respond(embed=embed, ephemeral=True)
 
 
 def setup(bot):

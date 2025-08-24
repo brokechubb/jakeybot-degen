@@ -19,7 +19,7 @@ Welcome to JakeyBot! This guide will help you get the most out of your interacti
 | `/remind` | Set a reminder for yourself | `/remind time_in:1h message:Take a break` |
 | `/sweep` | Clear conversation history | `/sweep` |
 | `/model set` | Switch AI models | `/model set gemini` |
-| `/feature` | Enable/disable tools | `/feature Memory` |
+| `/feature <tool>` | Enable/disable tools | `/feature Memory` |
 | `/jakey_engage` | Make Jakey actively engage in the current channel | `/jakey_engage` |
 | `/jakey_disengage` | Stop Jakey's active engagement | `/jakey_disengage` |
 | `/create_bet` | Create a new betting pool | `/create_bet title:Super Bowl options:Chiefs,49ers` |
@@ -27,13 +27,49 @@ Welcome to JakeyBot! This guide will help you get the most out of your interacti
 | `/trivia` | Start a trivia game | `/trivia` |
 | `/cancel_trivia` | Cancel the current trivia game | `/cancel_trivia` |
 
-### **New Utility Commands**
+### **Help & Support Commands**
 
 | Command | Description | Example |
 |---------|-------------|---------|
+| `/help` | Comprehensive help and quickstart guide | `/help` |
+| `/quickstart` | Step-by-step getting started guide | `/quickstart` |
 | `/memory_debug` | Debug memory system status | `/memory_debug` |
 | `/memory_reindex` | Fix memory search issues | `/memory_reindex` |
-| `/quickstart` | Show quickstart guide | `/quickstart` |
+
+### **New Utility Commands**
+
+## 🆘 **Help & Support System**
+
+### **Getting Help with JakeyBot**
+
+JakeyBot now includes comprehensive help commands to guide you through all features and capabilities:
+
+#### **`/help` - Complete Help Guide**
+- **Comprehensive overview** of all available features
+- **AI model information** with API key requirements
+- **Tool descriptions** and capabilities
+- **Pro tips** and best practices
+- **Troubleshooting** guide for common issues
+- **Admin commands** for server administrators
+
+#### **`/quickstart` - Getting Started Guide**
+- **3-step process** to get up and running
+- **Essential commands** to try first
+- **Feature overview** of what Jakey can do
+- **Actionable next steps** for new users
+
+#### **Help Features**
+- **API Key Requirements**: Clear information about what keys are needed
+- **Command Examples**: Copy-paste ready command examples
+- **Troubleshooting**: Solutions for common problems
+- **Cross-References**: Links between related commands and features
+
+### **When to Use Help Commands**
+
+- **New Users**: Start with `/quickstart` for step-by-step guidance
+- **Feature Discovery**: Use `/help` to explore all capabilities
+- **Problem Solving**: Check troubleshooting section for solutions
+- **Admin Tasks**: Find administrative commands and tools
 
 ## ⏰ **Personal Reminder System**
 

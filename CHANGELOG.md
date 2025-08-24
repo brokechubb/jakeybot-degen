@@ -2,6 +2,15 @@
 
 ## [Unreleased]
 
+### 🆘 Added
+
+- **Enhanced Help System**: New `/help` and `/quickstart` slash commands
+- **Comprehensive Help Guide**: Complete overview of all features, AI models, and tools
+- **API Key Requirements**: Clear information about required API keys for each model
+- **Troubleshooting Section**: Solutions for common issues and problems
+- **Admin Command Reference**: Information about prefix commands for administrators
+- **GitHub Repository Link**: Direct access to source code and documentation
+
 ## [v2.1.0] - 2025-01-24
 
 ### 🎉 Added

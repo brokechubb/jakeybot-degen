@@ -391,15 +391,31 @@ class CustomHelp(commands.MinimalHelpCommand):
             The help command opening note.
         """
         command_name = self.invoked_with
-        return cleandoc(f"""**{bot.user.name}** help
+        return cleandoc(f"""**{bot.user.name}** Help & Commands
 
-                Welcome! here are the prefix commands that you can use!
+                🚀 **Quick Start**: Use `/help` or `/quickstart` for the full guide!
                 
-                Use `/help` to view the QUICKSTART guide.
-
-                Use `{self.context.clean_prefix}{command_name} [command]` for more info on a command.
-
-                You can also use `{self.context.clean_prefix}{command_name} [category]` for more info on a category.""")
+                📋 **Core Commands**:
+                • `/ask <question>` - Ask Jakey anything
+                • `/model set <model>` - Switch AI models  
+                • `/feature <tool>` - Enable tools (Memory, CryptoPrice, etc.)
+                • `/sweep` - Clear conversation history
+                
+                🛠️ **Available Tools**:
+                • **Memory** - Remember and recall information
+                • **CryptoPrice** - Live token prices
+                • **CurrencyConverter** - Currency conversion
+                • **YouTube** - Video analysis
+                • **GitHub** - Code repository access
+                
+                💡 **Pro Tips**:
+                • Start with `/feature Memory` for best experience
+                • Use natural language - Jakey understands context
+                • Set reminders with `/remind <time> <message>`
+                
+                📚 **More Help**:
+                Use `{self.context.clean_prefix}{command_name} [command]` for detailed command info
+                Use `{self.context.clean_prefix}{command_name} [category]` for category info""")
 
     async def send_pages(self):
         destination = self.get_destination()

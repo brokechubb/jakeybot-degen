@@ -87,12 +87,14 @@ source venv/bin/activate
 
 ### Core Commands
 
+- `/help` - Comprehensive help and quickstart guide
+- `/quickstart` - Step-by-step getting started guide
 - `/ask` - Quick questions
 - `/sweep` - Clear conversation
 - `/model set` - Switch AI models
 - `/summarize` - Channel insights
 - `/mimic` - User impersonation
-- `/feature` - Enable/disable tools (one at a time)
+- `/feature <tool>` - Enable/disable tools (one at a time)
 
 ### New Utility Commands
 

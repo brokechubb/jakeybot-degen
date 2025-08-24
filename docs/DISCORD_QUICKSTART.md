@@ -2,9 +2,12 @@
 
 ## Basic Commands
 
-- `/help` - Show all available commands
-- `/feature <tool>` - Enable specific tools (ExaSearch, GitHub, etc.)
-- `/quickstart` - Display this guide
+- `/help` - Comprehensive help and quickstart guide
+- `/quickstart` - Step-by-step getting started guide
+- `/ask <question>` - Ask Jakey anything
+- `/feature <tool>` - Enable specific tools (Memory, CryptoPrice, etc.)
+- `/model set <model>` - Switch AI models
+- `/sweep` - Clear conversation history
 - `/jakey_engage` - Make Jakey actively engage in the current channel
 - `/jakey_disengage` - Stop Jakey's active engagement
 - `/create_bet <title> <options>` - Create a new betting pool
