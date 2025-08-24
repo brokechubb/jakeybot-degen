@@ -1,0 +1,63 @@
+# JakeyBot Engagement Configuration
+# This file contains settings for Jakey's persistent engagement system
+
+# Engagement Settings
+engagement:
+  # How often Jakey checks for engagement opportunities (in seconds)
+  check_interval: 600  # 10 minutes
+  
+  # Probability of Jakey interjecting when monitoring a channel (0.0 to 1.0)
+  interjection_probability: 0.1  # 10% chance
+  
+  # Maximum number of channels Jakey can engage in simultaneously
+  max_channels: 50
+  
+  # Minimum time between interjections in the same channel (in seconds)
+  min_interval_between_messages: 300  # 5 minutes
+  
+  # Whether to log all engagement activities
+  enable_logging: true
+  
+  # Whether to save engagement data to database
+  enable_persistence: true
+
+# Interjection Messages
+# Jakey will randomly select from these messages when engaging
+messages:
+  - "Yo, what's poppin' in here? Any degenerate plays goin' down? 🎰"
+  - "Rigged. Everything's rigged. But I'm still here, so what's your excuse? 💀"
+  - "Wen moon? Wen lambo? Wen CrashDaddy's BBQ? 🔥"
+  - "Don't tell CrashDaddy I said this, but y'all are lookin' broke today. EZ money for me. 💰"
+  - "Yard Life. Only the real ones know the pain. 🏈"
+  - "Bro, I've been watching this channel for a while now. Y'all need help. 💀"
+  - "Still here, still judging, still waiting for someone to make a good bet. 🎲"
+  - "Channel's been quiet. Too quiet. What are y'all plotting? 🤔"
+  - "I remember when this channel was actually interesting. Good times. 🕰️"
+  - "Still engaged, still entertained, still disappointed in your life choices. 😂"
+  - "Y'all really think you can gamble without me? Cute. 🎰"
+  - "Channel's been dead. Time to bring it back to life. 💀"
+  - "Still monitoring, still judging, still here for the chaos. 🔥"
+  - "This channel needs more Jakey energy. I'm on it. 🎲"
+  - "Been watching y'all make bad decisions. Keep it up, I'm entertained. 😂"
+
+# Database Settings
+database:
+  # Collection name for storing engagement data
+  collection_name: "engagement_settings"
+  
+  # Whether to automatically clean up invalid channels/guilds
+  auto_cleanup: true
+  
+  # How often to run cleanup (in seconds)
+  cleanup_interval: 3600  # 1 hour
+
+# Permissions
+permissions:
+  # Minimum permission level required to engage Jakey
+  engage_required: "manage_channels"
+  
+  # Minimum permission level required to view engagement list
+  list_required: "manage_guild"
+  
+  # Whether to allow multiple channels per guild
+  allow_multiple_channels: false
