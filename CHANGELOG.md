@@ -1,11 +1,33 @@
-# Changelog
+# JakeyBot Changelog
 
-All notable changes to JakeyBot will be documented in this file.
+## [Unreleased]
 
-## [2.0.0] - 2025-01-24
+## [v2.1.0] - 2025-01-24
 
-### 🆕 Added
+### 🎉 Added
+- **Persistent Auto-Image Generation**: Auto-image settings now saved to database and survive bot restarts
+- **Enhanced Image Generation Commands**: New `/auto_image_status` command and improved help system
+- **Database-Backed Configuration**: All auto-image settings persist across restarts and server reboots
 
+### 🔧 Changed
+- **Memory System Cleanup**: Successfully flushed old memory format and transitioned to new user-specific system
+- **Database Optimization**: Cleaned up orphaned knowledge collections and optimized memory storage
+- **Enhanced Error Handling**: Better logging and error recovery for auto-image generation system
+
+### 🧹 Cleaned Up
+- **Old Memory Format**: Removed outdated memory structure that didn't associate memories with users
+- **Orphaned Collections**: Cleaned up 1 orphaned knowledge collection from database
+- **Memory Verification**: Confirmed 13/13 memories now use proper user-specific format
+
+### 📊 Technical Improvements
+- **Persistence Layer**: Added `_load_auto_image_settings()`, `_save_auto_image_setting()`, and related methods
+- **New Guild Handling**: Automatic initialization of auto-image settings for new servers
+- **Database Integration**: Seamless MongoDB integration for configuration persistence
+- **Memory Format**: All memories now properly include `user_id` and `[Username]` prefix format
+
+## [v2.0.0] - 2025-01-24
+
+### 🎉 Added
 - **Enhanced Configuration System**: Improved `assistants.yaml` with comprehensive settings
 - **Multiple Personality Modes**: Jakey now supports various response styles (troll, degenerate_gambling, hypebeast, etc.)
 - **Advanced Error Handling**: User-friendly error messages and fallback responses
@@ -18,38 +40,32 @@ All notable changes to JakeyBot will be documented in this file.
   - Automatic cleanup of invalid channels/guilds
   - Support for up to 50 simultaneous engagements
   - New commands: status, list, and statistics
+- **On-Demand Image Generation**: Direct image generation commands without AI tool usage required
+- **Automatic Image Detection**: Jakey automatically detects image requests and offers generation options
+- **Smart Prompt Extraction**: Automatically extracts image descriptions from natural language requests
 
 ### 🔧 Changed
-
 - **Configuration Structure**: Consolidated all assistant settings into single `assistants.yaml` file
-- **Model Settings**:
-  - Temperature increased to 1.1 for more creative responses
-  - Max tokens increased to 5000 for longer responses
-  - Reduced frequency and presence penalties for better variety
-- **Behavior Customization**: Enhanced language, emoji usage, and formatting options
-- **Error Messages**: More user-friendly and context-aware error responses
+- **Memory System**: Fixed user memory contamination and implemented proper user-specific memory recall
+- **Gemini API Compatibility**: Resolved multiple compatibility issues with google-generativeai library
+- **Project Structure**: Cleaned up unused files, scripts, and test artifacts
+- **Documentation**: Updated README, CHANGELOG, and removed references to deleted files
+
+### 🐛 Fixed
+- **Memory User Association**: Memories now properly linked to creating users, preventing cross-user confusion
+- **Gemini API Errors**: Fixed Part.from_text() method signature and GenerationConfig type compatibility issues
+- **API Key Configuration**: Added proper API key validation and configuration for image generation
+- **Memory Priority System**: Implemented 4-tier priority system for user-specific memory recall
 
 ### 🗑️ Removed
+- **Unused Files**: Removed test scripts, old modular configuration, and database artifacts
+- **Modular Config**: Consolidated assistant configuration back to single file due to bot compatibility
+- **Temporary Scripts**: Cleaned up migration and test scripts after successful implementation
 
-- **Test Suite**: Removed entire `tests/` directory and test files
-- **Scripts Directory**: Removed unused utility scripts
-- **Modular Assistant Structure**: Consolidated into single configuration file
-- **Database Artifacts**: Removed development backups and dumps
-- **Coverage Reports**: Removed HTML coverage files
-- **Development Documentation**: Cleaned up unused development files
-
-### 🧹 Cleaned Up
-
-- **Project Structure**: Streamlined to essential components only
-- **File Count**: Reduced from ~10,000+ files to essential files only
-- **Documentation**: Updated README and removed outdated references
-- **Dependencies**: Cleaned up unused requirements and configuration files
-
-### 🚀 Performance
-
-- **Faster Startup**: Reduced file system overhead
-- **Better Organization**: Cleaner project structure for easier maintenance
-- **Optimized Settings**: Enhanced assistant configuration for better responses
+### 📚 Documentation
+- **Updated README**: Reflects v2.0.0 features and project cleanup
+- **Enhanced CHANGELOG**: Comprehensive documentation of all changes and improvements
+- **Security Updates**: Fixed documentation examples that triggered pre-commit hooks
 
 ## [1.x.x] - Previous Versions
 
