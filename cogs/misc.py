@@ -18,6 +18,7 @@ import time
 import asyncio
 import re
 
+
 class Misc(commands.Cog):
     """Use my other utilities here that can help make your server more active and entertaining"""
 
@@ -181,6 +182,210 @@ class Misc(commands.Cog):
             return target_time
 
         return None
+
+    @commands.slash_command(
+        name="auto_image", description="Toggle automatic image generation for simple requests"
+    )
+    @commands.has_permissions(manage_channels=True)
+    async def auto_image(self, ctx, enabled: bool = None):
+        """Toggle automatic image generation mode."""
+        guild_id = str(ctx.guild.id)
+        
+        # Get current setting
+        current_setting = getattr(self, '_auto_image_enabled', {}).get(guild_id, False)
+        
+        if enabled is None:
+            # Toggle the current setting
+            enabled = not current_setting
+        
+        # Update the setting
+        if not hasattr(self, '_auto_image_enabled'):
+            self._auto_image_enabled = {}
+        
+        self._auto_image_enabled[guild_id] = enabled
+        
+        if enabled:
+            await ctx.respond(
+                "🎨 **Auto-Image Generation Enabled!**\n"
+                "Jakey will now automatically generate images for simple requests.\n"
+                "Users can still use manual commands for more control.",
+                ephemeral=True
+            )
+        else:
+            await ctx.respond(
+                "🎨 **Auto-Image Generation Disabled!**\n"
+                "Jakey will only suggest image generation commands.\n"
+                "Users must manually use `/generate_image` or `/edit_image`.",
+                ephemeral=True
+            )
+
+    async def _auto_generate_image(self, message, prompt: str):
+        """Automatically generate an image for a user request."""
+        if not self._gemini_api_configured:
+            return False
+            
+        try:
+            # Send initial status message
+            status_msg = await message.channel.send(
+                f"🎨 **Auto-Generating Image**\n"
+                f"Prompt: *{prompt}*\n"
+                f"⌛ This may take a few minutes...",
+                reference=message
+            )
+            
+            # Get the model for image generation
+            model_name = environ.get("GEMINI_MODEL_NAME", "gemini-1.5-flash")
+            model = genai.GenerativeModel(model_name=model_name)
+
+            # Generate the image
+            response = await model.generate_content_async(
+                contents=prompt,
+                generation_config={
+                    "response_modalities": ["Text", "Image"],
+                    "candidate_count": 1,
+                    "temperature": 0.7,  # Default temperature for auto-generation
+                    "max_output_tokens": 8192,
+                }
+            )
+
+            if not response.candidates or not response.candidates[0].content:
+                await status_msg.edit(content="❌ Auto-generation failed. Please try `/generate_image` manually.")
+                return False
+
+            # Check for safety issues
+            if response.candidates[0].finish_reason == "IMAGE_SAFETY":
+                await status_msg.edit(content="❌ Auto-generation blocked by safety filters. Please try a different prompt.")
+                return False
+
+            # Process and send generated images
+            images_sent = 0
+            for index, part in enumerate(response.candidates[0].content.parts):
+                if hasattr(part, "inline_data") and part.inline_data:
+                    # Create filename with timestamp
+                    timestamp = datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
+                    filename = f"auto_generated_{timestamp}_part{index}.png"
+                    
+                    # Send the image
+                    file = discord.File(
+                        fp=io.BytesIO(part.inline_data.data), filename=filename
+                    )
+                    
+                    await message.channel.send(
+                        f"🎨 **Auto-Generated Image {index + 1}**\n"
+                        f"Prompt: *{prompt}*\n"
+                        f"💡 Use `/generate_image` for more control next time!",
+                        file=file,
+                        reference=message
+                    )
+                    images_sent += 1
+
+            if images_sent > 0:
+                await status_msg.edit(content=f"✅ **Auto-Generation Complete!** Generated {images_sent} image(s).")
+                return True
+            else:
+                await status_msg.edit(content="❌ No images were generated. Please try `/generate_image` manually.")
+                return False
+
+        except Exception as e:
+            logging.error(f"Error in auto-image generation: {e}")
+            await status_msg.edit(content=f"❌ Auto-generation error: {str(e)[:100]}")
+            return False
+
+    @commands.Cog.listener()
+    async def on_message(self, message):
+        """Listen for messages and automatically offer image generation when appropriate."""
+        # Ignore bot messages and commands
+        if message.author.bot or message.content.startswith('/'):
+            return
+            
+        # Check if the message is asking for image generation
+        image_keywords = [
+            "generate an image", "create an image", "make an image", "draw me", "show me a picture",
+            "generate a picture", "create a picture", "make a picture", "draw a", "show a",
+            "can you draw", "can you create", "can you make", "can you generate",
+            "i want an image", "i need an image", "i'd like an image", "i would like an image",
+            "generate image of", "create image of", "make image of", "draw image of",
+            "picture of", "image of", "drawing of", "art of", "illustration of"
+        ]
+        
+        message_lower = message.content.lower()
+        is_image_request = any(keyword in message_lower for keyword in image_keywords)
+        
+        if is_image_request:
+            # Extract potential prompt from the message
+            prompt = self._extract_image_prompt(message.content)
+            
+            # Check if auto-generation is enabled for this guild
+            guild_id = str(message.guild.id) if message.guild else "dm"
+            auto_enabled = getattr(self, '_auto_image_enabled', {}).get(guild_id, False)
+            
+            if auto_enabled and len(prompt) > 10:  # Only auto-generate for substantial prompts
+                # Try to auto-generate the image
+                success = await self._auto_generate_image(message, prompt)
+                if success:
+                    return  # Don't send the suggestion if auto-generation succeeded
+            
+            # Create a helpful response with image generation options
+            embed = discord.Embed(
+                title="🎨 Image Generation Detected!",
+                description=f"I detected you're asking for an image! Here are your options:",
+                color=0x00ff00
+            )
+            
+            embed.add_field(
+                name="🖼️ Generate New Image",
+                value=f"Use `/generate_image {prompt}` to create a new image",
+                inline=False
+            )
+            
+            embed.add_field(
+                name="✏️ Edit Existing Image", 
+                value="Attach an image and use `/edit_image <prompt>` to modify it",
+                inline=False
+            )
+            
+            embed.add_field(
+                name="❓ Need Help?",
+                value="Use `/image_help` for detailed instructions",
+                inline=False
+            )
+            
+            embed.set_footer(text="💡 Tip: You can also adjust creativity with the temperature parameter")
+            
+            # Send the helpful response
+            await message.channel.send(embed=embed, reference=message)
+
+    def _extract_image_prompt(self, message_content: str) -> str:
+        """Extract a potential image prompt from a message."""
+        # Remove common request words to get to the actual description
+        request_words = [
+            "generate an image of", "create an image of", "make an image of", "draw me",
+            "generate a picture of", "create a picture of", "make a picture of",
+            "can you draw", "can you create", "can you make", "can you generate",
+            "i want an image of", "i need an image of", "i'd like an image of",
+            "i would like an image of", "show me a picture of", "show a picture of",
+            "picture of", "image of", "drawing of", "art of", "illustration of"
+        ]
+        
+        message_lower = message_content.lower()
+        prompt = message_content
+        
+        # Try to extract the actual description
+        for request_word in request_words:
+            if request_word in message_lower:
+                # Find the position after the request word
+                start_pos = message_lower.find(request_word) + len(request_word)
+                prompt = message_content[start_pos:].strip()
+                break
+        
+        # Clean up the prompt
+        prompt = prompt.strip(".,!?")
+        
+        # If prompt is too short, provide a default
+        if len(prompt) < 3:
+            prompt = "your request"
+            
+        return prompt
 
     @commands.slash_command(
         name="time",
@@ -404,7 +609,10 @@ class Misc(commands.Cog):
             guild_id = ctx.author.id
 
         # Check if AutoReturnManager is available
-        if not hasattr(self.bot, "auto_return_manager") or not self.bot.auto_return_manager:
+        if (
+            not hasattr(self.bot, "auto_return_manager")
+            or not self.bot.auto_return_manager
+        ):
             await ctx.respond("❌ Auto-return system is not available")
             return
 
@@ -413,18 +621,22 @@ class Misc(commands.Cog):
         remaining_time = await self.bot.auto_return_manager.get_remaining_time(guild_id)
 
         if current_tool is None:
-            await ctx.respond("✅ Currently using default tool (no auto-return scheduled)")
+            await ctx.respond(
+                "✅ Currently using default tool (no auto-return scheduled)"
+            )
         else:
             # Format remaining time
             if remaining_time is not None:
                 minutes = remaining_time // 60
                 seconds = remaining_time % 60
-                
+
                 if minutes > 0:
-                    time_str = f"{minutes}m {seconds}s" if seconds > 0 else f"{minutes}m"
+                    time_str = (
+                        f"{minutes}m {seconds}s" if seconds > 0 else f"{minutes}m"
+                    )
                 else:
                     time_str = f"{seconds}s"
-                
+
                 await ctx.respond(
                     f"⏰ **Current Tool:** {current_tool}\n"
                     f"🕐 **Time Remaining:** {time_str}\n"
@@ -465,7 +677,10 @@ class Misc(commands.Cog):
             guild_id = ctx.author.id
 
         # Check if AutoReturnManager is available
-        if not hasattr(self.bot, "auto_return_manager") or not self.bot.auto_return_manager:
+        if (
+            not hasattr(self.bot, "auto_return_manager")
+            or not self.bot.auto_return_manager
+        ):
             await ctx.respond("❌ Auto-return system is not available")
             return
 
@@ -489,20 +704,26 @@ class Misc(commands.Cog):
 
         # Extend the timeout
         try:
-            await self.bot.auto_return_manager.extend_timeout(guild_id, additional_seconds)
-            
+            await self.bot.auto_return_manager.extend_timeout(
+                guild_id, additional_seconds
+            )
+
             # Get new remaining time
-            new_remaining_time = await self.bot.auto_return_manager.get_remaining_time(guild_id)
-            
+            new_remaining_time = await self.bot.auto_return_manager.get_remaining_time(
+                guild_id
+            )
+
             if new_remaining_time is not None:
                 minutes = new_remaining_time // 60
                 seconds = new_remaining_time % 60
-                
+
                 if minutes > 0:
-                    time_str = f"{minutes}m {seconds}s" if seconds > 0 else f"{minutes}m"
+                    time_str = (
+                        f"{minutes}m {seconds}s" if seconds > 0 else f"{minutes}m"
+                    )
                 else:
                     time_str = f"{seconds}s"
-                
+
                 await ctx.respond(
                     f"⏰ **Timeout Extended!**\n"
                     f"🛠️ **Current Tool:** {current_tool}\n"
@@ -516,7 +737,7 @@ class Misc(commands.Cog):
                     f"🕐 **New Time Remaining:** Unknown\n"
                     f"🧠 **Will Return To:** {self.bot.auto_return_manager.default_tool}"
                 )
-                
+
         except Exception as e:
             await ctx.respond(f"❌ Failed to extend timeout: {str(e)}")
             logging.error(f"Error extending timeout: {e}")
@@ -544,7 +765,10 @@ class Misc(commands.Cog):
             guild_id = ctx.author.id
 
         # Check if AutoReturnManager is available
-        if not hasattr(self.bot, "auto_return_manager") or not self.bot.auto_return_manager:
+        if (
+            not hasattr(self.bot, "auto_return_manager")
+            or not self.bot.auto_return_manager
+        ):
             await ctx.respond("❌ Auto-return system is not available")
             return
 
@@ -557,17 +781,19 @@ class Misc(commands.Cog):
         # Cancel the timer and return to default
         try:
             await self.bot.auto_return_manager.cancel_timer(guild_id)
-            
+
             # Set the tool back to default in the database
             if hasattr(self.bot, "DBConn") and self.bot.DBConn is not None:
-                await self.bot.DBConn.set_tool_config(guild_id=guild_id, tool=self.bot.auto_return_manager.default_tool)
-            
+                await self.bot.DBConn.set_tool_config(
+                    guild_id=guild_id, tool=self.bot.auto_return_manager.default_tool
+                )
+
             await ctx.respond(
                 f"🧠 **Returned to Default Tool!**\n"
                 f"✅ Now using: {self.bot.auto_return_manager.default_tool}\n"
                 f"⏰ Auto-return timer cancelled"
             )
-            
+
         except Exception as e:
             await ctx.respond(f"❌ Failed to return to default: {str(e)}")
             logging.error(f"Error returning to default: {e}")
@@ -595,17 +821,22 @@ class Misc(commands.Cog):
             guild_id = ctx.author.id
 
         # Check if AutoReturnManager is available
-        if not hasattr(self.bot, "auto_return_manager") or not self.bot.auto_return_manager:
+        if (
+            not hasattr(self.bot, "auto_return_manager")
+            or not self.bot.auto_return_manager
+        ):
             await ctx.respond("❌ Auto-return system is not available")
             return
 
         # Get smart suggestions based on current context
-        suggestions = await self.bot.auto_return_manager.get_smart_suggestions(guild_id, "smart_suggestions_request")
-        
+        suggestions = await self.bot.auto_return_manager.get_smart_suggestions(
+            guild_id, "smart_suggestions_request"
+        )
+
         if not suggestions:
             # Provide general helpful suggestions
             current_tool = await self.bot.auto_return_manager.get_current_tool(guild_id)
-            
+
             if current_tool is None:
                 await ctx.respond(
                     f"🧠 **Smart Suggestions**\n\n"
@@ -618,16 +849,20 @@ class Misc(commands.Cog):
                     f"• Use `/return_to_default` to return immediately"
                 )
             else:
-                remaining_time = await self.bot.auto_return_manager.get_remaining_time(guild_id)
+                remaining_time = await self.bot.auto_return_manager.get_remaining_time(
+                    guild_id
+                )
                 if remaining_time is not None:
                     minutes = remaining_time // 60
                     seconds = remaining_time % 60
-                    
+
                     if minutes > 0:
-                        time_str = f"{minutes}m {seconds}s" if seconds > 0 else f"{minutes}m"
+                        time_str = (
+                            f"{minutes}m {seconds}s" if seconds > 0 else f"{minutes}m"
+                        )
                     else:
                         time_str = f"{seconds}s"
-                    
+
                     await ctx.respond(
                         f"🧠 **Smart Suggestions**\n\n"
                         f"🛠️ **Current Tool**: {current_tool}\n"
@@ -650,8 +885,10 @@ class Misc(commands.Cog):
                     )
         else:
             # Format multiple suggestions
-            suggestion_text = "\n\n".join([f"💡 {suggestion}" for suggestion in suggestions])
-            
+            suggestion_text = "\n\n".join(
+                [f"💡 {suggestion}" for suggestion in suggestions]
+            )
+
             await ctx.respond(
                 f"🧠 **Smart Suggestions**\n\n{suggestion_text}\n\n"
                 f"💡 **Quick Actions**:\n"
@@ -677,13 +914,16 @@ class Misc(commands.Cog):
         await ctx.response.defer(ephemeral=True)
 
         # Check if AutoReturnManager is available
-        if not hasattr(self.bot, "auto_return_manager") or not self.bot.auto_return_manager:
+        if (
+            not hasattr(self.bot, "auto_return_manager")
+            or not self.bot.auto_return_manager
+        ):
             await ctx.respond("❌ Auto-return system is not available")
             return
 
         # Get system status
         status = self.bot.auto_return_manager.get_status()
-        
+
         # Format timeouts for display
         timeout_info = []
         for tool, timeout in status["tool_timeouts"].items():
@@ -691,13 +931,15 @@ class Misc(commands.Cog):
                 minutes = timeout // 60
                 seconds = timeout % 60
                 if minutes > 0:
-                    time_str = f"{minutes}m {seconds}s" if seconds > 0 else f"{minutes}m"
+                    time_str = (
+                        f"{minutes}m {seconds}s" if seconds > 0 else f"{minutes}m"
+                    )
                 else:
                     time_str = f"{seconds}s"
                 timeout_info.append(f"• **{tool}**: {time_str}")
-        
+
         timeout_info.sort()
-        
+
         await ctx.respond(
             f"🧠 **Auto-Return System Status**\n\n"
             f"✅ **Default Tool:** {status['default_tool']}\n"
@@ -708,20 +950,29 @@ class Misc(commands.Cog):
             f"• **Default**: {status['tool_timeouts']['default'] // 60}m {status['tool_timeouts']['default'] % 60}s"
         )
 
-    @commands.slash_command(name="generate_image", description="Generate an image using AI")
+    @commands.slash_command(
+        name="generate_image", description="Generate an image using AI"
+    )
     async def generate_image(self, ctx, prompt: str, temperature: float = 0.7):
         """Generate an image using Gemini AI without needing the AI to use tools."""
         if not self._gemini_api_configured:
-            await ctx.respond("❌ Image generation is not available. Please check the bot configuration.", ephemeral=True)
+            await ctx.respond(
+                "❌ Image generation is not available. Please check the bot configuration.",
+                ephemeral=True,
+            )
             return
 
         # Check temperature limits
         if temperature < 0.0 or temperature > 1.2:
-            await ctx.respond("❌ Temperature must be between 0.0 and 1.2", ephemeral=True)
+            await ctx.respond(
+                "❌ Temperature must be between 0.0 and 1.2", ephemeral=True
+            )
             return
 
         # Send initial status message
-        status_msg = await ctx.respond(f"⌛ Generating image with prompt: **{prompt}**... This may take a few minutes.")
+        status_msg = await ctx.respond(
+            f"⌛ Generating image with prompt: **{prompt}**... This may take a few minutes."
+        )
 
         try:
             # Get the model for image generation
@@ -736,86 +987,113 @@ class Misc(commands.Cog):
                     "candidate_count": 1,
                     "temperature": temperature,
                     "max_output_tokens": 8192,
-                }
+                },
             )
 
             if not response.candidates or not response.candidates[0].content:
-                await status_msg.edit(content="❌ Failed to generate image. Please try again.")
+                await status_msg.edit(
+                    content="❌ Failed to generate image. Please try again."
+                )
                 return
 
             # Check for safety issues
             if response.candidates[0].finish_reason == "IMAGE_SAFETY":
-                await status_msg.edit(content="❌ Image generation blocked by safety filters. Please try a different prompt.")
+                await status_msg.edit(
+                    content="❌ Image generation blocked by safety filters. Please try a different prompt."
+                )
                 return
 
             # Process and send generated images
             images_sent = 0
             for index, part in enumerate(response.candidates[0].content.parts):
-                if hasattr(part, 'inline_data') and part.inline_data:
+                if hasattr(part, "inline_data") and part.inline_data:
                     # Create filename with timestamp
                     timestamp = datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
                     filename = f"generated_image_{timestamp}_part{index}.png"
-                    
+
                     # Send the image
                     file = discord.File(
-                        fp=io.BytesIO(part.inline_data.data),
-                        filename=filename
+                        fp=io.BytesIO(part.inline_data.data), filename=filename
                     )
-                    
+
                     await ctx.send(
                         f"🎨 **Generated Image {index + 1}**\nPrompt: *{prompt}*",
-                        file=file
+                        file=file,
                     )
                     images_sent += 1
 
             if images_sent > 0:
-                await status_msg.edit(content=f"✅ Successfully generated {images_sent} image(s)!")
+                await status_msg.edit(
+                    content=f"✅ Successfully generated {images_sent} image(s)!"
+                )
             else:
-                await status_msg.edit(content="❌ No images were generated. Please try again.")
+                await status_msg.edit(
+                    content="❌ No images were generated. Please try again."
+                )
 
         except Exception as e:
             logging.error(f"Error generating image: {e}")
             await status_msg.edit(content=f"❌ Error generating image: {str(e)[:100]}")
 
-    @commands.slash_command(name="edit_image", description="Edit an existing image using AI")
+    @commands.slash_command(
+        name="edit_image", description="Edit an existing image using AI"
+    )
     async def edit_image(self, ctx, prompt: str, temperature: float = 0.7):
         """Edit an image using Gemini AI. Attach an image to your message first."""
         if not self._gemini_api_configured:
-            await ctx.respond("❌ Image editing is not available. Please check the bot configuration.", ephemeral=True)
+            await ctx.respond(
+                "❌ Image editing is not available. Please check the bot configuration.",
+                ephemeral=True,
+            )
             return
 
         # Check if there's an image attachment
         if not ctx.message.attachments:
-            await ctx.respond("❌ Please attach an image to edit. Reply to this message with an image attachment.", ephemeral=True)
+            await ctx.respond(
+                "❌ Please attach an image to edit. Reply to this message with an image attachment.",
+                ephemeral=True,
+            )
             return
 
         image_attachment = ctx.message.attachments[0]
-        
+
         # Validate image
-        if not image_attachment.content_type or not image_attachment.content_type.startswith('image/'):
+        if (
+            not image_attachment.content_type
+            or not image_attachment.content_type.startswith("image/")
+        ):
             await ctx.respond("❌ Please attach a valid image file.", ephemeral=True)
             return
 
         if image_attachment.size > 10 * 1024 * 1024:  # 10MB limit
-            await ctx.respond("❌ Image file is too large. Please use an image smaller than 10MB.", ephemeral=True)
+            await ctx.respond(
+                "❌ Image file is too large. Please use an image smaller than 10MB.",
+                ephemeral=True,
+            )
             return
 
         # Check temperature limits
         if temperature < 0.0 or temperature > 1.2:
-            await ctx.respond("❌ Temperature must be between 0.0 and 1.2", ephemeral=True)
+            await ctx.respond(
+                "❌ Temperature must be between 0.0 and 1.2", ephemeral=True
+            )
             return
 
         # Send initial status message
-        status_msg = await ctx.respond(f"⌛ Editing image with prompt: **{prompt}**... This may take a few minutes.")
+        status_msg = await ctx.respond(
+            f"⌛ Editing image with prompt: **{prompt}**... This may take a few minutes."
+        )
 
         try:
             # Download the image
             async with aiohttp.ClientSession() as session:
                 async with session.get(image_attachment.url) as response:
                     if response.status != 200:
-                        await status_msg.edit(content="❌ Failed to download the image. Please try again.")
+                        await status_msg.edit(
+                            content="❌ Failed to download the image. Please try again."
+                        )
                         return
-                    
+
                     image_data = await response.read()
 
             # Get the model for image generation
@@ -823,8 +1101,10 @@ class Misc(commands.Cog):
             model = genai.GenerativeModel(model_name=model_name)
 
             # Create the prompt with image
-            image_part = types.Part.from_bytes(data=image_data, mime_type=image_attachment.content_type)
-            
+            image_part = types.Part.from_bytes(
+                data=image_data, mime_type=image_attachment.content_type
+            )
+
             # Generate the edited image
             response = await model.generate_content_async(
                 contents=[prompt, image_part],
@@ -833,82 +1113,104 @@ class Misc(commands.Cog):
                     "candidate_count": 1,
                     "temperature": temperature,
                     "max_output_tokens": 8192,
-                }
+                },
             )
 
             if not response.candidates or not response.candidates[0].content:
-                await status_msg.edit(content="❌ Failed to edit image. Please try again.")
+                await status_msg.edit(
+                    content="❌ Failed to edit image. Please try again."
+                )
                 return
 
             # Check for safety issues
             if response.candidates[0].finish_reason == "IMAGE_SAFETY":
-                await status_msg.edit(content="❌ Image editing blocked by safety filters. Please try a different prompt.")
+                await status_msg.edit(
+                    content="❌ Image editing blocked by safety filters. Please try a different prompt."
+                )
                 return
 
             # Process and send edited images
             images_sent = 0
             for index, part in enumerate(response.candidates[0].content.parts):
-                if hasattr(part, 'inline_data') and part.inline_data:
+                if hasattr(part, "inline_data") and part.inline_data:
                     # Create filename with timestamp
                     timestamp = datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
                     filename = f"edited_image_{timestamp}_part{index}.png"
-                    
+
                     # Send the edited image
                     file = discord.File(
-                        fp=io.BytesIO(part.inline_data.data),
-                        filename=filename
+                        fp=io.BytesIO(part.inline_data.data), filename=filename
                     )
-                    
+
                     await ctx.send(
                         f"🎨 **Edited Image {index + 1}**\nPrompt: *{prompt}*",
-                        file=file
+                        file=file,
                     )
                     images_sent += 1
 
             if images_sent > 0:
-                await status_msg.edit(content=f"✅ Successfully edited {images_sent} image(s)!")
+                await status_msg.edit(
+                    content=f"✅ Successfully edited {images_sent} image(s)!"
+                )
             else:
-                await status_msg.edit(content="❌ No edited images were generated. Please try again.")
+                await status_msg.edit(
+                    content="❌ No edited images were generated. Please try again."
+                )
 
         except Exception as e:
             logging.error(f"Error editing image: {e}")
             await status_msg.edit(content=f"❌ Error editing image: {str(e)[:100]}")
 
-    @commands.slash_command(name="image_help", description="Show help for image generation commands")
+    @commands.slash_command(
+        name="image_help", description="Show help for image generation commands"
+    )
     async def image_help(self, ctx):
         """Show help information for image generation commands."""
         embed = discord.Embed(
             title="🎨 Image Generation Commands",
             description="Generate and edit images using AI without needing the AI to use tools!",
-            color=0x00ff00
+            color=0x00FF00,
         )
         
         embed.add_field(
             name="/generate_image",
             value="Generate a new image from a text prompt\n**Usage:** `/generate_image <prompt> [temperature]`\n**Example:** `/generate_image a cute robot playing guitar`",
-            inline=False
+            inline=False,
         )
         
         embed.add_field(
-            name="/edit_image", 
+            name="/edit_image",
             value="Edit an existing image. Attach an image first!\n**Usage:** `/edit_image <prompt> [temperature]`\n**Example:** `/edit_image add a hat` (with image attached)",
-            inline=False
+            inline=False,
+        )
+        
+        embed.add_field(
+            name="/auto_image",
+            value="Toggle automatic image generation mode (Admin only)\n**Usage:** `/auto_image [true/false]`\n**Effect:** Jakey automatically generates images for simple requests",
+            inline=False,
+        )
+        
+        embed.add_field(
+            name="🤖 Auto-Generation Mode",
+            value="When enabled, Jakey will automatically detect image requests and generate images instantly!\n**Example:** Say 'draw me a cat' and Jakey will generate it automatically.",
+            inline=False,
         )
         
         embed.add_field(
             name="Temperature",
             value="Controls creativity (0.0 = focused, 1.2 = very creative)\n**Default:** 0.7",
-            inline=False
+            inline=False,
         )
         
         embed.add_field(
             name="Tips",
-            value="• Be specific in your prompts\n• For editing, keep prompts simple\n• Images are generated in PNG format\n• Maximum file size: 10MB",
-            inline=False
+            value="• Be specific in your prompts\n• For editing, keep prompts simple\n• Images are generated in PNG format\n• Maximum file size: 10MB\n• Auto-generation works best with detailed prompts",
+            inline=False,
         )
         
         embed.set_footer(text="Powered by Gemini AI")
         await ctx.respond(embed=embed, ephemeral=True)
+
 
 def setup(bot):
     bot.add_cog(Misc(bot))
