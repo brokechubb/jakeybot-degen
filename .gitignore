@@ -98,5 +98,7 @@ Thumbs.db
 
 # Custom bot files
 emojis.yaml
-.clinerules/
+
+# Local startup scripts
 jakey.sh
+.clinerules/

@@ -10,7 +10,6 @@ All notable changes to JakeyBot will be documented in this file.
 - **Multiple Personality Modes**: Jakey now supports various response styles (troll, degenerate_gambling, hypebeast, etc.)
 - **Advanced Error Handling**: User-friendly error messages and fallback responses
 - **Performance Optimizations**: Better temperature, token limits, and response handling
-- **Startup Script**: `jakey.sh` for convenient bot startup
 
 ### 🔧 Changed
 
@@ -65,14 +64,12 @@ All notable changes to JakeyBot will be documented in this file.
 **What Changed**:
 
 - Configuration is now in single `assistants.yaml` file
-- Startup process simplified with `jakey.sh` script
 - Project structure cleaned up for better maintainability
 
 **What You Need to Do**:
 
 1. **Nothing!** The bot will work exactly as before
-2. **Optional**: Use `./jakey.sh` for easier startup
-3. **Optional**: Customize Jakey's personality in `assistants.yaml`
+2. **Optional**: Customize Jakey's personality in `assistants.yaml`
 
 ---
 

@@ -256,14 +256,9 @@ python scripts/security_check.py
 ### Quick Security Check
 
 ```bash
-# Scan for sensitive data
-python scripts/security_check.py
-
-# Secure environment setup
-python scripts/setup_env.py
-
-# Manage default tools for all users
-python scripts/set_default_tool.py <tool_name>
+# Configure API keys securely in dev.env
+# The bot includes built-in security features
+# No additional scripts required
 ```
 
 ### Protection Features
@@ -304,7 +299,8 @@ python --version  # Should show Python 3.11.x
 pip install -r requirements.txt
 
 # Configure dev.env from template
-python scripts/setup_env.py
+cp dev.env.template dev.env
+# Edit dev.env with your API keys
 ```
 
 ## 📚 Documentation
@@ -314,17 +310,16 @@ python scripts/setup_env.py
 - **[TOOLS.md](./docs/TOOLS.md)** - Tool documentation
 - **[FAQ.md](./docs/FAQ.md)** - Frequently asked questions
 - **[MEMORY_QUICKSTART.md](./docs/MEMORY_QUICKSTART.md)** - Memory tool guide
-- **[Scripts README](./scripts/README.md)** - Management scripts guide
 - **[🚀 DISCORD_QUICKSTART.md](./docs/DISCORD_QUICKSTART.md)** - **5-minute quick start for Discord users**
 - **[🎮 DISCORD_USER_GUIDE.md](./docs/DISCORD_USER_GUIDE.md)** - **Complete user guide for Discord users**
 
 ## 🎯 Get Started
 
 1. **Install Python 3.11** (required for compatibility)
-2. **Set up securely** with `python scripts/setup_env.py`
+2. **Set up environment** by copying `dev.env.template` to `dev.env`
 3. **Configure API keys** in `dev.env`
-4. **Verify security** with `python scripts/security_check.py`
-5. **Set up Memory tool** with `python scripts/setup_memory.py`
+4. **Install dependencies** with `pip install -r requirements.txt`
+5. **Start the bot** with `python main.py`
 6. **Start chatting** with Jakey's unique personality!
 
 ## 🆘 **Troubleshooting**
@@ -344,8 +339,8 @@ source venv/bin/activate
 ### **Common Issues**
 
 - **audioop module errors** → Use Python 3.11
-- **Tool not working** → Check with `python scripts/manage_tools.py`
-- **Memory not working** → Run `python scripts/setup_memory.py`
+- **Tool not working** → Check bot logs and configuration
+- **Memory not working** → Check database connection with `/memory_debug`
 - **Reminders not working** → Check database connection with `/memory_debug`
 
 ---
