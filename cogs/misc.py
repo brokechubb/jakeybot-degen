@@ -1,17 +1,22 @@
+import logging
+import discord
 from discord.ext import commands
 from discord import Member, DiscordException
+import yaml
+import os
+from datetime import datetime, timedelta
+from core.services.helperfunctions import HelperFunctions
+from core.ai.history import History
+import motor.motor_asyncio
 from os import environ
-import logging
-
-import discord
-import logging
+import google.genai as genai
+from google.genai import types
+import aiohttp
+import io
 import requests
-import datetime
 import time
 import asyncio
 import re
-import motor.motor_asyncio
-from core.ai.history import History
 
 class Misc(commands.Cog):
     """Use my other utilities here that can help make your server more active and entertaining"""
@@ -46,6 +51,22 @@ class Misc(commands.Cog):
             logging.info("Reminder checker started")
         else:
             logging.warning("Reminder checker not started - no database connection")
+
+        # Check if Gemini API is configured
+        self._gemini_api_configured = False
+        if hasattr(bot, "_gemini_api_configured") and bot._gemini_api_configured:
+            self._gemini_api_configured = True
+            logging.info("Misc cog detected globally configured Gemini API.")
+        else:
+            # Try to configure locally
+            api_key = environ.get("GEMINI_API_KEY")
+            if api_key:
+                try:
+                    genai.configure(api_key=api_key)
+                    self._gemini_api_configured = True
+                    logging.info("Misc cog configured Gemini API locally.")
+                except Exception as e:
+                    logging.warning(f"Failed to configure Gemini API locally: {e}")
 
     async def _check_reminders(self):
         await self.bot.wait_until_ready()
@@ -111,21 +132,21 @@ class Misc(commands.Cog):
             await ctx.respond(f"❌ Failed to set reminder: {str(e)}")
             logging.error("Error setting reminder: %s", e)
 
-    def _parse_time_input(self, time_input: str) -> datetime.datetime:
-        now = datetime.datetime.now()
+    def _parse_time_input(self, time_input: str) -> datetime:
+        now = datetime.now()
         time_input = time_input.lower()
 
         if time_input.endswith("m"):
             minutes = int(time_input[:-1])
-            return now + datetime.timedelta(minutes=minutes)
+            return now + timedelta(minutes=minutes)
         elif time_input.endswith("h"):
             hours = int(time_input[:-1])
-            return now + datetime.timedelta(hours=hours)
+            return now + timedelta(hours=hours)
         elif time_input.endswith("d"):
             days = int(time_input[:-1])
-            return now + datetime.timedelta(days=days)
+            return now + timedelta(days=days)
         elif "tomorrow" in time_input:
-            tomorrow = now + datetime.timedelta(days=1)
+            tomorrow = now + timedelta(days=1)
             if " " in time_input:
                 time_part = time_input.split(" ", 1)[1]
                 try:
@@ -156,7 +177,7 @@ class Misc(commands.Cog):
             # If the target time is already past today, set for tomorrow
             target_time = now.replace(hour=hour, minute=0, second=0, microsecond=0)
             if target_time <= now:
-                target_time += datetime.timedelta(days=1)
+                target_time += timedelta(days=1)
             return target_time
 
         return None
@@ -175,7 +196,7 @@ class Misc(commands.Cog):
     )
     async def current_time_slash(self, ctx):
         """Displays the current time and DST status."""
-        now = datetime.datetime.now()
+        now = datetime.now()
         dst_status = "active" if time.localtime().tm_isdst else "inactive"
         await ctx.respond(
             f"The current time is {now.strftime('%Y-%m-%d %H:%M:%S %Z%z')}. Daylight Saving Time is currently {dst_status}."
@@ -186,7 +207,7 @@ class Misc(commands.Cog):
     )
     async def current_time_prefix(self, ctx):
         """Displays the current time and DST status."""
-        now = datetime.datetime.now()
+        now = datetime.now()
         dst_status = "active" if time.localtime().tm_isdst else "inactive"
         await ctx.send(
             f"The current time is {now.strftime('%Y-%m-%d %H:%M:%S %Z%z')}. Daylight Saving Time is currently {dst_status}."
@@ -686,6 +707,208 @@ class Misc(commands.Cog):
             f"**Tool Timeouts:**\n" + "\n".join(timeout_info) + "\n"
             f"• **Default**: {status['tool_timeouts']['default'] // 60}m {status['tool_timeouts']['default'] % 60}s"
         )
+
+    @commands.slash_command(name="generate_image", description="Generate an image using AI")
+    async def generate_image(self, ctx, prompt: str, temperature: float = 0.7):
+        """Generate an image using Gemini AI without needing the AI to use tools."""
+        if not self._gemini_api_configured:
+            await ctx.respond("❌ Image generation is not available. Please check the bot configuration.", ephemeral=True)
+            return
+
+        # Check temperature limits
+        if temperature < 0.0 or temperature > 1.2:
+            await ctx.respond("❌ Temperature must be between 0.0 and 1.2", ephemeral=True)
+            return
+
+        # Send initial status message
+        status_msg = await ctx.respond(f"⌛ Generating image with prompt: **{prompt}**... This may take a few minutes.")
+
+        try:
+            # Get the model for image generation
+            model_name = environ.get("GEMINI_MODEL_NAME", "gemini-1.5-flash")
+            model = genai.GenerativeModel(model_name=model_name)
+
+            # Generate the image
+            response = await model.generate_content_async(
+                contents=prompt,
+                generation_config={
+                    "response_modalities": ["Text", "Image"],
+                    "candidate_count": 1,
+                    "temperature": temperature,
+                    "max_output_tokens": 8192,
+                }
+            )
+
+            if not response.candidates or not response.candidates[0].content:
+                await status_msg.edit(content="❌ Failed to generate image. Please try again.")
+                return
+
+            # Check for safety issues
+            if response.candidates[0].finish_reason == "IMAGE_SAFETY":
+                await status_msg.edit(content="❌ Image generation blocked by safety filters. Please try a different prompt.")
+                return
+
+            # Process and send generated images
+            images_sent = 0
+            for index, part in enumerate(response.candidates[0].content.parts):
+                if hasattr(part, 'inline_data') and part.inline_data:
+                    # Create filename with timestamp
+                    timestamp = datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
+                    filename = f"generated_image_{timestamp}_part{index}.png"
+                    
+                    # Send the image
+                    file = discord.File(
+                        fp=io.BytesIO(part.inline_data.data),
+                        filename=filename
+                    )
+                    
+                    await ctx.send(
+                        f"🎨 **Generated Image {index + 1}**\nPrompt: *{prompt}*",
+                        file=file
+                    )
+                    images_sent += 1
+
+            if images_sent > 0:
+                await status_msg.edit(content=f"✅ Successfully generated {images_sent} image(s)!")
+            else:
+                await status_msg.edit(content="❌ No images were generated. Please try again.")
+
+        except Exception as e:
+            logging.error(f"Error generating image: {e}")
+            await status_msg.edit(content=f"❌ Error generating image: {str(e)[:100]}")
+
+    @commands.slash_command(name="edit_image", description="Edit an existing image using AI")
+    async def edit_image(self, ctx, prompt: str, temperature: float = 0.7):
+        """Edit an image using Gemini AI. Attach an image to your message first."""
+        if not self._gemini_api_configured:
+            await ctx.respond("❌ Image editing is not available. Please check the bot configuration.", ephemeral=True)
+            return
+
+        # Check if there's an image attachment
+        if not ctx.message.attachments:
+            await ctx.respond("❌ Please attach an image to edit. Reply to this message with an image attachment.", ephemeral=True)
+            return
+
+        image_attachment = ctx.message.attachments[0]
+        
+        # Validate image
+        if not image_attachment.content_type or not image_attachment.content_type.startswith('image/'):
+            await ctx.respond("❌ Please attach a valid image file.", ephemeral=True)
+            return
+
+        if image_attachment.size > 10 * 1024 * 1024:  # 10MB limit
+            await ctx.respond("❌ Image file is too large. Please use an image smaller than 10MB.", ephemeral=True)
+            return
+
+        # Check temperature limits
+        if temperature < 0.0 or temperature > 1.2:
+            await ctx.respond("❌ Temperature must be between 0.0 and 1.2", ephemeral=True)
+            return
+
+        # Send initial status message
+        status_msg = await ctx.respond(f"⌛ Editing image with prompt: **{prompt}**... This may take a few minutes.")
+
+        try:
+            # Download the image
+            async with aiohttp.ClientSession() as session:
+                async with session.get(image_attachment.url) as response:
+                    if response.status != 200:
+                        await status_msg.edit(content="❌ Failed to download the image. Please try again.")
+                        return
+                    
+                    image_data = await response.read()
+
+            # Get the model for image generation
+            model_name = environ.get("GEMINI_MODEL_NAME", "gemini-1.5-flash")
+            model = genai.GenerativeModel(model_name=model_name)
+
+            # Create the prompt with image
+            image_part = types.Part.from_bytes(data=image_data, mime_type=image_attachment.content_type)
+            
+            # Generate the edited image
+            response = await model.generate_content_async(
+                contents=[prompt, image_part],
+                generation_config={
+                    "response_modalities": ["Text", "Image"],
+                    "candidate_count": 1,
+                    "temperature": temperature,
+                    "max_output_tokens": 8192,
+                }
+            )
+
+            if not response.candidates or not response.candidates[0].content:
+                await status_msg.edit(content="❌ Failed to edit image. Please try again.")
+                return
+
+            # Check for safety issues
+            if response.candidates[0].finish_reason == "IMAGE_SAFETY":
+                await status_msg.edit(content="❌ Image editing blocked by safety filters. Please try a different prompt.")
+                return
+
+            # Process and send edited images
+            images_sent = 0
+            for index, part in enumerate(response.candidates[0].content.parts):
+                if hasattr(part, 'inline_data') and part.inline_data:
+                    # Create filename with timestamp
+                    timestamp = datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
+                    filename = f"edited_image_{timestamp}_part{index}.png"
+                    
+                    # Send the edited image
+                    file = discord.File(
+                        fp=io.BytesIO(part.inline_data.data),
+                        filename=filename
+                    )
+                    
+                    await ctx.send(
+                        f"🎨 **Edited Image {index + 1}**\nPrompt: *{prompt}*",
+                        file=file
+                    )
+                    images_sent += 1
+
+            if images_sent > 0:
+                await status_msg.edit(content=f"✅ Successfully edited {images_sent} image(s)!")
+            else:
+                await status_msg.edit(content="❌ No edited images were generated. Please try again.")
+
+        except Exception as e:
+            logging.error(f"Error editing image: {e}")
+            await status_msg.edit(content=f"❌ Error editing image: {str(e)[:100]}")
+
+    @commands.slash_command(name="image_help", description="Show help for image generation commands")
+    async def image_help(self, ctx):
+        """Show help information for image generation commands."""
+        embed = discord.Embed(
+            title="🎨 Image Generation Commands",
+            description="Generate and edit images using AI without needing the AI to use tools!",
+            color=0x00ff00
+        )
+        
+        embed.add_field(
+            name="/generate_image",
+            value="Generate a new image from a text prompt\n**Usage:** `/generate_image <prompt> [temperature]`\n**Example:** `/generate_image a cute robot playing guitar`",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="/edit_image", 
+            value="Edit an existing image. Attach an image first!\n**Usage:** `/edit_image <prompt> [temperature]`\n**Example:** `/edit_image add a hat` (with image attached)",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="Temperature",
+            value="Controls creativity (0.0 = focused, 1.2 = very creative)\n**Default:** 0.7",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="Tips",
+            value="• Be specific in your prompts\n• For editing, keep prompts simple\n• Images are generated in PNG format\n• Maximum file size: 10MB",
+            inline=False
+        )
+        
+        embed.set_footer(text="Powered by Gemini AI")
+        await ctx.respond(embed=embed, ephemeral=True)
 
 def setup(bot):
     bot.add_cog(Misc(bot))
