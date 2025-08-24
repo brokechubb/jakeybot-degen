@@ -131,51 +131,67 @@ class Tool(ToolManifest):
                 if self.discord_ctx.guild
                 else self.discord_ctx.author.id
             )
+            current_user_id = self.discord_ctx.author.id
 
             # Limit the search results
             limit = min(max(1, limit), 10)
 
-            # First try to search for facts
-            facts = await self.history_db.search_facts(guild_id, query, limit=limit)
+            # FIRST PRIORITY: Search for facts created by the current user
+            user_facts = await self.history_db.search_facts_by_user(
+                guild_id, current_user_id, query, limit=limit
+            )
 
-            # If no facts found, try getting recent facts as a fallback
-            if not facts:
-                facts = await self.history_db.get_recent_facts(guild_id, limit=limit)
-                if facts:
-                    return (
-                        f"🤔 I couldn't find facts matching '{query}', but here are some recent things I remember:\n"
-                        + "\n".join(f"- {fact}" for fact in facts)
-                    )
+            # SECOND PRIORITY: If no user-specific facts found, search all facts
+            all_facts = []
+            if not user_facts:
+                all_facts = await self.history_db.search_facts(guild_id, query, limit=limit)
 
-            # If still no facts, try getting facts by the current user
-            if not facts:
-                user_id = self.discord_ctx.author.id
-                facts = await self.history_db.get_facts_by_user(
-                    guild_id, user_id, limit=limit
+            # THIRD PRIORITY: If still no facts, get recent facts by the current user
+            recent_user_facts = []
+            if not user_facts and not all_facts:
+                recent_user_facts = await self.history_db.get_facts_by_user(
+                    guild_id, current_user_id, limit=limit
                 )
-                if facts:
-                    return (
-                        f"🤔 I couldn't find facts matching '{query}', but here are some things you've told me:\n"
-                        + "\n".join(f"- {fact}" for fact in facts)
-                    )
 
-            if not facts:
+            # FOURTH PRIORITY: If still nothing, get recent facts from anyone
+            recent_all_facts = []
+            if not user_facts and not all_facts and not recent_user_facts:
+                recent_all_facts = await self.history_db.get_recent_facts(guild_id, limit=limit)
+
+            # Determine which facts to return and format the response
+            if user_facts:
+                # User-specific facts found - this is the best case
+                facts = user_facts
+                source_info = "your personal memory"
+            elif all_facts:
+                # General facts found
+                facts = all_facts
+                source_info = "general memory"
+            elif recent_user_facts:
+                # Recent user facts as fallback
+                facts = recent_user_facts
+                source_info = "your recent conversations"
+            elif recent_all_facts:
+                # Recent general facts as last resort
+                facts = recent_all_facts
+                source_info = "recent conversations"
+            else:
                 return f"🤔 I couldn't find any facts matching '{query}' in my memory"
 
             # Format the response
             if len(facts) == 1:
-                response = f"📝 Here's what I remember about '{query}':\n**{facts[0]}**"
+                response = f"📝 Here's what I remember about '{query}' from {source_info}:\n**{facts[0]}**"
             else:
-                response = f"📝 Here are the facts I found about '{query}':\n"
+                response = f"📝 Here are the facts I found about '{query}' from {source_info}:\n"
                 for i, fact in enumerate(facts, 1):
                     response += f"{i}. **{fact}**\n"
 
             # Return the facts in a natural format for the AI to use
             if len(facts) == 1:
-                return f"I found this information in my memory: {facts[0]}"
+                return f"I found this information in my memory from {source_info}: {facts[0]}"
             else:
                 facts_text = "; ".join(facts)
-                return f"I found these details in my memory: {facts_text}"
+                return f"I found these details in my memory from {source_info}: {facts_text}"
 
         except Exception as e:
             logging.error(f"Error recalling facts: {e}")
@@ -193,6 +209,7 @@ class Tool(ToolManifest):
                 if self.discord_ctx.guild
                 else self.discord_ctx.author.id
             )
+            current_user_id = self.discord_ctx.author.id
 
             # Limit the results
             limit = min(max(1, limit), 20)
@@ -200,7 +217,7 @@ class Tool(ToolManifest):
             # Get facts from the knowledge base
             knowledge_collection = self.history_db._db[f"knowledge_{guild_id}"]
 
-            # Build query
+            # Build query - prioritize current user's facts
             query = {}
             if category:
                 query["fact_text"] = {
@@ -208,14 +225,33 @@ class Tool(ToolManifest):
                     "$options": "i",
                 }
 
-            # Get facts
+            # Get facts - prioritize current user
             facts = []
-            async for fact in knowledge_collection.find(query).limit(limit):
+            
+            # First get facts by current user
+            user_query = query.copy()
+            user_query["user_id"] = current_user_id
+            
+            async for fact in knowledge_collection.find(user_query).limit(limit):
                 if fact and (
                     fact.get("expires_at") is None
                     or fact["expires_at"] > datetime.now(timezone.utc)
                 ):
                     facts.append(fact["fact_text"])
+            
+            # If we need more facts and category is specified, get other users' facts in that category
+            if len(facts) < limit and category:
+                other_query = query.copy()
+                other_query["user_id"] = {"$ne": current_user_id}
+                
+                async for fact in knowledge_collection.find(other_query).limit(limit - len(facts)):
+                    if fact and (
+                        fact.get("expires_at") is None
+                        or fact["expires_at"] > datetime.now(timezone.utc)
+                    ):
+                        fact_text = fact["fact_text"]
+                        if fact_text not in facts:  # Avoid duplicates
+                            facts.append(fact_text)
 
             if not facts:
                 if category:
@@ -225,9 +261,9 @@ class Tool(ToolManifest):
 
             # Format the response
             if category:
-                response = f"📋 Facts in category '{category}':\n"
+                response = f"📋 Facts in category '{category}' (prioritizing your facts):\n"
             else:
-                response = f"📋 All facts in my memory:\n"
+                response = f"📋 All facts in my memory (prioritizing your facts):\n"
 
             for i, fact in enumerate(facts, 1):
                 response += f"{i}. {fact}\n"
@@ -245,3 +281,87 @@ class Tool(ToolManifest):
         except Exception as e:
             logging.error(f"Error listing facts: {e}")
             return f"❌ Failed to list facts: {str(e)}"
+
+    async def _tool_function_my_facts(self, limit: int = 10):
+        """List facts created by the current user"""
+        if not self.history_db:
+            return "❌ Memory system is not available at the moment"
+
+        try:
+            # Determine guild/user ID
+            guild_id = (
+                self.discord_ctx.guild.id
+                if self.discord_ctx.guild
+                else self.discord_ctx.author.id
+            )
+            current_user_id = self.discord_ctx.author.id
+
+            # Limit the results
+            limit = min(max(1, limit), 20)
+
+            # Get facts by current user
+            facts = await self.history_db.get_facts_by_user(
+                guild_id, current_user_id, limit=limit
+            )
+
+            if not facts:
+                return "🤔 You haven't told me any facts to remember yet."
+
+            # Format the response
+            response = f"📋 Facts you've told me to remember:\n"
+            for i, fact in enumerate(facts, 1):
+                response += f"{i}. {fact}\n"
+
+            if len(facts) == limit:
+                response += f"\n... and more (showing first {limit})"
+
+            # Return the facts in a natural format for the AI to use
+            if len(facts) == 1:
+                return f"You've told me one fact: {facts[0]}"
+            else:
+                facts_text = "; ".join(facts)
+                return f"You've told me {len(facts)} facts: {facts_text}"
+
+        except Exception as e:
+            logging.error(f"Error listing user facts: {e}")
+            return f"❌ Failed to list your facts: {str(e)}"
+
+    async def _tool_function_forget_fact(self, query: str):
+        """Forget a specific fact (only if created by the current user)"""
+        if not self.history_db:
+            return "❌ Memory system is not available at the moment"
+
+        try:
+            # Determine guild/user ID
+            guild_id = (
+                self.discord_ctx.guild.id
+                if self.discord_ctx.guild
+                else self.discord_ctx.author.id
+            )
+            current_user_id = self.discord_ctx.author.id
+
+            # Search for facts by current user that match the query
+            user_facts = await self.history_db.search_facts_by_user(
+                guild_id, current_user_id, query, limit=5
+            )
+
+            if not user_facts:
+                return f"🤔 I couldn't find any facts matching '{query}' that you created."
+
+            # For now, just return the facts found (actual deletion would need to be implemented)
+            if len(user_facts) == 1:
+                return f"📝 I found this fact you created: **{user_facts[0]}**\n\n*Note: Fact deletion is not yet implemented, but I can see what you want me to forget.*"
+            else:
+                response = f"📝 I found these facts you created matching '{query}':\n"
+                for i, fact in enumerate(user_facts, 1):
+                    response += f"{i}. **{fact}**\n"
+                response += "\n*Note: Fact deletion is not yet implemented, but I can see what you want me to forget.*"
+                return response
+
+        except Exception as e:
+            logging.error(f"Error searching for facts to forget: {e}")
+            return f"❌ Failed to search for facts: {str(e)}"
+
+
+def setup(bot):
+    bot.add_cog(Tool(bot))

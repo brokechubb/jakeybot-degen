@@ -55,11 +55,39 @@ class ToolManifest:
                             "description": "Optional category to filter facts by",
                         },
                         "limit": {
+                            "type": "string",
+                            "description": "Maximum number of facts to return (default: 10, max: 20)",
+                        },
+                    },
+                    "required": [],
+                },
+            },
+            {
+                "name": "my_facts",
+                "description": "List facts created by the current user",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "limit": {
                             "type": "integer",
                             "description": "Maximum number of facts to return (default: 10, max: 20)",
                         },
                     },
                     "required": [],
+                },
+            },
+            {
+                "name": "forget_fact",
+                "description": "Search for facts created by the current user that match a query (for potential deletion)",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "type": "string",
+                            "description": "The search query to find facts you want to forget",
+                        },
+                    },
+                    "required": ["query"],
                 },
             },
         ]

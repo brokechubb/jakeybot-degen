@@ -11,7 +11,7 @@ All notable changes to JakeyBot will be documented in this file.
 - **Advanced Error Handling**: User-friendly error messages and fallback responses
 - **Performance Optimizations**: Better temperature, token limits, and response handling
 - **Persistent Engagement System**: Engagement settings now survive bot restarts with MongoDB storage
-- **Enhanced Engagement Features**: 
+- **Enhanced Engagement Features**:
   - MongoDB persistence for engagement settings
   - Configurable engagement parameters via YAML
   - Message cooldown system to prevent spam

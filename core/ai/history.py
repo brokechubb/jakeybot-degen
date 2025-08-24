@@ -564,3 +564,91 @@ class History:
         ):
             leaderboard.append(entry)
         return leaderboard
+
+    async def search_facts_by_user(self, guild_id: int, user_id: int, query: str, limit: int = 5):
+        """Search for relevant facts created by a specific user"""
+        guild_id = self._normalize_guild_id(guild_id)
+        collection_name = f"knowledge_{guild_id}"
+
+        if collection_name not in await self._db.list_collection_names():
+            return []
+
+        knowledge_collection = self._db[collection_name]
+        results = []
+
+        try:
+            # Create text index if it doesn't exist
+            if guild_id not in self._knowledge_indexes:
+                try:
+                    await knowledge_collection.create_index([("fact_text", "text")])
+                    self._knowledge_indexes.add(guild_id)
+                except Exception as e:
+                    logging.warning(
+                        f"Failed to create text index for guild {guild_id}: {e}"
+                    )
+
+            # Try text search first (user-specific)
+            try:
+                async for fact in knowledge_collection.find(
+                    {"$text": {"$search": query}, "user_id": user_id}
+                ).limit(limit):
+                    if fact and (
+                        fact.get("expires_at") is None
+                        or fact["expires_at"] > datetime.now(timezone.utc)
+                    ):
+                        results.append(fact["fact_text"])
+            except Exception as e:
+                logging.warning(f"Text search failed for user {user_id} in guild {guild_id}: {e}")
+
+            # If text search didn't return enough results, try regex search
+            if len(results) < limit:
+                try:
+                    # Create a regex pattern for case-insensitive search
+                    regex_pattern = re.compile(re.escape(query), re.IGNORECASE)
+
+                    async for fact in knowledge_collection.find(
+                        {"fact_text": {"$regex": regex_pattern}, "user_id": user_id}
+                    ).limit(limit - len(results)):
+                        if fact and (
+                            fact.get("expires_at") is None
+                            or fact["expires_at"] > datetime.now(timezone.utc)
+                        ):
+                            fact_text = fact["fact_text"]
+                            if fact_text not in results:  # Avoid duplicates
+                                results.append(fact_text)
+                except Exception as e:
+                    logging.warning(f"Regex search failed for user {user_id} in guild {guild_id}: {e}")
+
+            # If still not enough results, try partial word matching
+            if len(results) < limit:
+                try:
+                    words = query.lower().split()
+                    for word in words:
+                        if (
+                            len(word) > 2
+                        ):  # Only search for words longer than 2 characters
+                            word_pattern = re.compile(re.escape(word), re.IGNORECASE)
+
+                            async for fact in knowledge_collection.find(
+                                {"fact_text": {"$regex": word_pattern}, "user_id": user_id}
+                            ).limit(limit - len(results)):
+                                if fact and (
+                                    fact.get("expires_at") is None
+                                    or fact["expires_at"] > datetime.now(timezone.utc)
+                                ):
+                                    fact_text = fact["fact_text"]
+                                    if fact_text not in results:  # Avoid duplicates
+                                        results.append(fact_text)
+                                        if len(results) >= limit:
+                                            break
+                        if len(results) >= limit:
+                            break
+                except Exception as e:
+                    logging.warning(
+                        f"Partial word search failed for user {user_id} in guild {guild_id}: {e}"
+                    )
+
+        except Exception as e:
+            logging.error(f"User-specific search failed for guild {guild_id}, user {user_id}: {e}")
+
+        return results[:limit]
