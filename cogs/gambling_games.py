@@ -87,7 +87,10 @@ class GamblingGames(commands.Cog):
             model = genai.GenerativeModel(model_name=model_name) # Create model instance directly
             response = await model.generate_content_async( # Use async method
                 contents=prompt_text,
-                generation_config=types.GenerationConfig(temperature=0.7, max_output_tokens=4096)
+                generation_config={
+                    "temperature": 0.7,
+                    "max_output_tokens": 4096
+                }
             )
             
             # Extract JSON from the response text, handling potential markdown code blocks
