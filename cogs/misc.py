@@ -256,8 +256,12 @@ class Misc(commands.Cog):
                 reference=message,
             )
 
-            # Get the model for image generation
-            model_name = environ.get("GEMINI_MODEL_NAME", "gemini-1.5-flash")
+            # Get the model for image generation - use a model that supports image generation
+            model_name = environ.get("DEFAULT_GEMINI_IMAGE_GENERATION_MODEL", "gemini-1.5-flash-exp")
+            if not model_name or model_name == "gemini-model-id":
+                model_name = "gemini-1.5-flash-exp"  # Fallback to a model that supports image generation
+            
+            logging.info(f"Using auto-image generation model: {model_name}")
             model = genai.GenerativeModel(model_name=model_name)
 
             # Generate the image
@@ -1045,8 +1049,12 @@ class Misc(commands.Cog):
         )
 
         try:
-            # Get the model for image generation
-            model_name = environ.get("GEMINI_MODEL_NAME", "gemini-1.5-flash")
+            # Get the model for image generation - use a model that supports image generation
+            model_name = environ.get("DEFAULT_GEMINI_IMAGE_GENERATION_MODEL", "gemini-1.5-flash-exp")
+            if not model_name or model_name == "gemini-model-id":
+                model_name = "gemini-1.5-flash-exp"  # Fallback to a model that supports image generation
+            
+            logging.info(f"Using image generation model: {model_name}")
             model = genai.GenerativeModel(model_name=model_name)
 
             # Generate the image
@@ -1059,6 +1067,7 @@ class Misc(commands.Cog):
             )
 
             if not response.candidates or not response.candidates[0].content:
+                logging.warning(f"No candidates or content in response for prompt: {prompt}")
                 await status_msg.edit(
                     content="❌ Failed to generate image. Please try again."
                 )
@@ -1072,8 +1081,10 @@ class Misc(commands.Cog):
                 return
 
             # Process and send generated images
+            logging.info(f"Processing response with {len(response.candidates[0].content.parts)} parts")
             images_sent = 0
             for index, part in enumerate(response.candidates[0].content.parts):
+                logging.info(f"Part {index}: type={type(part)}, has_inline_data={hasattr(part, 'inline_data')}")
                 if hasattr(part, "inline_data") and part.inline_data:
                     # Create filename with timestamp
                     timestamp = datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
@@ -1164,8 +1175,12 @@ class Misc(commands.Cog):
 
                     image_data = await response.read()
 
-            # Get the model for image generation
-            model_name = environ.get("GEMINI_MODEL_NAME", "gemini-1.5-flash")
+            # Get the model for image generation - use a model that supports image generation
+            model_name = environ.get("DEFAULT_GEMINI_IMAGE_GENERATION_MODEL", "gemini-1.5-flash-exp")
+            if not model_name or model_name == "gemini-model-id":
+                model_name = "gemini-1.5-flash-exp"  # Fallback to a model that supports image generation
+            
+            logging.info(f"Using image editing model: {model_name}")
             model = genai.GenerativeModel(model_name=model_name)
 
             # Create the prompt with image
