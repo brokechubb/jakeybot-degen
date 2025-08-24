@@ -86,7 +86,7 @@ class GamblingGames(commands.Cog):
             model_name = environ.get("GEMINI_MODEL_NAME", "gemini-pro") # Use a default Gemini model
             model = genai.GenerativeModel(model_name=model_name) # Create model instance directly
             response = await model.generate_content_async( # Use async method
-                contents=[types.Part.from_text(prompt_text)],
+                contents=prompt_text,
                 generation_config=types.GenerationConfig(temperature=0.7, max_output_tokens=4096)
             )
             
