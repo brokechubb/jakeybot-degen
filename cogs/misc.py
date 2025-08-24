@@ -257,9 +257,9 @@ class Misc(commands.Cog):
             )
 
             # Get the model for image generation - use a model that supports image generation
-            model_name = environ.get("DEFAULT_GEMINI_IMAGE_GENERATION_MODEL", "gemini-1.5-flash-exp")
+            model_name = environ.get("DEFAULT_GEMINI_IMAGE_GENERATION_MODEL", "gemini-2.0-flash-preview-image-generation")
             if not model_name or model_name == "gemini-model-id":
-                model_name = "gemini-1.5-flash-exp"  # Fallback to a model that supports image generation
+                model_name = "gemini-2.0-flash-preview-image-generation"  # Fallback to a model that supports image generation
             
             logging.info(f"Using auto-image generation model: {model_name}")
             model = genai.GenerativeModel(model_name=model_name)
@@ -1050,9 +1050,9 @@ class Misc(commands.Cog):
 
         try:
             # Get the model for image generation - use a model that supports image generation
-            model_name = environ.get("DEFAULT_GEMINI_IMAGE_GENERATION_MODEL", "gemini-1.5-flash-exp")
+            model_name = environ.get("DEFAULT_GEMINI_IMAGE_GENERATION_MODEL", "gemini-2.0-flash-preview-image-generation")
             if not model_name or model_name == "gemini-model-id":
-                model_name = "gemini-1.5-flash-exp"  # Fallback to a model that supports image generation
+                model_name = "gemini-2.0-flash-preview-image-generation"  # Fallback to a model that supports image generation
             
             logging.info(f"Using image generation model: {model_name}")
             model = genai.GenerativeModel(model_name=model_name)
@@ -1176,9 +1176,9 @@ class Misc(commands.Cog):
                     image_data = await response.read()
 
             # Get the model for image generation - use a model that supports image generation
-            model_name = environ.get("DEFAULT_GEMINI_IMAGE_GENERATION_MODEL", "gemini-1.5-flash-exp")
+            model_name = environ.get("DEFAULT_GEMINI_IMAGE_GENERATION_MODEL", "gemini-2.0-flash-preview-image-generation")
             if not model_name or model_name == "gemini-model-id":
-                model_name = "gemini-1.5-flash-exp"  # Fallback to a model that supports image generation
+                model_name = "gemini-2.0-flash-preview-image-generation"  # Fallback to a model that supports image generation
             
             logging.info(f"Using image editing model: {model_name}")
             model = genai.GenerativeModel(model_name=model_name)
