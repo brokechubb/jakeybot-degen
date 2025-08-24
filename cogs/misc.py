@@ -1072,6 +1072,10 @@ class Misc(commands.Cog):
                     content="❌ Failed to generate image. Please try again."
                 )
                 return
+            
+            # Log response structure for debugging
+            logging.info(f"Response structure: candidates={len(response.candidates)}, content_parts={len(response.candidates[0].content.parts)}")
+            logging.info(f"First candidate finish_reason: {response.candidates[0].finish_reason}")
 
             # Check for safety issues
             if response.candidates[0].finish_reason == "IMAGE_SAFETY":
@@ -1086,20 +1090,31 @@ class Misc(commands.Cog):
             for index, part in enumerate(response.candidates[0].content.parts):
                 logging.info(f"Part {index}: type={type(part)}, has_inline_data={hasattr(part, 'inline_data')}")
                 if hasattr(part, "inline_data") and part.inline_data:
+                    logging.info(f"Part {index} inline_data: {part.inline_data}")
+                    logging.info(f"Part {index} mime_type: {part.inline_data.mime_type}")
+                    logging.info(f"Part {index} data length: {len(part.inline_data.data) if part.inline_data.data else 'None'}")
+                    
                     # Create filename with timestamp
                     timestamp = datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
                     filename = f"generated_image_{timestamp}_part{index}.png"
 
                     # Send the image
-                    file = discord.File(
-                        fp=io.BytesIO(part.inline_data.data), filename=filename
-                    )
+                    try:
+                        file = discord.File(
+                            fp=io.BytesIO(part.inline_data.data), filename=filename
+                        )
+                        logging.info(f"Created Discord file: {filename}")
 
-                    await ctx.send(
-                        f"🎨 **Generated Image {index + 1}**\nPrompt: *{prompt}*",
-                        file=file,
-                    )
-                    images_sent += 1
+                        await ctx.send(
+                            f"🎨 **Generated Image {index + 1}**\nPrompt: *{prompt}*",
+                            file=file,
+                        )
+                        logging.info(f"Successfully sent image {index + 1}")
+                        images_sent += 1
+                    except Exception as e:
+                        logging.error(f"Error sending image {index + 1}: {e}")
+                        # Try to send without file as fallback
+                        await ctx.send(f"❌ Error sending image {index + 1}: {str(e)[:100]}")
 
             if images_sent > 0:
                 await status_msg.edit(
