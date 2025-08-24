@@ -63,6 +63,11 @@ class GamblingGames(commands.Cog):
         if not self._gemini_api_configured:
             return None, "Jakey's AI brain is offline for dynamic questions. (GEMINI_API_KEY not set or configured). Try a static category! 💀"
 
+        # Check if API key is actually available
+        api_key = environ.get("GEMINI_API_KEY")
+        if not api_key:
+            return None, "Jakey's AI brain is offline - GEMINI_API_KEY not found in environment. Try a static category! 💀"
+
         prompt_text = f"""
         Generate {rounds} multiple-choice trivia questions about '{topic}'.
         Each question should have 4 options (A, B, C, D) and clearly indicate the correct answer.
@@ -83,7 +88,12 @@ class GamblingGames(commands.Cog):
         ]
         """
         try:
-            model_name = environ.get("GEMINI_MODEL_NAME", "gemini-pro") # Use a default Gemini model
+            # Configure the API with the key
+            genai.configure(api_key=api_key)
+            
+            model_name = environ.get("GEMINI_MODEL_NAME", "gemini-1.5-flash") # Use a supported Gemini model
+            print(f"🔍 Attempting to use model: {model_name}")  # Debug info
+            
             model = genai.GenerativeModel(model_name=model_name) # Create model instance directly
             response = await model.generate_content_async( # Use async method
                 contents=prompt_text,
@@ -104,7 +114,7 @@ class GamblingGames(commands.Cog):
             return questions, None
         except Exception as e:
             logging.error(f"Error generating AI trivia questions for topic '{topic}': {e}")
-            return None, f"Jakey's AI brain glitched trying to make questions about '{topic}'. Try a different topic or a static category. Rigged. 💀"
+            return None, f"Jakey's AI brain glitched trying to make questions about '{topic}'. Error: {str(e)[:100]}. Try a different topic or a static category. Rigged. 💀"
 
     @commands.slash_command(name="create_bet", description="Create a new betting pool.")
     @commands.has_permissions(manage_channels=True)
