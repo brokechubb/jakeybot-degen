@@ -1118,6 +1118,13 @@ class Misc(commands.Cog):
                 logging.warning(f"Generation may not have completed successfully. Finish reason: {response.candidates[0].finish_reason}")
                 if response.candidates[0].finish_reason == 1:
                     logging.warning("Finish reason 1 typically indicates an error or incomplete generation")
+            
+            # Log the actual response content for debugging
+            for i, part in enumerate(response.candidates[0].content.parts):
+                logging.info(f"Response part {i}: {part}")
+                if hasattr(part, 'text') and part.text:
+                    logging.info(f"Part {i} text length: {len(part.text)}")
+                    logging.info(f"Part {i} text preview: {part.text[:200]}...")
 
             # Check for safety issues
             if response.candidates[0].finish_reason == "IMAGE_SAFETY":
@@ -1160,11 +1167,16 @@ class Misc(commands.Cog):
                         await ctx.send(f"❌ Error sending image {index + 1}: {str(e)[:100]}")
                 elif hasattr(part, 'text') and part.text:
                     logging.info(f"Part {index} contains text response: {part.text[:200]}...")
+                    # Truncate long text responses to fit Discord's 2000 character limit
+                    text_content = part.text
+                    if len(text_content) > 1900:  # Leave room for formatting
+                        text_content = text_content[:1900] + "... [truncated]"
+                    
                     # Check if it's an error message
                     if "violates the policy" in part.text.lower() or "unable to create" in part.text.lower():
-                        await ctx.send(f"❌ **Content Policy Violation**\n{part.text}")
+                        await ctx.send(f"❌ **Content Policy Violation**\n{text_content}")
                     else:
-                        await ctx.send(f"ℹ️ **API Response**\n{part.text}")
+                        await ctx.send(f"ℹ️ **API Response**\n{text_content}")
                 else:
                     logging.warning(f"Part {index} has no inline_data or inline_data is False/None")
                     logging.info(f"Part {index} content: {part}")
@@ -1180,7 +1192,18 @@ class Misc(commands.Cog):
 
         except Exception as e:
             logging.error(f"Error generating image: {e}")
-            await status_msg.edit(content=f"❌ Error generating image: {str(e)[:100]}")
+            error_msg = str(e)
+            
+            # Handle Discord API errors specifically
+            if "400 Bad Request" in error_msg and "2000 or fewer" in error_msg:
+                await status_msg.edit(content="❌ **Discord Error**: Response too long. Please try a shorter prompt.")
+            elif "400 Bad Request" in error_msg:
+                await status_msg.edit(content="❌ **Discord Error**: Bad request. Please try again.")
+            else:
+                # Truncate error message if it's too long
+                if len(error_msg) > 100:
+                    error_msg = error_msg[:100] + "..."
+                await status_msg.edit(content=f"❌ Error generating image: {error_msg}")
 
     @commands.slash_command(
         name="edit_image", description="Edit an existing image using AI"
