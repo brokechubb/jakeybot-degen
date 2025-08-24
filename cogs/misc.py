@@ -264,12 +264,13 @@ class Misc(commands.Cog):
             logging.info(f"Using auto-image generation model: {model_name}")
             model = genai.GenerativeModel(model_name=model_name)
 
-            # Generate the image with safety settings disabled
+                        # Generate the image with safety settings disabled
             response = await model.generate_content_async(
                 contents=prompt,
                 generation_config={
                     "temperature": 0.7,  # Default temperature for auto-generation
                     "max_output_tokens": 8192,
+                    "response_modalities": ["IMAGE"]
                 },
                 safety_settings=[
                     {
@@ -282,7 +283,7 @@ class Misc(commands.Cog):
                     },
                     {
                         "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                        "threshold": "BLOCK_NONE"
+                            "threshold": "BLOCK_NONE"
                     },
                     {
                         "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
@@ -1077,30 +1078,31 @@ class Misc(commands.Cog):
 
             # Generate the image with safety settings disabled
             response = await model.generate_content_async(
-                contents=prompt,
-                generation_config={
-                    "temperature": temperature,
-                    "max_output_tokens": 8192,
-                },
-                safety_settings=[
-                    {
-                        "category": "HARM_CATEGORY_HARASSMENT",
-                        "threshold": "BLOCK_NONE"
+                    contents=prompt,
+                    generation_config={
+                        "temperature": temperature,
+                        "max_output_tokens": 8192,
+                        "response_modalities": ["IMAGE"]
                     },
-                    {
-                        "category": "HARM_CATEGORY_HATE_SPEECH", 
-                        "threshold": "BLOCK_NONE"
-                    },
-                    {
-                        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                        "threshold": "BLOCK_NONE"
-                    },
-                    {
-                        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                        "threshold": "BLOCK_NONE"
-                    }
-                ]
-            )
+                    safety_settings=[
+                        {
+                            "category": "HARM_CATEGORY_HARASSMENT",
+                            "threshold": "BLOCK_NONE"
+                        },
+                        {
+                            "category": "HARM_CATEGORY_HATE_SPEECH", 
+                            "threshold": "BLOCK_NONE"
+                        },
+                        {
+                            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                            "threshold": "BLOCK_NONE"
+                        },
+                        {
+                            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                            "threshold": "BLOCK_NONE"
+                        }
+                    ]
+                )
 
             if not response.candidates or not response.candidates[0].content:
                 logging.warning(f"No candidates or content in response for prompt: {prompt}")
@@ -1285,6 +1287,7 @@ class Misc(commands.Cog):
                 generation_config={
                     "temperature": temperature,
                     "max_output_tokens": 8192,
+                    "response_modalities": ["IMAGE"]
                 },
                 safety_settings=[
                     {
