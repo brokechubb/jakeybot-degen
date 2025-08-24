@@ -10,6 +10,14 @@ All notable changes to JakeyBot will be documented in this file.
 - **Multiple Personality Modes**: Jakey now supports various response styles (troll, degenerate_gambling, hypebeast, etc.)
 - **Advanced Error Handling**: User-friendly error messages and fallback responses
 - **Performance Optimizations**: Better temperature, token limits, and response handling
+- **Persistent Engagement System**: Engagement settings now survive bot restarts with MongoDB storage
+- **Enhanced Engagement Features**: 
+  - MongoDB persistence for engagement settings
+  - Configurable engagement parameters via YAML
+  - Message cooldown system to prevent spam
+  - Automatic cleanup of invalid channels/guilds
+  - Support for up to 50 simultaneous engagements
+  - New commands: status, list, and statistics
 
 ### 🔧 Changed
 
