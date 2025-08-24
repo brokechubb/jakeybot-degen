@@ -3,17 +3,17 @@ from core.exceptions import CustomErrorMessage
 from os import environ
 from typing import Literal
 from typing import TypedDict
+import logging
+
 import aiofiles
 import aiofiles.ospath
 import discord
 import logging
 import yaml
 
-
 class DefaultModelDict(TypedDict):
     provider: Literal["gemini"]
     model_name: str
-
 
 # You can choose other service like GCP or your custom solution
 class HelperFunctions:

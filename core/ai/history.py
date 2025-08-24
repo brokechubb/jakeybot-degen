@@ -1,3 +1,4 @@
+import logging
 from core.exceptions import HistoryDatabaseError
 from core.services.helperfunctions import HelperFunctions
 from os import environ
@@ -5,7 +6,7 @@ from pymongo import ReturnDocument
 import discord as typehint_Discord
 import logging
 import motor.motor_asyncio
-from datetime import datetime
+from datetime import datetime, timezone
 import time
 import re
 
@@ -227,8 +228,8 @@ class History:
             "user_id": user_id,
             "fact_text": fact_text,
             "source": source,
-            "created_at": datetime.utcnow(),
-            "last_accessed_at": datetime.utcnow(),
+            "created_at": datetime.now(timezone.utc),
+            "last_accessed_at": datetime.now(timezone.utc),
             "relevance_score": 0,  # Default relevance score
             "expires_at": expires_at,
         }
@@ -252,7 +253,7 @@ class History:
             "channel_id": channel_id,
             "message": message,
             "remind_time": remind_time,
-            "created_at": datetime.utcnow(),
+            "created_at": datetime.now(timezone.utc),
         }
         result = await reminders_collection.insert_one(reminder)
         return result.inserted_id
@@ -266,7 +267,7 @@ class History:
             return []
 
         reminders_collection = self._db[collection_name]
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         due_reminders = []
         async for reminder in reminders_collection.find({"remind_time": {"$lte": now}}):
             due_reminders.append(reminder)
@@ -284,11 +285,13 @@ class History:
         knowledge_collection = self._db[f"knowledge_{guild_id}"]
         fact = await knowledge_collection.find_one({"_id": fact_id})
         if fact and (
-            fact["expires_at"] is None or fact["expires_at"] > datetime.utcnow()
+            fact["expires_at"] is None
+            or fact["expires_at"] > datetime.now(timezone.utc)
         ):
             # Update last_accessed_at
             await knowledge_collection.update_one(
-                {"_id": fact_id}, {"$set": {"last_accessed_at": datetime.utcnow()}}
+                {"_id": fact_id},
+                {"$set": {"last_accessed_at": datetime.now(timezone.utc)}},
             )
             return fact["fact_text"]
         return None
@@ -322,7 +325,7 @@ class History:
                 ).limit(limit):
                     if fact and (
                         fact.get("expires_at") is None
-                        or fact["expires_at"] > datetime.utcnow()
+                        or fact["expires_at"] > datetime.now(timezone.utc)
                     ):
                         results.append(fact["fact_text"])
             except Exception as e:
@@ -339,7 +342,7 @@ class History:
                     ).limit(limit - len(results)):
                         if fact and (
                             fact.get("expires_at") is None
-                            or fact["expires_at"] > datetime.utcnow()
+                            or fact["expires_at"] > datetime.now(timezone.utc)
                         ):
                             fact_text = fact["fact_text"]
                             if fact_text not in results:  # Avoid duplicates
@@ -362,7 +365,7 @@ class History:
                             ).limit(limit - len(results)):
                                 if fact and (
                                     fact.get("expires_at") is None
-                                    or fact["expires_at"] > datetime.utcnow()
+                                    or fact["expires_at"] > datetime.now(timezone.utc)
                                 ):
                                     fact_text = fact["fact_text"]
                                     if fact_text not in results:  # Avoid duplicates
@@ -398,7 +401,7 @@ class History:
             ):
                 if fact and (
                     fact.get("expires_at") is None
-                    or fact["expires_at"] > datetime.utcnow()
+                    or fact["expires_at"] > datetime.now(timezone.utc)
                 ):
                     facts.append(fact["fact_text"])
         except Exception as e:
@@ -423,7 +426,7 @@ class History:
             ):
                 if fact and (
                     fact.get("expires_at") is None
-                    or fact["expires_at"] > datetime.utcnow()
+                    or fact["expires_at"] > datetime.now(timezone.utc)
                 ):
                     facts.append(fact["fact_text"])
         except Exception as e:
@@ -455,7 +458,7 @@ class History:
             total_facts = await knowledge_collection.count_documents({})
 
             # Count non-expired facts
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             non_expired_facts = await knowledge_collection.count_documents(
                 {
                     "$or": [
@@ -540,10 +543,15 @@ class History:
 
         await trivia_scores_collection.update_one(
             {"user_id": user_id},
-            {"$inc": {"score": score}, "$set": {"last_updated": datetime.utcnow()}},
-            upsert=True
+            {
+                "$inc": {"score": score},
+                "$set": {"last_updated": datetime.now(timezone.utc)},
+            },
+            upsert=True,
         )
-        logging.info(f"User {user_id} in guild {guild_id} scored {score} trivia points.")
+        logging.info(
+            f"User {user_id} in guild {guild_id} scored {score} trivia points."
+        )
 
     async def get_trivia_leaderboard(self, guild_id: int, limit: int = 10):
         """Retrieve the top trivia scores for a guild."""
@@ -551,6 +559,8 @@ class History:
         trivia_scores_collection = self._db[f"trivia_scores_{guild_id}"]
 
         leaderboard = []
-        async for entry in trivia_scores_collection.find().sort("score", -1).limit(limit):
+        async for entry in (
+            trivia_scores_collection.find().sort("score", -1).limit(limit)
+        ):
             leaderboard.append(entry)
         return leaderboard

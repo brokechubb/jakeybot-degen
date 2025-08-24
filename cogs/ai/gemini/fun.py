@@ -6,6 +6,8 @@ from discord.ext import commands
 from discord import Member, DiscordException
 from google.genai import types
 from os import environ
+import logging
+
 import discord
 import inspect
 import io
@@ -109,7 +111,6 @@ class GeminiUtils(commands.Cog):
             logging.error("An error has occurred while executing show command, reason: %s", e, exc_info=True)
             await ctx.respond("❌ Something went wrong, please try again later.", ephemeral=True)
 
-
     # Remix avatar command
     @avatar.command()
     @discord.option(
@@ -178,7 +179,6 @@ class GeminiUtils(commands.Cog):
                 )
             ], return_text=False)
 
-            
             _imagedata = None
             for _parts in _completion_data.candidates[0].content.parts:
                 if _parts.inline_data:

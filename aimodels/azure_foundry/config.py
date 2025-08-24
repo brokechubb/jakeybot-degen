@@ -1,3 +1,5 @@
+import logging
+
 class ModelParams:
     def __init__(self):
         self.genai_params = {

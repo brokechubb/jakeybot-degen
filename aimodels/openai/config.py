@@ -2,6 +2,7 @@ from core.exceptions import CustomErrorMessage
 import importlib
 import logging
 
+import logging
 
 class ModelParams:
     def __init__(self):

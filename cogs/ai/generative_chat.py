@@ -5,6 +5,7 @@ from core.ai.history import History as typehint_History
 from discord import Message
 from os import environ
 import aimodels._template_ as typehint_AIModelTemplate
+import logging
 import discord
 import importlib
 import inspect

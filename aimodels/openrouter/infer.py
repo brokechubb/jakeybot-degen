@@ -1,4 +1,6 @@
 # TODO: KEEP THE BASE64 FORMAT REGARDLES
+import logging
+
 from .config import ModelParams
 from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
@@ -10,7 +12,6 @@ import discord
 import json
 import logging
 import openai
-
 
 class Completions(ModelParams):
     def __init__(self, model_name, discord_ctx, discord_bot, guild_id: int = None):

@@ -1,3 +1,5 @@
+import logging
+
 class ModelParams:
     def __init__(self):
         # Model provider thread

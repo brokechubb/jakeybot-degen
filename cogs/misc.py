@@ -1,6 +1,8 @@
 from discord.ext import commands
 from discord import Member, DiscordException
 from os import environ
+import logging
+
 import discord
 import logging
 import requests
@@ -10,7 +12,6 @@ import asyncio
 import re
 import motor.motor_asyncio
 from core.ai.history import History
-
 
 class Misc(commands.Cog):
     """Use my other utilities here that can help make your server more active and entertaining"""
@@ -320,7 +321,6 @@ class Misc(commands.Cog):
         except Exception as e:
             await ctx.respond(f"❌ Error during memory reindex: {str(e)}")
             logging.error(f"Memory reindex error: {e}")
-
 
     @commands.slash_command(
         contexts={discord.InteractionContextType.guild},
@@ -686,7 +686,6 @@ class Misc(commands.Cog):
             f"**Tool Timeouts:**\n" + "\n".join(timeout_info) + "\n"
             f"• **Default**: {status['tool_timeouts']['default'] // 60}m {status['tool_timeouts']['default'] % 60}s"
         )
-
 
 def setup(bot):
     bot.add_cog(Misc(bot))

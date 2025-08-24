@@ -59,7 +59,7 @@ The `.gitignore` file includes:
 
 ```python
 # Hardcoding API keys in code
-api_key = "sk-1234567890abcdef1234567890abcdef1234567890abcdef"
+example_key = "example_key_placeholder"
 ```
 
 ### ✅ Do this instead
@@ -137,14 +137,14 @@ git push origin --force --all
 4. **Monitor for unusual activity**
 5. **Keep dependencies updated**
 
-### Docker Security
+### Environment Security
 
 ```bash
-# Use environment file for Docker
-docker run --env-file dev.env your-image
+# Use environment file for local development
+source dev.env
 
-# Or pass environment variables directly
-docker run -e TOKEN=your-token -e OPENAI_API_KEY=your-key your-image
+# Or pass environment variables directly when running
+TOKEN=your-token OPENAI_API_KEY=your-key python main.py
 ```
 
 ## 📞 Getting Help

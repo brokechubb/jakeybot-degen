@@ -5,6 +5,7 @@ from core.exceptions import *
 from discord.commands import SlashCommandGroup
 from discord.ext import commands
 from os import environ
+import logging
 import discord
 import inspect
 import logging
@@ -406,61 +407,84 @@ class Chat(commands.Cog):
             )
 
             # Use AutoReturnManager if available and capability is not None
-            if capability is not None and hasattr(self.bot, "auto_return_manager") and self.bot.auto_return_manager:
+            if (
+                capability is not None
+                and hasattr(self.bot, "auto_return_manager")
+                and self.bot.auto_return_manager
+            ):
                 try:
                     # Switch tool with timeout using AutoReturnManager
                     await self.bot.auto_return_manager.switch_tool_with_timeout(
-                        guild_id=guild_id, 
-                        new_tool=capability, 
-                        user_id=ctx.author.id
+                        guild_id=guild_id, new_tool=capability, user_id=ctx.author.id
                     )
-                    
+
                     # Get timeout for this tool
-                    timeout = self.bot.auto_return_manager.tool_timeouts.get(capability, self.bot.auto_return_manager.tool_timeouts["default"])
+                    timeout = self.bot.auto_return_manager.tool_timeouts.get(
+                        capability,
+                        self.bot.auto_return_manager.tool_timeouts["default"],
+                    )
                     timeout_minutes = timeout // 60
                     timeout_seconds = timeout % 60
-                    
+
                     if timeout_minutes > 0:
-                        timeout_str = f"{timeout_minutes}m {timeout_seconds}s" if timeout_seconds > 0 else f"{timeout_minutes}m"
+                        timeout_str = (
+                            f"{timeout_minutes}m {timeout_seconds}s"
+                            if timeout_seconds > 0
+                            else f"{timeout_minutes}m"
+                        )
                     else:
                         timeout_str = f"{timeout_seconds}s"
-                    
+
                     # Get smart suggestions for the new tool
-                    suggestions = await self.bot.auto_return_manager.get_smart_suggestions(guild_id, f"switched to {capability}")
-                    
+                    suggestions = (
+                        await self.bot.auto_return_manager.get_smart_suggestions(
+                            guild_id, f"switched to {capability}"
+                        )
+                    )
+
                     # Build response with suggestions
                     response_parts = []
-                    
+
                     if not _cur_feature:
-                        response_parts.append(f"✅ Feature **{capability}** enabled successfully!")
+                        response_parts.append(
+                            f"✅ Feature **{capability}** enabled successfully!"
+                        )
                     else:
-                        response_parts.append(f"✅ Feature **{capability}** enabled successfully and chat is reset!")
-                    
-                    response_parts.append(f"⏰ Will automatically return to {self.bot.auto_return_manager.default_tool} in {timeout_str}")
-                    
+                        response_parts.append(
+                            f"✅ Feature **{capability}** enabled successfully and chat is reset!"
+                        )
+
+                    response_parts.append(
+                        f"⏰ Will automatically return to {self.bot.auto_return_manager.default_tool} in {timeout_str}"
+                    )
+
                     # Add smart suggestions if available
                     if suggestions:
                         response_parts.append("\n🧠 **Smart Suggestions:**")
                         for suggestion in suggestions[:3]:  # Limit to 3 suggestions
                             response_parts.append(f"• {suggestion}")
-                        
+
                         if len(suggestions) > 3:
-                            response_parts.append(f"• ... and {len(suggestions) - 3} more suggestions")
-                    
+                            response_parts.append(
+                                f"• ... and {len(suggestions) - 3} more suggestions"
+                            )
+
                     # Add helpful tips
                     response_parts.append(f"\n💡 **Quick Actions:**")
                     response_parts.append(f"• `/timeout_status` - Check remaining time")
                     response_parts.append(f"• `/extend_timeout <time>` - Add more time")
                     response_parts.append(f"• `/return_to_default` - Switch back now")
                     response_parts.append(f"• `/smart_suggestions` - Get more tips")
-                    
+
                     await ctx.respond("\n".join(response_parts))
-                    
+
                 except Exception as e:
                     logging.error(f"Error using AutoReturnManager: {e}")
                     # Fall back to normal response
                     if not _cur_feature:
-                        await ctx.respond(f"✅ Feature **{capability}** enabled successfully")
+                        await ctx.respond(
+                            f"✅ Feature **{capability}** enabled successfully"
+                        )
                     else:
                         await ctx.respond(
                             f"✅ Feature **{capability}** enabled successfully and chat is reset to reflect the changes"
@@ -536,9 +560,9 @@ class Chat(commands.Cog):
         expires_at = None
         if expires_in:
             try:
-                from datetime import datetime, timedelta
+                from datetime import datetime, timedelta, timezone
 
-                now = datetime.utcnow()
+                now = datetime.now(timezone.utc)
                 if expires_in.endswith("d"):
                     days = int(expires_in[:-1])
                     expires_at = now + timedelta(days=days)

@@ -1,4 +1,40 @@
 from core.services.initbot import ServicesInitBot
+import logging
+import logging.config
+
+# Setup colored logging
+try:
+    from core.services.colored_logging import setup_colored_logging
+
+    setup_colored_logging(
+        level=logging.INFO,
+        use_simple=False,  # Use advanced colored formatter
+    )
+    logging.info("🎨 Colored logging initialized successfully")
+except ImportError:
+    # Fallback to standard logging if colored logging is not available
+    logging_config = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "standard": {
+                "format": "%(levelname)s %(asctime)s [%(pathname)s:%(lineno)d - %(module)s.%(funcName)s()]:\n%(message)s",
+                "datefmt": "%m/%d/%Y %I:%M:%S %p",
+            },
+        },
+        "handlers": {
+            "default": {
+                "level": "INFO",
+                "formatter": "standard",
+                "class": "logging.StreamHandler",
+            },
+        },
+        "loggers": {"": {"handlers": ["default"], "level": "INFO", "propagate": False}},
+    }
+
+    logging.config.dictConfig(logging_config)
+    logging.warning("Colored logging not available, using standard logging")
+
 from discord.ext import commands
 from inspect import cleandoc
 from os import chdir, mkdir, environ
@@ -13,7 +49,7 @@ import yaml
 import motor.motor_asyncio
 from core.ai.history import History
 from core.services.auto_return_manager import AutoReturnManager
-import google.generativeai as genai # Import Gemini API client
+import google.generativeai as genai  # Import Gemini API client
 
 # Go to project root directory
 chdir(Path(__file__).parent.resolve())
@@ -21,21 +57,47 @@ chdir(Path(__file__).parent.resolve())
 # Load environment variables
 dotenv.load_dotenv("dev.env")
 
-# Logging
-logging.basicConfig(
-    format="%(levelname)s %(asctime)s [%(pathname)s:%(lineno)d - %(module)s.%(funcName)s()]: %(message)s",
-    datefmt="%m/%d/%Y %I:%M:%S %p",
-    level=logging.INFO,
-)
+# Validate configuration
+try:
+    from core.services.config_validator import (
+        validate_configuration,
+        get_config_summary,
+    )
 
-# Check if TOKEN is set
-if (
-    "TOKEN" in environ
-    and (environ.get("TOKEN") == "INSERT_DISCORD_TOKEN")
-    or (environ.get("TOKEN") is None)
-    or (environ.get("TOKEN") == "")
-):
-    raise Exception("Please insert a valid Discord bot token")
+    validate_configuration()
+
+    # Log configuration summary
+    config_summary = get_config_summary()
+    try:
+        from core.services.colored_logging import log_success, log_info
+
+        log_success("Configuration validated successfully")
+        log_info(
+            f"Bot: {config_summary['bot_name']} (prefix: {config_summary['bot_prefix']})"
+        )
+        log_info(
+            f"AI Providers: {len(config_summary['ai_providers_configured'])} configured"
+        )
+        log_info(
+            f"Database: {'Configured' if config_summary['database_configured'] else 'Not configured'}"
+        )
+    except ImportError:
+        logging.info(f"Configuration validated successfully")
+        logging.info(
+            f"Bot: {config_summary['bot_name']} (prefix: {config_summary['bot_prefix']})"
+        )
+        logging.info(
+            f"AI Providers: {len(config_summary['ai_providers_configured'])} configured"
+        )
+        logging.info(
+            f"Database: {'Configured' if config_summary['database_configured'] else 'Not configured'}"
+        )
+
+except ImportError:
+    logging.warning("Configuration validator not available, skipping validation")
+except Exception as e:
+    logging.error(f"Configuration validation failed: {e}")
+    raise
 
 # Intents
 intents = discord.Intents.default()
@@ -62,20 +124,7 @@ class InitBot(ServicesInitBot):
             environ["TEMP_DIR"] = "temp"
             mkdir(environ.get("TEMP_DIR"))
 
-        # Initialize shared database connection
-        try:
-            self.DBConn = History(
-                bot=self,
-                db_conn=motor.motor_asyncio.AsyncIOMotorClient(
-                    environ.get("MONGO_DB_URL")
-                ),
-            )
-            logging.info("Shared database connection initialized successfully")
-        except Exception as e:
-            logging.error(f"Failed to initialize shared database connection: {e}")
-            self.DBConn = None
-
-        # Initialize AutoReturnManager
+        # Initialize non-async services
         try:
             self.auto_return_manager = AutoReturnManager(self)
             logging.info("AutoReturnManager initialized successfully")
@@ -83,11 +132,22 @@ class InitBot(ServicesInitBot):
             logging.error(f"Failed to initialize AutoReturnManager: {e}")
             self.auto_return_manager = None
 
+        try:
+            from core.services.input_validator import get_input_validator
+
+            self.input_validator = get_input_validator()
+            logging.info("Input validator initialized successfully")
+        except Exception as e:
+            logging.error(f"Failed to initialize input validator: {e}")
+            self.input_validator = None
+
         # Configure Gemini API client globally
         try:
             gemini_api_key = environ.get("GEMINI_API_KEY")
             gemini_api_key_status = "set" if gemini_api_key else "not set"
-            logging.info(f"GEMINI_API_KEY status during initialization: {gemini_api_key_status}")
+            logging.info(
+                f"GEMINI_API_KEY status during initialization: {gemini_api_key_status}"
+            )
 
             if gemini_api_key:
                 genai.configure(api_key=gemini_api_key)
@@ -95,14 +155,74 @@ class InitBot(ServicesInitBot):
                 logging.info("Gemini API configured successfully")
             else:
                 self._gemini_api_configured = False
-                logging.warning("GEMINI_API_KEY not set; Gemini API will not be available for dynamic question generation.")
+                logging.warning(
+                    "GEMINI_API_KEY not set; Gemini API will not be available for dynamic question generation."
+                )
         except Exception as e:
             logging.error(f"Failed to configure Gemini API: {e}")
             self._gemini_api_configured = False
 
-        # Initialize services
+        # Initialize async services after bot is ready
+        self.loop.create_task(self._initialize_async_services())
         self.loop.create_task(self.start_services())
-        logging.info("Services initialized successfully")
+        logging.info("Services initialization started")
+
+        # Initialize non-async performance services
+        try:
+            from core.services.cache_manager import get_cache_manager
+
+            self.cache_manager = get_cache_manager()
+            logging.info("Cache manager initialized successfully")
+        except Exception as e:
+            logging.error(f"Failed to initialize cache manager: {e}")
+            self.cache_manager = None
+
+    async def _initialize_async_services(self):
+        """Initialize async services that require await."""
+        # Initialize shared database connection
+        try:
+            from core.services.database_manager import get_database_manager
+
+            db_manager = await get_database_manager()
+            db_client = await db_manager.get_client()
+
+            self.DBConn = History(
+                bot=self,
+                db_conn=db_client,
+            )
+            logging.info("Shared database connection initialized successfully")
+        except Exception as e:
+            logging.error(f"Failed to initialize shared database connection: {e}")
+            self.DBConn = None
+
+        # Initialize Rate Limiter
+        try:
+            from core.services.rate_limiter import get_rate_limiter
+
+            self.rate_limiter = await get_rate_limiter()
+            logging.info("Rate limiter initialized successfully")
+        except Exception as e:
+            logging.error(f"Failed to initialize rate limiter: {e}")
+            self.rate_limiter = None
+
+        # Initialize async performance services
+        try:
+            from core.services.performance_monitor import get_performance_monitor
+
+            self.performance_monitor = await get_performance_monitor()
+            logging.info("Performance monitor initialized successfully")
+        except Exception as e:
+            logging.error(f"Failed to initialize performance monitor: {e}")
+            self.performance_monitor = None
+
+        try:
+            from core.services.connection_pool import get_connection_pool
+
+            self.connection_pool = await get_connection_pool()
+            logging.info("Connection pool manager initialized successfully")
+        except Exception as e:
+            logging.error(f"Failed to initialize connection pool manager: {e}")
+            self.connection_pool = None
 
     def _lock_socket_instance(self, port):
         try:
@@ -123,6 +243,49 @@ class InitBot(ServicesInitBot):
         if hasattr(self, "auto_return_manager") and self.auto_return_manager:
             await self.auto_return_manager.cleanup()
             logging.info("AutoReturnManager cleanup completed")
+
+        # Cleanup database connection
+        try:
+            from core.services.database_manager import cleanup_database
+
+            await cleanup_database()
+            logging.info("Database connection cleanup completed")
+        except Exception as e:
+            logging.error(f"Failed to cleanup database connection: {e}")
+
+        # Cleanup performance services
+        try:
+            from core.services.performance_monitor import cleanup_performance_monitor
+
+            await cleanup_performance_monitor()
+            logging.info("Performance monitor cleanup completed")
+        except Exception as e:
+            logging.error(f"Failed to cleanup performance monitor: {e}")
+
+        try:
+            from core.services.cache_manager import cleanup_cache
+
+            await cleanup_cache()
+            logging.info("Cache manager cleanup completed")
+        except Exception as e:
+            logging.error(f"Failed to cleanup cache manager: {e}")
+
+        try:
+            from core.services.connection_pool import cleanup_connection_pool
+
+            await cleanup_connection_pool()
+            logging.info("Connection pool manager cleanup completed")
+        except Exception as e:
+            logging.error(f"Failed to cleanup connection pool manager: {e}")
+
+        # Cleanup rate limiter
+        try:
+            from core.services.rate_limiter import cleanup_rate_limiter
+
+            await cleanup_rate_limiter()
+            logging.info("Rate limiter cleanup completed")
+        except Exception as e:
+            logging.error(f"Failed to cleanup rate limiter: {e}")
 
         # Remove temp files
         if Path(environ.get("TEMP_DIR", "temp")).exists():
@@ -150,7 +313,12 @@ async def on_ready():
     await bot.change_presence(
         activity=discord.Game(f"/ask me anything or {bot.command_prefix}help")
     )
-    logging.info("%s is ready and online!", bot.user)
+    try:
+        from core.services.colored_logging import log_success
+
+        log_success(f"{bot.user} is ready and online!")
+    except ImportError:
+        logging.info("%s is ready and online!", bot.user)
 
 
 ###############################################

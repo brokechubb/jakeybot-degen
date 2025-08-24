@@ -3,6 +3,8 @@ from core.services.helperfunctions import HelperFunctions
 from discord.ext import commands
 from google.genai import types
 from os import environ
+import logging
+
 import discord
 import logging
 

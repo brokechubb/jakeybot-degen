@@ -1,3 +1,4 @@
+import logging
 from azure.storage.blob.aio import BlobServiceClient
 from discord.ext import bridge
 from google import genai

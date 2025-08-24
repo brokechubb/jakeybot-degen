@@ -5,12 +5,13 @@ from google.genai import types
 from os import environ
 import aiofiles
 import datetime
+import logging
+
 import discord
 import inspect
 import logging
 import json
 import random
-
 
 class GeminiAITools(commands.Cog):
     def __init__(self, bot):
@@ -274,7 +275,6 @@ class GeminiAITools(commands.Cog):
             _error,
             exc_info=True,
         )
-
 
 def setup(bot):
     bot.add_cog(GeminiAITools(bot))

@@ -1,7 +1,8 @@
 from discord.ext import commands
+import logging
+
 import discord
 import random
-
 
 class Keno(commands.Cog):
     """Keno number generator commands"""
@@ -59,7 +60,6 @@ class Keno(commands.Cog):
         embed.set_footer(text="Numbers in brackets are your picks!")
 
         await ctx.followup.send(embed=embed)
-
 
 def setup(bot):
     bot.add_cog(Keno(bot))

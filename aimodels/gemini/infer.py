@@ -1,6 +1,9 @@
+import logging
+
 from .config import ModelParams
 from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage
+from core.services.colored_logging import log_error, log_warning
 from google import genai
 from google.genai import errors
 from google.genai import types
@@ -179,10 +182,7 @@ class Completions(ModelParams):
             )
         # Check if we get ClientError and has PERMISSION_DENIED
         except errors.ClientError as e:
-            logging.error(
-                "1st try: I think I found a problem related to the request... doing first fixes: %s",
-                e.message,
-            )
+            log_error(f"Gemini API client error (1st try): {e.message}")
             if "do not have permission" in e.message:
                 # Curated history attribute are list of multipart chat turns under Content structured datatype
                 # Inside, it has "part" -> List and "role" -> str fields, so we iterate on the parts
@@ -208,7 +208,7 @@ class Completions(ModelParams):
                     return_text=False,
                 )
             elif e.status_code == 429:
-                logging.warning(
+                log_warning(
                     "Gemini API quota exceeded (429 RESOURCE_EXHAUSTED). Retrying after 30 seconds."
                 )
                 await self._discord_method_send(
@@ -222,10 +222,7 @@ class Completions(ModelParams):
                     return_text=False,
                 )
             else:
-                logging.error(
-                    "2nd try: I think I found a problem related to the request: %s",
-                    e.message,
-                )
+                log_error(f"Gemini API client error (2nd try): {e.message}")
                 raise e
         # Check if the response was blocked due to safety and other reasons than STOP
         # https://ai.google.dev/api/generate-content#FinishReason
@@ -239,13 +236,31 @@ class Completions(ModelParams):
                     "⚠️ Response reached max tokens limit, please make your message concise."
                 )
             elif _response.candidates[0].finish_reason != "STOP":
+                log_error(
+                    f"Gemini API error: finish_reason = {_response.candidates[0].finish_reason}"
+                )
                 raise CustomErrorMessage(
                     "⚠️ An error has occurred while giving you an answer, please rephrase your prompt or try again later."
                 )
         else:
-            raise CustomErrorMessage(
-                "⚠️ An error has occurred while giving you an answer, please rephrase your prompt or try again later."
-            )
+            # Handle cases where candidates is None or empty
+            error_message = "⚠️ An error has occurred while giving you an answer, please rephrase your prompt or try again later."
+
+            # Check for specific error conditions
+            if hasattr(_response, "prompt_feedback") and _response.prompt_feedback:
+                if hasattr(_response.prompt_feedback, "block_reason"):
+                    block_reason = _response.prompt_feedback.block_reason
+                    if block_reason == "PROHIBITED_CONTENT":
+                        error_message = "🚫 Your message contains prohibited content. Please rephrase your question to be more appropriate."
+                    elif block_reason == "SAFETY":
+                        error_message = "🛡️ Your message was blocked for safety reasons. Please rephrase your question."
+                    elif block_reason == "OTHER":
+                        error_message = "⚠️ Your message was blocked. Please try rephrasing your question."
+                    else:
+                        error_message = f"🚫 Your message was blocked: {block_reason}. Please rephrase your question."
+
+            log_error(f"Gemini API error: response blocked - {_response}")
+            raise CustomErrorMessage(error_message)
 
         # Agentic experiences
         # Begin inference operation
@@ -284,9 +299,8 @@ class Completions(ModelParams):
                         elif hasattr(_Tool["tool_object"], "_tool_function"):
                             _toExec = getattr(_Tool["tool_object"], "_tool_function")
                         else:
-                            logging.error(
-                                "I think I found a problem related to function calling or the tool function implementation is not available: %s",
-                                _part.function_call.name,
+                            log_error(
+                                f"Tool function not found: {_part.function_call.name}"
                             )
                             raise CustomErrorMessage(
                                 "⚠️ An error has occurred while calling tools, please try again later or choose another tool"
@@ -304,9 +318,7 @@ class Completions(ModelParams):
                             _toolUseErrorOccurred = True
 
                         # Also print the error to the console
-                        logging.error(
-                            "Something when calling specific tool lately, reason: %s", e
-                        )
+                        log_error(f"Tool execution error: {e}")
                         _toolResult = {
                             "error": f"⚠️ Something went wrong while executing the tool: {e}\nTell the user about this error and make sure the tool is enabled with the /feature command",
                             "tool_args": _part.function_call.args,

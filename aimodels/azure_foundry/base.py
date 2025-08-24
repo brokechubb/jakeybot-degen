@@ -1,3 +1,5 @@
+import logging
+
 from .config import ModelParams
 from core.exceptions import ModelAPIKeyUnset
 from os import environ

@@ -1,6 +1,6 @@
 from tools.Memory.manifest import ToolManifest
 from core.ai.history import History
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import logging
 import re
 
@@ -71,7 +71,7 @@ class Tool(ToolManifest):
             expires_at = None
             if expires_in and expires_in.lower() != "never":
                 try:
-                    now = datetime.utcnow()
+                    now = datetime.now(timezone.utc)
                     if expires_in.endswith("d"):
                         days = int(expires_in[:-1])
                         expires_at = now + timedelta(days=days)
@@ -213,7 +213,7 @@ class Tool(ToolManifest):
             async for fact in knowledge_collection.find(query).limit(limit):
                 if fact and (
                     fact.get("expires_at") is None
-                    or fact["expires_at"] > datetime.utcnow()
+                    or fact["expires_at"] > datetime.now(timezone.utc)
                 ):
                     facts.append(fact["fact_text"])
 

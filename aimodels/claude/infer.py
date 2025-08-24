@@ -1,3 +1,5 @@
+import logging
+
 from .config import ModelParams
 from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset
@@ -7,7 +9,6 @@ import json
 import litellm
 import logging
 import re
-
 
 class Completions(ModelParams):
     def __init__(self, model_name, discord_ctx, discord_bot, guild_id: int = None):

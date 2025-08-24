@@ -3,6 +3,8 @@ from google.genai import types
 import importlib
 import logging
 
+import logging
+
 class ModelParams:
     def __init__(self):
         # Model provider thread

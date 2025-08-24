@@ -1,3 +1,5 @@
+import logging
+
 from ..base import BaseInitProvider
 from core.ai.core import Utils
 from os import environ
@@ -38,7 +40,6 @@ class Completions(BaseInitProvider):
                 ]
             }
         )
-
 
         # Generate completion
         litellm.api_key = environ.get("AZURE_AI_API_KEY")

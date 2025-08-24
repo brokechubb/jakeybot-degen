@@ -1,3 +1,5 @@
+import logging
+
 from .config import ModelParams
 from core.ai.core import Utils
 from core.exceptions import CustomErrorMessage, ModelAPIKeyUnset

@@ -3,6 +3,7 @@ from google.genai import types
 import importlib
 import logging
 
+import logging
 
 class ModelParams:
     def __init__(self):
@@ -16,15 +17,15 @@ class ModelParams:
             "top_p": 1,
             "top_k": 55,
             "safety_settings": [
-                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "HARM_BLOCK_THRESHOLD_UNSPECIFIED"},
-                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "HARM_BLOCK_THRESHOLD_UNSPECIFIED"},
+                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "OFF"},
+                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "OFF"},
                 {
                     "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                    "threshold": "HARM_BLOCK_THRESHOLD_UNSPECIFIED",
+                    "threshold": "OFF",
                 },
                 {
                     "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                    "threshold": "HARM_BLOCK_THRESHOLD_UNSPECIFIED",
+                    "threshold": "OFF",
                 },
             ],
         }

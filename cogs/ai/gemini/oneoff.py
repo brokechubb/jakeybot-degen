@@ -1,6 +1,8 @@
 from core.services.helperfunctions import HelperFunctions
 from discord.ext import commands
 import aimodels._template_ as typehint_AIModelTemplate
+import logging
+
 import discord
 import importlib
 import io
