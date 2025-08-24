@@ -1096,13 +1096,10 @@ class Misc(commands.Cog):
             for index, part in enumerate(response.candidates[0].content.parts):
                 logging.info(f"Part {index}: type={type(part)}, has_inline_data={hasattr(part, 'inline_data')}")
                 logging.info(f"Part {index} attributes: {dir(part)}")
-                if hasattr(part, "inline_data") and part.inline_data:
+                if hasattr(part, "inline_data") and part.inline_data and hasattr(part.inline_data, 'data') and part.inline_data.data:
                     logging.info(f"Part {index} inline_data: {part.inline_data}")
                     logging.info(f"Part {index} mime_type: {part.inline_data.mime_type}")
-                    logging.info(f"Part {index} data length: {len(part.inline_data.data) if part.inline_data.data else 'None'}")
-                else:
-                    logging.warning(f"Part {index} has no inline_data or inline_data is False/None")
-                    logging.info(f"Part {index} content: {part}")
+                    logging.info(f"Part {index} data length: {len(part.inline_data.data)}")
                     
                     # Create filename with timestamp
                     timestamp = datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
@@ -1125,6 +1122,16 @@ class Misc(commands.Cog):
                         logging.error(f"Error sending image {index + 1}: {e}")
                         # Try to send without file as fallback
                         await ctx.send(f"❌ Error sending image {index + 1}: {str(e)[:100]}")
+                elif hasattr(part, 'text') and part.text:
+                    logging.info(f"Part {index} contains text response: {part.text[:200]}...")
+                    # Check if it's an error message
+                    if "violates the policy" in part.text.lower() or "unable to create" in part.text.lower():
+                        await ctx.send(f"❌ **Content Policy Violation**\n{part.text}")
+                    else:
+                        await ctx.send(f"ℹ️ **API Response**\n{part.text}")
+                else:
+                    logging.warning(f"Part {index} has no inline_data or inline_data is False/None")
+                    logging.info(f"Part {index} content: {part}")
 
             if images_sent > 0:
                 await status_msg.edit(
