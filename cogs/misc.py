@@ -264,8 +264,6 @@ class Misc(commands.Cog):
             response = await model.generate_content_async(
                 contents=prompt,
                 generation_config={
-                    "response_modalities": ["Text", "Image"],
-                    "candidate_count": 1,
                     "temperature": 0.7,  # Default temperature for auto-generation
                     "max_output_tokens": 8192,
                 },
@@ -1055,8 +1053,6 @@ class Misc(commands.Cog):
             response = await model.generate_content_async(
                 contents=prompt,
                 generation_config={
-                    "response_modalities": ["Text", "Image"],
-                    "candidate_count": 1,
                     "temperature": temperature,
                     "max_output_tokens": 8192,
                 },
@@ -1181,8 +1177,6 @@ class Misc(commands.Cog):
             response = await model.generate_content_async(
                 contents=[prompt, image_part],
                 generation_config={
-                    "response_modalities": ["Text", "Image"],
-                    "candidate_count": 1,
                     "temperature": temperature,
                     "max_output_tokens": 8192,
                 },
