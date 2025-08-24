@@ -44,6 +44,7 @@ JakeyBot now includes a **personal reminder system** that lets you set reminders
 ### **How to Use Reminders**
 
 **Basic Reminder Syntax:**
+
 ```
 /remind time_in:<time> message:<what to remind you about>
 ```
@@ -60,11 +61,13 @@ JakeyBot now includes a **personal reminder system** that lets you set reminders
 ### **Time Formats Supported**
 
 **Simple Formats:**
+
 - **Minutes**: `30m`, `15m`, `45m`
 - **Hours**: `1h`, `2h`, `12h`
 - **Days**: `1d`, `2d`, `1w`
 
 **Natural Language:**
+
 - `tomorrow 10am`
 - `next week`
 - `in 2 hours`
@@ -94,12 +97,14 @@ Get the current time and timezone information:
 **Command:** `/time` or `$time`
 
 **What You Get:**
+
 - Current date and time
 - Timezone information (EDT, PST, etc.)
 - Daylight Saving Time status
 - Both slash and prefix command support
 
 **Example Output:**
+
 ```
 The current time is 2025-08-23 14:30:25 EDT-0400. 
 Daylight Saving Time is currently active.
@@ -158,12 +163,14 @@ JakeyBot: "Your name is Alex and you love playing guitar!"
 ### **Memory Debugging**
 
 **When to Use `/memory_debug`:**
+
 - Check if memory is working properly
 - Verify database connection status
 - See memory system statistics
 - Troubleshoot memory issues
 
 **When to Use `/memory_reindex`:**
+
 - Fix search problems
 - Resolve missing information issues
 - Improve search accuracy
@@ -397,7 +404,7 @@ JakeyBot: "sure, but don't blame me if you fail the test 😂"
 While only one tool can be active at a time, you can:
 
 1. **Use Memory tool** for personalization
-2. **Switch to ImageGen** for image creation
+2. **Use image generation commands** for image creation
 3. **Use ExaSearch** for web research
 4. **Return to Memory** to continue personalized conversations
 
@@ -448,7 +455,7 @@ Your server may have additional features enabled:
 ### **Popular Tools**
 
 - **Memory** - Personal information recall
-- **ImageGen** - AI image creation
+
 - **ExaSearch** - Web search
 - **CryptoPrice** - Live crypto prices
 - **Engagement** - Active channel participation

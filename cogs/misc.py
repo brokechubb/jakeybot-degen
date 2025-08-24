@@ -75,7 +75,9 @@ class Misc(commands.Cog):
             self.bot.loop.create_task(self._load_auto_image_settings())
             logging.info("Auto-image settings loader started")
         else:
-            logging.warning("Auto-image settings loader not started - no database connection")
+            logging.warning(
+                "Auto-image settings loader not started - no database connection"
+            )
 
     async def _check_reminders(self):
         await self.bot.wait_until_ready()
@@ -209,10 +211,10 @@ class Misc(commands.Cog):
 
         # Update the setting in memory
         self._auto_image_enabled[guild_id] = enabled
-        
+
         # Save the setting to the database
         save_success = await self._save_auto_image_setting(guild_id, enabled)
-        
+
         if save_success:
             if enabled:
                 await ctx.respond(
@@ -1259,13 +1261,13 @@ class Misc(commands.Cog):
             value="Toggle automatic image generation mode (Admin only)\n**Usage:** `/auto_image [true/false]`\n**Effect:** Jakey automatically generates images for simple requests",
             inline=False,
         )
-        
+
         embed.add_field(
             name="/auto_image_status",
             value="Check current auto-image generation status for this server\n**Usage:** `/auto_image_status`\n**Shows:** Current mode, what it means, and admin controls",
             inline=False,
         )
-        
+
         embed.add_field(
             name="🤖 Auto-Generation Mode",
             value="When enabled, Jakey will automatically detect image requests and generate images instantly!\n**Example:** Say 'draw me a cat' and Jakey will generate it automatically.\n**Persistence:** Settings are saved to database and survive bot restarts.",
@@ -1290,12 +1292,14 @@ class Misc(commands.Cog):
     async def _load_auto_image_settings(self):
         """Load auto-image generation settings from the database."""
         await self.bot.wait_until_ready()
-        
+
         try:
             if not self.DBConn:
-                logging.warning("No database connection available for loading auto-image settings")
+                logging.warning(
+                    "No database connection available for loading auto-image settings"
+                )
                 return
-                
+
             # Get all guilds and load their auto-image settings
             for guild in self.bot.guilds:
                 guild_id = str(guild.id)
@@ -1303,14 +1307,20 @@ class Misc(commands.Cog):
                     # Try to get the setting from the database
                     setting = await self._get_auto_image_setting(guild_id)
                     self._auto_image_enabled[guild_id] = setting
-                    logging.info(f"Loaded auto-image setting for guild {guild.name}: {setting}")
+                    logging.info(
+                        f"Loaded auto-image setting for guild {guild.name}: {setting}"
+                    )
                 except Exception as e:
-                    logging.warning(f"Failed to load auto-image setting for guild {guild.name}: {e}")
+                    logging.warning(
+                        f"Failed to load auto-image setting for guild {guild.name}: {e}"
+                    )
                     # Default to disabled if loading fails
                     self._auto_image_enabled[guild_id] = False
-                    
-            logging.info(f"Loaded auto-image settings for {len(self._auto_image_enabled)} guilds")
-            
+
+            logging.info(
+                f"Loaded auto-image settings for {len(self._auto_image_enabled)} guilds"
+            )
+
         except Exception as e:
             logging.error(f"Error loading auto-image settings: {e}")
 
@@ -1319,17 +1329,17 @@ class Misc(commands.Cog):
         try:
             if not self.DBConn:
                 return False
-                
+
             # Use the existing database structure to store auto-image settings
             # We'll store it in the guild's main document
             guild_doc = await self.DBConn._collection.find_one({"guild_id": guild_id})
-            
+
             if guild_doc and "auto_image_enabled" in guild_doc:
                 return guild_doc["auto_image_enabled"]
             else:
                 # Default to disabled if no setting found
                 return False
-                
+
         except Exception as e:
             logging.error(f"Error getting auto-image setting for guild {guild_id}: {e}")
             return False
@@ -1338,83 +1348,89 @@ class Misc(commands.Cog):
         """Save auto-image setting to database for a specific guild."""
         try:
             if not self.DBConn:
-                logging.warning("No database connection available for saving auto-image setting")
+                logging.warning(
+                    "No database connection available for saving auto-image setting"
+                )
                 return False
-                
+
             # Update the guild's document with the auto-image setting
             result = await self.DBConn._collection.update_one(
                 {"guild_id": guild_id},
                 {
                     "$set": {
                         "auto_image_enabled": enabled,
-                        "auto_image_updated_at": datetime.now(timezone.utc)
+                        "auto_image_updated_at": datetime.now(timezone.utc),
                     }
                 },
-                upsert=True
+                upsert=True,
             )
-            
+
             if result.modified_count > 0 or result.upserted_id:
-                logging.info(f"Saved auto-image setting for guild {guild_id}: {enabled}")
+                logging.info(
+                    f"Saved auto-image setting for guild {guild_id}: {enabled}"
+                )
                 return True
             else:
-                logging.warning(f"No changes made when saving auto-image setting for guild {guild_id}")
+                logging.warning(
+                    f"No changes made when saving auto-image setting for guild {guild_id}"
+                )
                 return False
-                
+
         except Exception as e:
             logging.error(f"Error saving auto-image setting for guild {guild_id}: {e}")
             return False
 
     @commands.slash_command(
         name="auto_image_status",
-        description="Check the current auto-image generation status for this server"
+        description="Check the current auto-image generation status for this server",
     )
     async def auto_image_status(self, ctx):
         """Check the current auto-image generation status."""
         guild_id = str(ctx.guild.id)
         current_setting = self._auto_image_enabled.get(guild_id, False)
-        
+
         embed = discord.Embed(
             title="🎨 Auto-Image Generation Status",
-            color=0x00ff00 if current_setting else 0xff0000
+            color=0x00FF00 if current_setting else 0xFF0000,
         )
-        
+
         if current_setting:
             embed.description = "✅ **Auto-Image Generation is ENABLED**"
             embed.add_field(
                 name="Current Mode",
                 value="🤖 **Automatic Generation**\nJakey will automatically generate images for simple requests.",
-                inline=False
+                inline=False,
             )
             embed.add_field(
                 name="What This Means",
                 value="• Users can say 'draw me a cat' and get images automatically\n• No need to remember command syntax\n• Faster image generation for simple requests",
-                inline=False
+                inline=False,
             )
         else:
             embed.description = "❌ **Auto-Image Generation is DISABLED**"
             embed.add_field(
                 name="Current Mode",
                 value="💡 **Suggestion Mode**\nJakey will suggest image generation commands but won't generate automatically.",
-                inline=False
+                inline=False,
             )
             embed.add_field(
                 name="What This Means",
                 value="• Users must use `/generate_image` or `/edit_image` commands\n• Full control over image generation process\n• Manual command usage required",
-                inline=False
+                inline=False,
             )
-        
+
         embed.add_field(
             name="Admin Control",
             value="Use `/auto_image [true/false]` to change this setting\nRequires 'Manage Channels' permission",
-            inline=False
+            inline=False,
         )
-        
+
         embed.add_field(
             name="Persistence",
             value="✅ Settings are saved to database and survive bot restarts",
-            inline=False
+            inline=False,
         )
-        
+
         embed.set_footer(text=f"Server: {ctx.guild.name}")
         await ctx.respond(embed=embed, ephemeral=True)
 
@@ -1422,14 +1438,16 @@ class Misc(commands.Cog):
         """Handle a new guild joining and initialize auto-image settings."""
         try:
             guild_id = str(guild.id)
-            
+
             # Check if we already have a setting for this guild
             if guild_id not in self._auto_image_enabled:
                 # Load the setting from database (or default to False)
                 setting = await self._get_auto_image_setting(guild_id)
                 self._auto_image_enabled[guild_id] = setting
-                logging.info(f"Initialized auto-image setting for new guild {guild.name}: {setting}")
-                
+                logging.info(
+                    f"Initialized auto-image setting for new guild {guild.name}: {setting}"
+                )
+
         except Exception as e:
             logging.error(f"Error handling new guild {guild.name}: {e}")
 

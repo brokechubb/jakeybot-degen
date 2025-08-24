@@ -121,7 +121,7 @@ source venv/bin/activate
 - **🧠 Memory** - Automatic memory recall and information storage (**Recommended Default**)
 - **💰 CryptoPrice** - Live Solana/Ethereum token prices
 - **💱 CurrencyConverter** - Live currency conversion (170+ currencies)
-- **🎨 ImageGen** - AI image generation & editing (**Recently Fixed!**)
+
 - **🎵 AudioTools** - Audio creation & manipulation
 - **📺 YouTube** - Video analysis & summarization
 - **💻 CodeExecution** - Python code execution

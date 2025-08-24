@@ -42,7 +42,6 @@ class AutoReturnManager:
     def _get_tool_timeouts(self) -> Dict[str, int]:
         """Get tool-specific timeout configurations from environment variables."""
         timeouts = {
-            "ImageGen": int(environ.get("TOOL_TIMEOUT_IMAGEGEN", "300")),  # 5 minutes
             "ExaSearch": int(environ.get("TOOL_TIMEOUT_EXASEARCH", "180")),  # 3 minutes
             "GitHub": int(environ.get("TOOL_TIMEOUT_GITHUB", "240")),  # 4 minutes
             "CodeExecution": int(
@@ -217,17 +216,8 @@ class AutoReturnManager:
         """
         content_lower = message_content.lower()
 
-        # ImageGen suggestions
-        if current_tool == "ImageGen":
-            if "edit" in content_lower or "modify" in content_lower:
-                if remaining_time and remaining_time < 120:
-                    return f"🎨 **Image Editing**: You're editing images with {remaining_time // 60}m {remaining_time % 60}s remaining. Consider extending with `/extend_timeout 3m` for more edits."
-            elif "generate" in content_lower or "create" in content_lower:
-                if remaining_time and remaining_time < 180:
-                    return f"🎨 **Image Generation**: Creating images takes time! You have {remaining_time // 60}m {remaining_time % 60}s remaining. Extend with `/extend_timeout 5m` for more generations."
-
         # ExaSearch suggestions
-        elif current_tool == "ExaSearch":
+        if current_tool == "ExaSearch":
             if "search" in content_lower or "find" in content_lower:
                 if remaining_time and remaining_time < 60:
                     return f"🔍 **Web Search**: Quick searches with {remaining_time}s remaining. Use `/extend_timeout 2m` for more searches, or `/return_to_default` to go back to Memory."
@@ -367,17 +357,7 @@ class AutoReturnManager:
         content_lower = message_content.lower()
 
         # Tool-specific optimization tips
-        if current_tool == "ImageGen":
-            if "edit" in content_lower and "image" not in content_lower:
-                suggestions.append(
-                    "💡 **Tip**: For image editing, make sure to attach an image first, then describe what you want to change."
-                )
-            elif "generate" in content_lower and len(content_lower.split()) < 5:
-                suggestions.append(
-                    "💡 **Tip**: Be more specific with image generation. Try: 'Generate a cute cat playing with yarn in a sunny garden'"
-                )
-
-        elif current_tool == "ExaSearch":
+        if current_tool == "ExaSearch":
             if len(content_lower.split()) < 3:
                 suggestions.append(
                     "💡 **Tip**: More specific searches get better results. Try: 'latest news about AI developments in 2025'"

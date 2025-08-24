@@ -3,7 +3,7 @@
 ## Basic Commands
 
 - `/help` - Show all available commands
-- `/feature <tool>` - Enable specific tools (ImageGen, ExaSearch, etc.)
+- `/feature <tool>` - Enable specific tools (ExaSearch, GitHub, etc.)
 - `/quickstart` - Display this guide
 - `/jakey_engage` - Make Jakey actively engage in the current channel
 - `/jakey_disengage` - Stop Jakey's active engagement
@@ -40,7 +40,6 @@
 
 ### **Popular Tools**
 
-- **ImageGen**: Generate and edit images
 - **ExaSearch**: Web search and research
 - **GitHub**: Repository analysis
 - **CodeExecution**: Run Python code
@@ -54,7 +53,7 @@
 ### **Image Generation**
 
 ```
-/feature ImageGen
+/feature ExaSearch
 generate a cute cat playing with yarn
 ```
 

@@ -185,8 +185,8 @@ Add the `DEFAULT_TOOL` environment variable to your `dev.env` file:
 
 ```bash
 # Default tool to enable for new users/guilds
-# Options: ImageGen, ExaSearch, GitHub, YouTube, AudioTools, IdeationTools, CryptoPrice, CurrencyConverter, CodeExecution, or None to disable
-DEFAULT_TOOL=ImageGen
+# Options: ExaSearch, GitHub, YouTube, AudioTools, IdeationTools, CryptoPrice, CurrencyConverter, CodeExecution, or None to disable
+DEFAULT_TOOL=Memory
 ```
 
 ### Method 2: Update Existing Users

@@ -91,7 +91,6 @@ class ConfigValidator:
 
         # Validate timeout configurations
         timeout_vars = [
-            "TOOL_TIMEOUT_IMAGEGEN",
             "TOOL_TIMEOUT_EXASEARCH",
             "TOOL_TIMEOUT_GITHUB",
             "TOOL_TIMEOUT_CODEEXECUTION",

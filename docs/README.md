@@ -103,7 +103,7 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 ### **Popular Tools**
 
 - **🧠 Memory** - Personal information recall
-- **🎨 ImageGen** - AI image creation
+
 - **🔍 ExaSearch** - Web search
 - **💰 CryptoPrice** - Live crypto prices
 - **🎲 GamblingGames** - Betting pools and trivia

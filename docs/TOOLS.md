@@ -289,7 +289,7 @@ Use the `/feature` command to enable a specific tool:
 
 ```
 /feature Memory          # Enable Memory tool
-/feature ImageGen        # Enable Image Generation
+/generate_image         # Generate images directly
 /feature ExaSearch       # Enable Web Search
 ```
 
@@ -358,7 +358,7 @@ python scripts/test_memory.py
 ```bash
 # View tool health and configuration
 python scripts/manage_tools.py status Memory
-python scripts/manage_tools.py status ImageGen
+python scripts/manage_tools.py status ExaSearch
 ```
 
 ## 📊 Tool Usage Statistics

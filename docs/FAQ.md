@@ -47,7 +47,7 @@ Each model maintains separate conversation contexts for optimal performance and 
 
 ```
 /feature Memory          # Enable Memory tool
-/feature ImageGen        # Enable Image Generation
+/generate_image         # Generate images directly
 /feature ExaSearch       # Enable Web Search
 /feature GitHub          # Enable GitHub integration
 ```
@@ -61,7 +61,7 @@ Each model maintains separate conversation contexts for optimal performance and 
 **A**: JakeyBot offers many tools:
 
 - **🧠 Memory** - Remember and recall information
-- **🎨 ImageGen** - Generate and edit images
+
 - **🔍 ExaSearch** - Web search capabilities
 - **📚 GitHub** - Repository analysis
 - **🎥 YouTube** - Video search and analysis
