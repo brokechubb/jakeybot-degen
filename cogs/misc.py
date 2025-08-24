@@ -264,13 +264,31 @@ class Misc(commands.Cog):
             logging.info(f"Using auto-image generation model: {model_name}")
             model = genai.GenerativeModel(model_name=model_name)
 
-            # Generate the image
+            # Generate the image with safety settings disabled
             response = await model.generate_content_async(
                 contents=prompt,
                 generation_config={
                     "temperature": 0.7,  # Default temperature for auto-generation
                     "max_output_tokens": 8192,
                 },
+                safety_settings=[
+                    {
+                        "category": "HARM_CATEGORY_HARASSMENT",
+                        "threshold": "BLOCK_NONE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_HATE_SPEECH", 
+                        "threshold": "BLOCK_NONE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                        "threshold": "BLOCK_NONE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                        "threshold": "BLOCK_NONE"
+                    }
+                ]
             )
 
             if not response.candidates or not response.candidates[0].content:
@@ -1057,13 +1075,31 @@ class Misc(commands.Cog):
             logging.info(f"Using image generation model: {model_name}")
             model = genai.GenerativeModel(model_name=model_name)
 
-            # Generate the image
+            # Generate the image with safety settings disabled
             response = await model.generate_content_async(
                 contents=prompt,
                 generation_config={
                     "temperature": temperature,
                     "max_output_tokens": 8192,
                 },
+                safety_settings=[
+                    {
+                        "category": "HARM_CATEGORY_HARASSMENT",
+                        "threshold": "BLOCK_NONE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_HATE_SPEECH", 
+                        "threshold": "BLOCK_NONE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                        "threshold": "BLOCK_NONE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                        "threshold": "BLOCK_NONE"
+                    }
+                ]
             )
 
             if not response.candidates or not response.candidates[0].content:
@@ -1220,13 +1256,31 @@ class Misc(commands.Cog):
                 data=image_data, mime_type=image_attachment.content_type
             )
 
-            # Generate the edited image
+            # Generate the edited image with safety settings disabled
             response = await model.generate_content_async(
                 contents=[prompt, image_part],
                 generation_config={
                     "temperature": temperature,
                     "max_output_tokens": 8192,
                 },
+                safety_settings=[
+                    {
+                        "category": "HARM_CATEGORY_HARASSMENT",
+                        "threshold": "BLOCK_NONE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_HATE_SPEECH", 
+                        "threshold": "BLOCK_NONE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                        "threshold": "BLOCK_NONE"
+                    },
+                    {
+                        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                        "threshold": "BLOCK_NONE"
+                    }
+                ]
             )
 
             if not response.candidates or not response.candidates[0].content:
