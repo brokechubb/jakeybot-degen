@@ -270,7 +270,7 @@ class Misc(commands.Cog):
                 generation_config={
                     "temperature": 0.7,  # Default temperature for auto-generation
                     "max_output_tokens": 8192,
-                    "response_modalities": ["IMAGE"]
+                    "response_modalities": ["IMAGE", "TEXT"]
                 },
                 safety_settings=[
                     {
@@ -1079,11 +1079,11 @@ class Misc(commands.Cog):
             # Generate the image with safety settings disabled
             response = await model.generate_content_async(
                     contents=prompt,
-                    generation_config={
-                        "temperature": temperature,
-                        "max_output_tokens": 8192,
-                        "response_modalities": ["IMAGE"]
-                    },
+                                    generation_config={
+                    "temperature": temperature,
+                    "max_output_tokens": 8192,
+                    "response_modalities": ["IMAGE", "TEXT"]
+                },
                     safety_settings=[
                         {
                             "category": "HARM_CATEGORY_HARASSMENT",
@@ -1287,7 +1287,7 @@ class Misc(commands.Cog):
                 generation_config={
                     "temperature": temperature,
                     "max_output_tokens": 8192,
-                    "response_modalities": ["IMAGE"]
+                    "response_modalities": ["IMAGE", "TEXT"]
                 },
                 safety_settings=[
                     {
