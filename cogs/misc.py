@@ -4,7 +4,7 @@ from discord.ext import commands
 from discord import Member, DiscordException
 import yaml
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from core.services.helperfunctions import HelperFunctions
 from core.ai.history import History
 import motor.motor_asyncio
@@ -68,6 +68,14 @@ class Misc(commands.Cog):
                     logging.info("Misc cog configured Gemini API locally.")
                 except Exception as e:
                     logging.warning(f"Failed to configure Gemini API locally: {e}")
+
+        # Initialize auto-image settings and load from database
+        self._auto_image_enabled = {}
+        if self.DBConn:
+            self.bot.loop.create_task(self._load_auto_image_settings())
+            logging.info("Auto-image settings loader started")
+        else:
+            logging.warning("Auto-image settings loader not started - no database connection")
 
     async def _check_reminders(self):
         await self.bot.wait_until_ready()
@@ -184,55 +192,68 @@ class Misc(commands.Cog):
         return None
 
     @commands.slash_command(
-        name="auto_image", description="Toggle automatic image generation for simple requests"
+        name="auto_image",
+        description="Toggle automatic image generation for simple requests",
     )
     @commands.has_permissions(manage_channels=True)
     async def auto_image(self, ctx, enabled: bool = None):
         """Toggle automatic image generation mode."""
         guild_id = str(ctx.guild.id)
-        
+
         # Get current setting
-        current_setting = getattr(self, '_auto_image_enabled', {}).get(guild_id, False)
-        
+        current_setting = self._auto_image_enabled.get(guild_id, False)
+
         if enabled is None:
             # Toggle the current setting
             enabled = not current_setting
-        
-        # Update the setting
-        if not hasattr(self, '_auto_image_enabled'):
-            self._auto_image_enabled = {}
-        
+
+        # Update the setting in memory
         self._auto_image_enabled[guild_id] = enabled
         
-        if enabled:
-            await ctx.respond(
-                "🎨 **Auto-Image Generation Enabled!**\n"
-                "Jakey will now automatically generate images for simple requests.\n"
-                "Users can still use manual commands for more control.",
-                ephemeral=True
-            )
+        # Save the setting to the database
+        save_success = await self._save_auto_image_setting(guild_id, enabled)
+        
+        if save_success:
+            if enabled:
+                await ctx.respond(
+                    "🎨 **Auto-Image Generation Enabled!**\n"
+                    "Jakey will now automatically generate images for simple requests.\n"
+                    "Users can still use manual commands for more control.\n"
+                    "✅ Setting saved to database (persistent across restarts).",
+                    ephemeral=True,
+                )
+            else:
+                await ctx.respond(
+                    "🎨 **Auto-Image Generation Disabled!**\n"
+                    "Jakey will only suggest image generation commands.\n"
+                    "Users must manually use `/generate_image` or `/edit_image`.\n"
+                    "✅ Setting saved to database (persistent across restarts).",
+                    ephemeral=True,
+                )
         else:
+            # If saving failed, revert the memory setting
+            self._auto_image_enabled[guild_id] = current_setting
             await ctx.respond(
-                "🎨 **Auto-Image Generation Disabled!**\n"
-                "Jakey will only suggest image generation commands.\n"
-                "Users must manually use `/generate_image` or `/edit_image`.",
-                ephemeral=True
+                "❌ **Failed to save setting!**\n"
+                "The change was not saved to the database.\n"
+                "Please try again or contact an administrator.",
+                ephemeral=True,
             )
 
     async def _auto_generate_image(self, message, prompt: str):
         """Automatically generate an image for a user request."""
         if not self._gemini_api_configured:
             return False
-            
+
         try:
             # Send initial status message
             status_msg = await message.channel.send(
                 f"🎨 **Auto-Generating Image**\n"
                 f"Prompt: *{prompt}*\n"
                 f"⌛ This may take a few minutes...",
-                reference=message
+                reference=message,
             )
-            
+
             # Get the model for image generation
             model_name = environ.get("GEMINI_MODEL_NAME", "gemini-1.5-flash")
             model = genai.GenerativeModel(model_name=model_name)
@@ -245,16 +266,20 @@ class Misc(commands.Cog):
                     "candidate_count": 1,
                     "temperature": 0.7,  # Default temperature for auto-generation
                     "max_output_tokens": 8192,
-                }
+                },
             )
 
             if not response.candidates or not response.candidates[0].content:
-                await status_msg.edit(content="❌ Auto-generation failed. Please try `/generate_image` manually.")
+                await status_msg.edit(
+                    content="❌ Auto-generation failed. Please try `/generate_image` manually."
+                )
                 return False
 
             # Check for safety issues
             if response.candidates[0].finish_reason == "IMAGE_SAFETY":
-                await status_msg.edit(content="❌ Auto-generation blocked by safety filters. Please try a different prompt.")
+                await status_msg.edit(
+                    content="❌ Auto-generation blocked by safety filters. Please try a different prompt."
+                )
                 return False
 
             # Process and send generated images
@@ -264,26 +289,30 @@ class Misc(commands.Cog):
                     # Create filename with timestamp
                     timestamp = datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
                     filename = f"auto_generated_{timestamp}_part{index}.png"
-                    
+
                     # Send the image
                     file = discord.File(
                         fp=io.BytesIO(part.inline_data.data), filename=filename
                     )
-                    
+
                     await message.channel.send(
                         f"🎨 **Auto-Generated Image {index + 1}**\n"
                         f"Prompt: *{prompt}*\n"
                         f"💡 Use `/generate_image` for more control next time!",
                         file=file,
-                        reference=message
+                        reference=message,
                     )
                     images_sent += 1
 
             if images_sent > 0:
-                await status_msg.edit(content=f"✅ **Auto-Generation Complete!** Generated {images_sent} image(s).")
+                await status_msg.edit(
+                    content=f"✅ **Auto-Generation Complete!** Generated {images_sent} image(s)."
+                )
                 return True
             else:
-                await status_msg.edit(content="❌ No images were generated. Please try `/generate_image` manually.")
+                await status_msg.edit(
+                    content="❌ No images were generated. Please try `/generate_image` manually."
+                )
                 return False
 
         except Exception as e:
@@ -295,63 +324,88 @@ class Misc(commands.Cog):
     async def on_message(self, message):
         """Listen for messages and automatically offer image generation when appropriate."""
         # Ignore bot messages and commands
-        if message.author.bot or message.content.startswith('/'):
+        if message.author.bot or message.content.startswith("/"):
             return
-            
+
         # Check if the message is asking for image generation
         image_keywords = [
-            "generate an image", "create an image", "make an image", "draw me", "show me a picture",
-            "generate a picture", "create a picture", "make a picture", "draw a", "show a",
-            "can you draw", "can you create", "can you make", "can you generate",
-            "i want an image", "i need an image", "i'd like an image", "i would like an image",
-            "generate image of", "create image of", "make image of", "draw image of",
-            "picture of", "image of", "drawing of", "art of", "illustration of"
+            "generate an image",
+            "create an image",
+            "make an image",
+            "draw me",
+            "show me a picture",
+            "generate a picture",
+            "create a picture",
+            "make a picture",
+            "draw a",
+            "show a",
+            "can you draw",
+            "can you create",
+            "can you make",
+            "can you generate",
+            "i want an image",
+            "i need an image",
+            "i'd like an image",
+            "i would like an image",
+            "generate image of",
+            "create image of",
+            "make image of",
+            "draw image of",
+            "picture of",
+            "image of",
+            "drawing of",
+            "art of",
+            "illustration of",
         ]
-        
+
         message_lower = message.content.lower()
         is_image_request = any(keyword in message_lower for keyword in image_keywords)
-        
+
         if is_image_request:
             # Extract potential prompt from the message
             prompt = self._extract_image_prompt(message.content)
-            
+
             # Check if auto-generation is enabled for this guild
             guild_id = str(message.guild.id) if message.guild else "dm"
-            auto_enabled = getattr(self, '_auto_image_enabled', {}).get(guild_id, False)
-            
-            if auto_enabled and len(prompt) > 10:  # Only auto-generate for substantial prompts
+            auto_enabled = getattr(self, "_auto_image_enabled", {}).get(guild_id, False)
+
+            if (
+                auto_enabled and len(prompt) > 10
+            ):  # Only auto-generate for substantial prompts
                 # Try to auto-generate the image
                 success = await self._auto_generate_image(message, prompt)
                 if success:
                     return  # Don't send the suggestion if auto-generation succeeded
-            
+
             # Create a helpful response with image generation options
             embed = discord.Embed(
                 title="🎨 Image Generation Detected!",
                 description=f"I detected you're asking for an image! Here are your options:",
-                color=0x00ff00
+                color=0x00FF00,
             )
-            
+
             embed.add_field(
                 name="🖼️ Generate New Image",
                 value=f"Use `/generate_image {prompt}` to create a new image",
-                inline=False
+                inline=False,
             )
-            
+
             embed.add_field(
-                name="✏️ Edit Existing Image", 
+                name="✏️ Edit Existing Image",
                 value="Attach an image and use `/edit_image <prompt>` to modify it",
-                inline=False
+                inline=False,
             )
-            
+
             embed.add_field(
                 name="❓ Need Help?",
                 value="Use `/image_help` for detailed instructions",
-                inline=False
+                inline=False,
             )
-            
-            embed.set_footer(text="💡 Tip: You can also adjust creativity with the temperature parameter")
-            
+
+            embed.set_footer(
+                text="💡 Tip: You can also adjust creativity with the temperature parameter"
+            )
+
             # Send the helpful response
             await message.channel.send(embed=embed, reference=message)
 
@@ -359,17 +413,33 @@ class Misc(commands.Cog):
         """Extract a potential image prompt from a message."""
         # Remove common request words to get to the actual description
         request_words = [
-            "generate an image of", "create an image of", "make an image of", "draw me",
-            "generate a picture of", "create a picture of", "make a picture of",
-            "can you draw", "can you create", "can you make", "can you generate",
-            "i want an image of", "i need an image of", "i'd like an image of",
-            "i would like an image of", "show me a picture of", "show a picture of",
-            "picture of", "image of", "drawing of", "art of", "illustration of"
+            "generate an image of",
+            "create an image of",
+            "make an image of",
+            "draw me",
+            "generate a picture of",
+            "create a picture of",
+            "make a picture of",
+            "can you draw",
+            "can you create",
+            "can you make",
+            "can you generate",
+            "i want an image of",
+            "i need an image of",
+            "i'd like an image of",
+            "i would like an image of",
+            "show me a picture of",
+            "show a picture of",
+            "picture of",
+            "image of",
+            "drawing of",
+            "art of",
+            "illustration of",
         ]
-        
+
         message_lower = message_content.lower()
         prompt = message_content
-        
+
         # Try to extract the actual description
         for request_word in request_words:
             if request_word in message_lower:
@@ -377,14 +447,14 @@ class Misc(commands.Cog):
                 start_pos = message_lower.find(request_word) + len(request_word)
                 prompt = message_content[start_pos:].strip()
                 break
-        
+
         # Clean up the prompt
         prompt = prompt.strip(".,!?")
-        
+
         # If prompt is too short, provide a default
         if len(prompt) < 3:
             prompt = "your request"
-            
+
         return prompt
 
     @commands.slash_command(
@@ -1171,19 +1241,19 @@ class Misc(commands.Cog):
             description="Generate and edit images using AI without needing the AI to use tools!",
             color=0x00FF00,
         )
-        
+
         embed.add_field(
             name="/generate_image",
             value="Generate a new image from a text prompt\n**Usage:** `/generate_image <prompt> [temperature]`\n**Example:** `/generate_image a cute robot playing guitar`",
             inline=False,
         )
-        
+
         embed.add_field(
             name="/edit_image",
             value="Edit an existing image. Attach an image first!\n**Usage:** `/edit_image <prompt> [temperature]`\n**Example:** `/edit_image add a hat` (with image attached)",
             inline=False,
         )
-        
+
         embed.add_field(
             name="/auto_image",
             value="Toggle automatic image generation mode (Admin only)\n**Usage:** `/auto_image [true/false]`\n**Effect:** Jakey automatically generates images for simple requests",
@@ -1191,25 +1261,182 @@ class Misc(commands.Cog):
         )
         
         embed.add_field(
-            name="🤖 Auto-Generation Mode",
-            value="When enabled, Jakey will automatically detect image requests and generate images instantly!\n**Example:** Say 'draw me a cat' and Jakey will generate it automatically.",
+            name="/auto_image_status",
+            value="Check current auto-image generation status for this server\n**Usage:** `/auto_image_status`\n**Shows:** Current mode, what it means, and admin controls",
             inline=False,
         )
         
+        embed.add_field(
+            name="🤖 Auto-Generation Mode",
+            value="When enabled, Jakey will automatically detect image requests and generate images instantly!\n**Example:** Say 'draw me a cat' and Jakey will generate it automatically.\n**Persistence:** Settings are saved to database and survive bot restarts.",
+            inline=False,
+        )
+
         embed.add_field(
             name="Temperature",
             value="Controls creativity (0.0 = focused, 1.2 = very creative)\n**Default:** 0.7",
             inline=False,
         )
-        
+
         embed.add_field(
             name="Tips",
             value="• Be specific in your prompts\n• For editing, keep prompts simple\n• Images are generated in PNG format\n• Maximum file size: 10MB\n• Auto-generation works best with detailed prompts",
             inline=False,
         )
-        
+
         embed.set_footer(text="Powered by Gemini AI")
         await ctx.respond(embed=embed, ephemeral=True)
+
+    async def _load_auto_image_settings(self):
+        """Load auto-image generation settings from the database."""
+        await self.bot.wait_until_ready()
+        
+        try:
+            if not self.DBConn:
+                logging.warning("No database connection available for loading auto-image settings")
+                return
+                
+            # Get all guilds and load their auto-image settings
+            for guild in self.bot.guilds:
+                guild_id = str(guild.id)
+                try:
+                    # Try to get the setting from the database
+                    setting = await self._get_auto_image_setting(guild_id)
+                    self._auto_image_enabled[guild_id] = setting
+                    logging.info(f"Loaded auto-image setting for guild {guild.name}: {setting}")
+                except Exception as e:
+                    logging.warning(f"Failed to load auto-image setting for guild {guild.name}: {e}")
+                    # Default to disabled if loading fails
+                    self._auto_image_enabled[guild_id] = False
+                    
+            logging.info(f"Loaded auto-image settings for {len(self._auto_image_enabled)} guilds")
+            
+        except Exception as e:
+            logging.error(f"Error loading auto-image settings: {e}")
+
+    async def _get_auto_image_setting(self, guild_id: str) -> bool:
+        """Get auto-image setting from database for a specific guild."""
+        try:
+            if not self.DBConn:
+                return False
+                
+            # Use the existing database structure to store auto-image settings
+            # We'll store it in the guild's main document
+            guild_doc = await self.DBConn._collection.find_one({"guild_id": guild_id})
+            
+            if guild_doc and "auto_image_enabled" in guild_doc:
+                return guild_doc["auto_image_enabled"]
+            else:
+                # Default to disabled if no setting found
+                return False
+                
+        except Exception as e:
+            logging.error(f"Error getting auto-image setting for guild {guild_id}: {e}")
+            return False
+
+    async def _save_auto_image_setting(self, guild_id: str, enabled: bool) -> bool:
+        """Save auto-image setting to database for a specific guild."""
+        try:
+            if not self.DBConn:
+                logging.warning("No database connection available for saving auto-image setting")
+                return False
+                
+            # Update the guild's document with the auto-image setting
+            result = await self.DBConn._collection.update_one(
+                {"guild_id": guild_id},
+                {
+                    "$set": {
+                        "auto_image_enabled": enabled,
+                        "auto_image_updated_at": datetime.now(timezone.utc)
+                    }
+                },
+                upsert=True
+            )
+            
+            if result.modified_count > 0 or result.upserted_id:
+                logging.info(f"Saved auto-image setting for guild {guild_id}: {enabled}")
+                return True
+            else:
+                logging.warning(f"No changes made when saving auto-image setting for guild {guild_id}")
+                return False
+                
+        except Exception as e:
+            logging.error(f"Error saving auto-image setting for guild {guild_id}: {e}")
+            return False
+
+    @commands.slash_command(
+        name="auto_image_status",
+        description="Check the current auto-image generation status for this server"
+    )
+    async def auto_image_status(self, ctx):
+        """Check the current auto-image generation status."""
+        guild_id = str(ctx.guild.id)
+        current_setting = self._auto_image_enabled.get(guild_id, False)
+        
+        embed = discord.Embed(
+            title="🎨 Auto-Image Generation Status",
+            color=0x00ff00 if current_setting else 0xff0000
+        )
+        
+        if current_setting:
+            embed.description = "✅ **Auto-Image Generation is ENABLED**"
+            embed.add_field(
+                name="Current Mode",
+                value="🤖 **Automatic Generation**\nJakey will automatically generate images for simple requests.",
+                inline=False
+            )
+            embed.add_field(
+                name="What This Means",
+                value="• Users can say 'draw me a cat' and get images automatically\n• No need to remember command syntax\n• Faster image generation for simple requests",
+                inline=False
+            )
+        else:
+            embed.description = "❌ **Auto-Image Generation is DISABLED**"
+            embed.add_field(
+                name="Current Mode",
+                value="💡 **Suggestion Mode**\nJakey will suggest image generation commands but won't generate automatically.",
+                inline=False
+            )
+            embed.add_field(
+                name="What This Means",
+                value="• Users must use `/generate_image` or `/edit_image` commands\n• Full control over image generation process\n• Manual command usage required",
+                inline=False
+            )
+        
+        embed.add_field(
+            name="Admin Control",
+            value="Use `/auto_image [true/false]` to change this setting\nRequires 'Manage Channels' permission",
+            inline=False
+        )
+        
+        embed.add_field(
+            name="Persistence",
+            value="✅ Settings are saved to database and survive bot restarts",
+            inline=False
+        )
+        
+        embed.set_footer(text=f"Server: {ctx.guild.name}")
+        await ctx.respond(embed=embed, ephemeral=True)
+
+    async def _handle_new_guild(self, guild):
+        """Handle a new guild joining and initialize auto-image settings."""
+        try:
+            guild_id = str(guild.id)
+            
+            # Check if we already have a setting for this guild
+            if guild_id not in self._auto_image_enabled:
+                # Load the setting from database (or default to False)
+                setting = await self._get_auto_image_setting(guild_id)
+                self._auto_image_enabled[guild_id] = setting
+                logging.info(f"Initialized auto-image setting for new guild {guild.name}: {setting}")
+                
+        except Exception as e:
+            logging.error(f"Error handling new guild {guild.name}: {e}")
+
+    @commands.Cog.listener()
+    async def on_guild_join(self, guild):
+        """Handle when the bot joins a new guild."""
+        await self._handle_new_guild(guild)
 
 
 def setup(bot):
