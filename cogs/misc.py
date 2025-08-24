@@ -9,8 +9,8 @@ from core.services.helperfunctions import HelperFunctions
 from core.ai.history import History
 import motor.motor_asyncio
 from os import environ
-import google.genai as genai
-from google.genai import types
+import google.generativeai as genai
+from google.generativeai import types
 import aiohttp
 import io
 import requests
