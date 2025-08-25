@@ -345,6 +345,15 @@ class Misc(commands.Cog):
         if message.author.bot or message.content.startswith("/"):
             return
 
+        # Check if the message is directed at the bot (mention or prefix command)
+        bot_mentioned = self.bot.user in message.mentions
+        prefix = getattr(self.bot, 'command_prefix', '!')
+        starts_with_prefix = message.content.startswith(prefix)
+        
+        # Only proceed if the message is directed at the bot
+        if not (bot_mentioned or starts_with_prefix):
+            return
+
         # Check if the message is asking for image generation
         image_keywords = [
             "generate an image",
@@ -1424,7 +1433,7 @@ class Misc(commands.Cog):
 
         embed.add_field(
             name="🤖 Auto-Generation Mode",
-            value="When enabled, Jakey will automatically detect image requests and generate images instantly!\n**Example:** Say 'draw me a cat' and Jakey will generate it automatically.\n**Persistence:** Settings are saved to database and survive bot restarts.",
+            value="When enabled, Jakey will automatically detect image requests and generate images instantly!\n**Important:** Only works when you mention Jakey or use prefix commands.\n**Example:** '@Jakey draw me a cat' or '!draw me a cat' will trigger auto-generation.\n**Persistence:** Settings are saved to database and survive bot restarts.",
             inline=False,
         )
 
@@ -1661,14 +1670,14 @@ class Misc(commands.Cog):
         # Advanced features
         embed.add_field(
             name="⚡ **Advanced Features**",
-            value="• **Image Generation**: `/generate_image <prompt>`\n• **Image Editing**: `/edit_image <prompt>`\n• **Auto-Image**: Automatic detection and generation\n• **Reminders**: `/remind <time> <message>`\n• **Trivia Games**: `/trivia` for fun challenges\n• **Gambling Games**: `/create_bet` for betting pools\n• **Keno Numbers**: `/keno` for random number generation",
+            value="• **Image Generation**: `/generate_image <prompt>`\n• **Image Editing**: `/edit_image <prompt>`\n• **Auto-Image**: Automatic detection when you mention Jakey\n• **Reminders**: `/remind <time> <message>`\n• **Trivia Games**: `/trivia` for fun challenges\n• **Gambling Games**: `/create_bet` for betting pools\n• **Keno Numbers**: `/keno` for random number generation",
             inline=False,
         )
 
         # Tips
         embed.add_field(
             name="💡 **Pro Tips & Best Practices**",
-            value="• **Start with Memory**: `/feature Memory` for best experience\n• **Natural Language**: Jakey understands context and conversation\n• **Image Support**: Attach images for visual analysis\n• **Model Switching**: Use `/model set` to match your needs\n• **Tool Combinations**: Enable multiple tools for enhanced capabilities\n• **Auto-Return**: Tools automatically return to default after timeout",
+            value="• **Start with Memory**: `/feature Memory` for best experience\n• **Natural Language**: Jakey understands context and conversation\n• **Image Support**: Attach images for visual analysis\n• **Model Switching**: Use `/model set` to match your needs\n• **Tool Combinations**: Enable multiple tools for enhanced capabilities\n• **Auto-Return**: Tools automatically return to default after timeout\n• **Auto-Image**: Only triggers when you mention Jakey or use prefix commands",
             inline=False,
         )
 
