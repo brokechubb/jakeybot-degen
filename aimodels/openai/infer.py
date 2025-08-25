@@ -112,25 +112,54 @@ class Completions(ModelParams):
                         self._model_name,
                     )
 
-            # For GPT-5 models, maintain personality by using Jakey's recommended temperature
-            # Only override if temperature hasn't been set to Jakey's preferred value
+            # For GPT-5 models, check if they support custom temperature
+            # Some GPT-5 models only support default temperature (1.0)
             if self._genai_params.get("temperature") == 0.7:  # Default OpenAI temperature
-                self._genai_params["temperature"] = 1.1  # Jakey's preferred temperature
-                logging.info(
-                    "Using Jakey's personality temperature (1.1) for GPT-5 model: %s",
-                    self._model_name,
-                )
+                # Check if this is a model that supports custom temperature
+                if self._model_name in ["gpt-5", "gpt-5-mini", "gpt-5-mini-high"]:
+                    # These models support custom temperature
+                    self._genai_params["temperature"] = 1.1  # Jakey's preferred temperature
+                    logging.info(
+                        "Using Jakey's personality temperature (1.1) for GPT-5 model: %s",
+                        self._model_name,
+                    )
+                else:
+                    # For models like gpt-5-nano, use default temperature (1.0)
+                    self._genai_params["temperature"] = 1.0
+                    logging.info(
+                        "Using default temperature (1.0) for GPT-5 model that doesn't support custom temperature: %s",
+                        self._model_name,
+                    )
             
             # Add personality reinforcement parameters for GPT-5 models
-            self._genai_params.update({
-                "top_p": 0.95,  # Jakey's preferred top_p
-                "frequency_penalty": 0.1,  # Reduce repetition
-                "presence_penalty": 0.05,  # Encourage new topics
-            })
-            logging.info(
-                "Applied personality reinforcement parameters for GPT-5 model: %s",
-                self._model_name,
-            )
+            # Some models might not support all parameters, so we'll add them conditionally
+            personality_params = {}
+            
+            # Add top_p if not already set
+            if "top_p" not in self._genai_params:
+                personality_params["top_p"] = 0.95  # Jakey's preferred top_p
+            
+            # Add frequency_penalty if not already set
+            if "frequency_penalty" not in self._genai_params:
+                personality_params["frequency_penalty"] = 0.1  # Reduce repetition
+            
+            # Add presence_penalty if not already set
+            if "presence_penalty" not in self._genai_params:
+                personality_params["presence_penalty"] = 0.05  # Encourage new topics
+            
+            # Update parameters if we have any to add
+            if personality_params:
+                self._genai_params.update(personality_params)
+                logging.info(
+                    "Applied personality reinforcement parameters for GPT-5 model: %s - %s",
+                    self._model_name,
+                    list(personality_params.keys())
+                )
+            else:
+                logging.info(
+                    "No additional personality parameters needed for GPT-5 model: %s",
+                    self._model_name,
+                )
 
         _response = await self._openai_client.chat.completions.create(
             model=self._model_name,

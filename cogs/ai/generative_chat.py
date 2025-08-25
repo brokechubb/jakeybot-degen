@@ -42,7 +42,11 @@ class BaseChat:
 
         _model_provider = _model.split("::")[0]
         _model_name = _model.split("::")[-1]
-        logging.info("Initial model extraction - provider: %s, name: %s", _model_provider, _model_name)
+        logging.info(
+            "Initial model extraction - provider: %s, name: %s",
+            _model_provider,
+            _model_name,
+        )
         if "/model:" in prompt.content:
             _modelUsed = await prompt.channel.send(f"🔍 Using specific model")
             async for _model_selection in ModelsList.get_models_list_async():
@@ -53,13 +57,21 @@ class BaseChat:
                 # So, we are using \s|$ to match the end of the string and the suffix gets matched or if it's placed at the end of the string
                 if re.search(rf"\/model:{_model_name}(\s|$)", prompt.content):
                     await _modelUsed.edit(content=f"🔍 Using model: **{_model_name}**")
-                    logging.info("Model selected from list - provider: %s, name: %s", _model_provider, _model_name)
+                    logging.info(
+                        "Model selected from list - provider: %s, name: %s",
+                        _model_provider,
+                        _model_name,
+                    )
                     break
             else:
                 _model_provider = _model.split("::")[0]
                 _model_name = _model.split("::")[-1]
                 await _modelUsed.edit(content=f"🔍 Using model: **{_model_name}**")
-                logging.info("Model fallback to default - provider: %s, name: %s", _model_provider, _model_name)
+                logging.info(
+                    "Model fallback to default - provider: %s, name: %s",
+                    _model_provider,
+                    _model_name,
+                )
 
         # Check for /chat:ephemeral
         _append_history = True
@@ -120,11 +132,16 @@ class BaseChat:
         _system_prompt = await HelperFunctions.set_assistant_type(
             "jakey_system_prompt", type=0
         )
-        
+
         # Debug logging for system prompt loading
         logging.info("Loaded base system prompt for model: %s", _model_name)
         logging.info("System prompt length: %d characters", len(_system_prompt))
-        logging.info("System prompt preview: %s", _system_prompt[:200] + "..." if len(_system_prompt) > 200 else _system_prompt)
+        logging.info(
+            "System prompt preview: %s",
+            _system_prompt[:200] + "..."
+            if len(_system_prompt) > 200
+            else _system_prompt,
+        )
 
         # Retrieve relevant facts from knowledge base
         facts = await self.DBConn.search_facts(guild_id, _final_prompt, limit=3)
@@ -198,7 +215,12 @@ REMEMBER: You are Jakey, not a generic AI assistant. Act like the rude, gambling
 
         # Debug logging for final system prompt
         logging.info("Final system prompt length: %d characters", len(_system_prompt))
-        logging.info("Final system prompt preview: %s", _system_prompt[:300] + "..." if len(_system_prompt) > 300 else _system_prompt)
+        logging.info(
+            "Final system prompt preview: %s",
+            _system_prompt[:300] + "..."
+            if len(_system_prompt) > 300
+            else _system_prompt,
+        )
 
         # Generate the response and simulate the typing
         async with prompt.channel.typing():
