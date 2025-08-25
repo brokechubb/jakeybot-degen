@@ -60,23 +60,24 @@ class CacheManager:
             "total_requests": 0,
         }
 
-        # Start cleanup task
+        # Initialize cleanup task (will be started later when event loop is available)
         self._cleanup_task = None
-        self._start_cleanup_task()
 
     def _start_cleanup_task(self):
         """Start the background cleanup task."""
-
-        async def cleanup_loop():
-            while True:
-                try:
-                    await asyncio.sleep(60)  # Clean up every minute
-                    self._cleanup_expired_entries()
-                except Exception as e:
-                    logging.error(f"Error in cache cleanup: {e}")
-
+        # Only create the task if we're in an event loop
         try:
-            self._cleanup_task = asyncio.create_task(cleanup_loop())
+            loop = asyncio.get_running_loop()
+            
+            async def cleanup_loop():
+                while True:
+                    try:
+                        await asyncio.sleep(60)  # Clean up every minute
+                        self._cleanup_expired_entries()
+                    except Exception as e:
+                        logging.error(f"Error in cache cleanup: {e}")
+
+            self._cleanup_task = loop.create_task(cleanup_loop())
         except RuntimeError:
             # No event loop running, will start later
             self._cleanup_task = None
@@ -84,7 +85,22 @@ class CacheManager:
     async def start_cleanup_task(self):
         """Start the background cleanup task if not already running."""
         if self._cleanup_task is None:
-            self._start_cleanup_task()
+            # Use the current event loop to create the task
+            try:
+                loop = asyncio.get_running_loop()
+                
+                async def cleanup_loop():
+                    while True:
+                        try:
+                            await asyncio.sleep(60)  # Clean up every minute
+                            self._cleanup_expired_entries()
+                        except Exception as e:
+                            logging.error(f"Error in cache cleanup: {e}")
+
+                self._cleanup_task = loop.create_task(cleanup_loop())
+            except RuntimeError:
+                # No event loop running, will start later
+                self._cleanup_task = None
 
     def _cleanup_expired_entries(self):
         """Remove expired cache entries."""

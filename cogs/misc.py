@@ -347,9 +347,14 @@ class Misc(commands.Cog):
 
         # Check if the message is directed at the bot (mention or prefix command)
         bot_mentioned = self.bot.user in message.mentions
-        prefix = getattr(self.bot, 'command_prefix', '!')
-        starts_with_prefix = message.content.startswith(prefix)
-        
+
+        # Get the bot's command prefix and check for common variations
+        prefix = getattr(self.bot, "command_prefix", "!")
+        possible_prefixes = [prefix, "jakey", "Jakey", "jakey ", "Jakey "]
+        starts_with_prefix = any(
+            message.content.startswith(p) for p in possible_prefixes
+        )
+
         # Only proceed if the message is directed at the bot
         if not (bot_mentioned or starts_with_prefix):
             return
@@ -397,7 +402,7 @@ class Misc(commands.Cog):
             auto_enabled = getattr(self, "_auto_image_enabled", {}).get(guild_id, False)
 
             if (
-                auto_enabled and len(prompt) > 5
+                auto_enabled and len(prompt) > 3
             ):  # Only auto-generate for substantial prompts
                 # Try to auto-generate the image
                 success = await self._auto_generate_image(message, prompt)
