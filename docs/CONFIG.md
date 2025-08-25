@@ -28,6 +28,7 @@ for chat history and other settings, this may be required.
 - `GROQ_API_KEY` - Used to access models from Groq such as Deepseek R1 distilled and LLaMA models [Groq Cloud Console](https://console.groq.com/keys)
 - `OPENROUTER_API_KEY` - Set an OpenRouter API key to access models within `/openrouter` command and when the model `openrouter` is set.
 - `HF_TOKEN` - HuggingFace inference token for accessing HuggingFace serverless-supported models
+- `POLLINATIONS_API_KEY` - Set the Pollinations.AI API key for uncensored models and premium features. [Get an API key from Pollinations.AI](https://pollinations.ai/api). Optional - works without API key for basic features.
 
 ## API and Search tools
 
@@ -38,6 +39,57 @@ To use Google Search, Bing Search, and YouTube tools, you must set the following
 - `BING_SUBSCRIPTION_KEY` - Bing Search API subscription key [Get free F1 key](https://www.microsoft.com/en-us/bing/apis/bing-web-search-api)
 - `YOUTUBE_DATA_v3_API_KEY` - YouTube Data API key. [Enable this API](https://console.cloud.google.com/apis/api/youtube.googleapis.com)
 - `GITHUB_TOKEN` - Get one at <https://github.com/settings/personal-access-tokens> with public access, used for GitHub file tool.
+- `EXA_API_KEY` - ExaSearch API key for web search capabilities. [Get an API key from Exa](https://exa.ai/). Optional - works without API key for basic features.
+
+## Auto-Return System Configuration
+
+### **Default Tool Setting**
+
+- `DEFAULT_TOOL` - Set the default tool for all users (defaults to "Memory")
+  - **Options**: Memory, ExaSearch, GitHub, YouTube, AudioTools, IdeationTools, CryptoPrice, CurrencyConverter, CodeExecution
+  - **Recommended**: Memory (for personalized conversations)
+
+### **Auto-Return Timeouts**
+
+Configure timeout durations for different tools (in seconds):
+
+```bash
+# Auto-return timeout settings (in seconds)
+AUTO_RETURN_TIMEOUT_EXASEARCH=180    # 3 minutes for web searches
+AUTO_RETURN_TIMEOUT_CODEEXECUTION=600 # 10 minutes for code execution
+AUTO_RETURN_TIMEOUT_IMAGEGEN=300     # 5 minutes for image generation
+AUTO_RETURN_TIMEOUT_AUDIOTOOLS=480   # 8 minutes for audio processing
+AUTO_RETURN_TIMEOUT_GITHUB=240       # 4 minutes for GitHub operations
+AUTO_RETURN_TIMEOUT_YOUTUBE=240      # 4 minutes for YouTube analysis
+AUTO_RETURN_TIMEOUT_DEFAULT=300      # 5 minutes default timeout
+```
+
+### **Smart Suggestions**
+
+- `ENABLE_SMART_SUGGESTIONS` - Enable intelligent optimization tips (defaults to "true")
+- `SMART_SUGGESTIONS_INTERVAL` - How often to show suggestions (in minutes, defaults to 10)
+
+## Engagement System Configuration
+
+### **Engagement Settings**
+
+Configure Jakey's active participation in channels:
+
+```bash
+# Engagement system configuration
+ENGAGEMENT_CHECK_INTERVAL=1200       # How often to check for engagement (20 minutes)
+ENGAGEMENT_INTERJECTION_PROBABILITY=0.1  # Probability of interjecting (10%)
+ENGAGEMENT_MAX_CHANNELS=50           # Maximum channels to engage in simultaneously
+ENGAGEMENT_MIN_INTERVAL=300          # Minimum time between messages (5 minutes)
+ENGAGEMENT_ENABLE_LOGGING=true       # Enable engagement activity logging
+ENGAGEMENT_ENABLE_PERSISTENCE=true   # Save engagement settings to database
+```
+
+### **Engagement Permissions**
+
+- `ENGAGEMENT_REQUIRED_PERMISSION` - Minimum permission level to engage Jakey (defaults to "manage_channels")
+- `ENGAGEMENT_LIST_PERMISSION` - Permission level to view engagement list (defaults to "manage_guild")
+- `ENGAGEMENT_ALLOW_MULTIPLE` - Allow multiple channels per guild (defaults to "true")
 
 ## Administrative
 
@@ -99,127 +151,215 @@ SHARED_CHAT_HISTORY=false  # Recommended: Private conversations
 
 If you're changing from `true` to `false` and want to clear existing shared history:
 
-**Option 1: Complete Database Reset (⚠️ DANGEROUS)**
-
 ```bash
-# This will delete ALL data for ALL users
-python scripts/flush_db.py
+# Use the cleanup script to remove shared history
+python scripts/cleanup_shared_history.py
+
+# Or manually clear the database collection
+# (Be careful - this will delete ALL chat history)
 ```
 
-**Option 2: Manual Database Management**
+## Memory System Configuration
 
-1. Use MongoDB tools to manually manage collections
-2. Reference the [HistoryManagement class](../core/ai/history.py) for implementation details
-3. Consider backing up data before making changes
+### **Memory Settings**
 
-**Option 3: Gradual Migration**
-
-1. Set `SHARED_CHAT_HISTORY=false`
-2. New users will automatically get private history
-3. Existing shared history remains but is no longer updated
-4. Users can continue using existing context until manually cleared
-
-#### **Use Case Examples**
-
-**Set to `true` when**:
-
-- Building a collaborative team bot
-- All guild members need shared context
-- Privacy is not a concern
-- Bot is used for team coordination
-
-**Set to `false` when**:
-
-- Building a personal assistant bot
-- User privacy is important
-- Bot serves individual users independently
-- Compliance with privacy regulations is required
-
-#### **Configuration Best Practices**
-
-1. **Start with `false`** for most use cases
-2. **Test thoroughly** before deploying to production
-3. **Document the setting** for your team and users
-4. **Consider data migration** if changing from shared to private
-5. **Monitor user feedback** after making changes
-
-#### **Related Scripts and Tools**
+Configure the Memory tool behavior:
 
 ```bash
-# Check current database status
-python scripts/manage_tools.py
-
-# View tool usage statistics
-python scripts/manage_tools.py
-
-# Clear all data (⚠️ DANGEROUS - use with caution)
-python scripts/flush_db.py
-
-# Set default tool for new users
-python scripts/set_default_tool.py Memory
+# Memory system configuration
+MEMORY_ENABLE_AUTO_DETECTION=true    # Automatically detect and store personal information
+MEMORY_EXPIRATION_DAYS=365           # How long to keep memories (default: 1 year)
+MEMORY_MAX_MEMORIES_PER_USER=1000    # Maximum memories per user
+MEMORY_ENABLE_CATEGORIZATION=true    # Automatically categorize memories
+MEMORY_ENABLE_PRIORITY_SYSTEM=true   # Use priority system for memory recall
 ```
 
-#### **Troubleshooting**
+### **Memory Database**
 
-**Common Issues**:
+- `MEMORY_COLLECTION_NAME` - Database collection for storing memories (defaults to "memories")
+- `MEMORY_ENABLE_INDEXING` - Enable search indexing for better recall (defaults to "true")
 
-- **"Bot remembers other users' conversations"**: Check if `SHARED_CHAT_HISTORY` is set to `true`
-- **"Conversation context is lost"**: Verify the setting matches your intended behavior
-- **"Database errors"**: Ensure MongoDB connection is properly configured
+## Image Generation Configuration
 
-**Debugging**:
+### **Image Generation Settings**
 
-- Check your `.env` file for the correct setting
-- Verify the bot has been restarted after changing the setting
-- Use the management scripts to check current status
-
-# Default Tool Configuration
-
-## Setting Default Tools
-
-You can configure JakeyBot to enable specific tools by default for all new users/guilds. This is useful if you want certain capabilities (like image generation) to be available without users having to manually enable them.
-
-### Method 1: Environment Variable (Recommended)
-
-Add the `DEFAULT_TOOL` environment variable to your `dev.env` file:
+Configure AI image generation features:
 
 ```bash
-# Default tool to enable for new users/guilds
-# Options: ExaSearch, GitHub, YouTube, AudioTools, IdeationTools, CryptoPrice, CurrencyConverter, CodeExecution, or None to disable
+# Image generation configuration
+IMAGE_GENERATION_ENABLE_DIRECT_COMMANDS=true  # Enable /generate_image and /edit_image
+IMAGE_GENERATION_DEFAULT_MODEL=pollinations::flux  # Default image generation model
+IMAGE_GENERATION_MAX_SIZE=1024                # Maximum image size
+IMAGE_GENERATION_QUALITY=high                 # Image quality setting
+```
+
+### **Supported Image Models**
+
+- **Pollinations.AI**: `pollinations::flux`, `pollinations::kontext`, `pollinations::sdxl`
+- **Gemini**: `gemini::gemini-2.0-flash-001` (for image generation)
+- **OpenAI**: `openai::dall-e-3` (if available)
+
+## Gambling Games Configuration
+
+### **Gambling Games Settings**
+
+Configure interactive gambling features:
+
+```bash
+# Gambling games configuration
+GAMBLING_ENABLE_BETTING_POOLS=true   # Enable betting pool creation
+GAMBLING_ENABLE_TRIVIA=true          # Enable trivia games
+GAMBLING_ENABLE_KENO=true            # Enable keno number generation
+GAMBLING_MAX_BETTING_POOLS=10        # Maximum active betting pools per guild
+GAMBLING_TRIVIA_ROUNDS=5             # Default number of trivia rounds
+GAMBLING_ENABLE_LEADERBOARDS=true    # Enable score tracking
+```
+
+## Performance Configuration
+
+### **Rate Limiting**
+
+Configure rate limits to prevent abuse:
+
+```bash
+# Rate limiting configuration
+RATE_LIMIT_MESSAGES_PER_MINUTE=60    # Maximum messages per minute per user
+RATE_LIMIT_COMMANDS_PER_MINUTE=30    # Maximum commands per minute per user
+RATE_LIMIT_IMAGE_GENERATION_PER_HOUR=10  # Maximum image generations per hour per user
+RATE_LIMIT_TOOL_USAGE_PER_HOUR=100   # Maximum tool usage per hour per user
+```
+
+### **Caching**
+
+Configure caching for better performance:
+
+```bash
+# Caching configuration
+CACHE_ENABLE=true                    # Enable response caching
+CACHE_DURATION_MINUTES=30            # How long to cache responses
+CACHE_MAX_SIZE=1000                  # Maximum cached items
+CACHE_ENABLE_TOOL_RESULTS=true       # Cache tool results
+```
+
+## Security Configuration
+
+### **API Key Security**
+
+- **Never commit API keys** to version control
+- **Use environment variables** for all sensitive data
+- **Rotate API keys** regularly
+- **Monitor API usage** for unusual activity
+
+### **Database Security**
+
+```bash
+# Database security settings
+DB_ENABLE_AUTHENTICATION=true        # Enable MongoDB authentication
+DB_ENABLE_SSL=true                   # Enable SSL connections
+DB_CONNECTION_POOL_SIZE=10           # Connection pool size
+DB_MAX_RETRY_ATTEMPTS=3              # Maximum retry attempts
+```
+
+### **Bot Permissions**
+
+Ensure the bot has the minimum required permissions:
+
+- **Send Messages** - Required for bot responses
+- **Read Message History** - Required for context
+- **Attach Files** - Required for image generation
+- **Use Slash Commands** - Required for command functionality
+- **Manage Messages** - Optional, for message management
+
+## Environment File Example
+
+Here's a complete example of a `dev.env` file:
+
+```bash
+# Bot Configuration
+TOKEN=your_discord_bot_token_here
+BOT_NAME=Jakey Bot
+BOT_PREFIX=$
+
+# Database Configuration
+MONGO_DB_URL=mongodb://localhost:27017/jakey_bot
+MONGO_DB_NAME=jakey_prod_db
+MONGO_DB_COLLECTION_NAME=jakey_prod_db_collection
+
+# AI Model API Keys
+GEMINI_API_KEY=your_gemini_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+ANTHROPIC_API_KEY=your_anthropic_api_key_here
+POLLINATIONS_API_KEY=your_pollinations_api_key_here
+
+# Tool API Keys
+EXA_API_KEY=your_exa_api_key_here
+GITHUB_TOKEN=your_github_token_here
+YOUTUBE_DATA_v3_API_KEY=your_youtube_api_key_here
+
+# Auto-Return Configuration
 DEFAULT_TOOL=Memory
+AUTO_RETURN_TIMEOUT_EXASEARCH=180
+AUTO_RETURN_TIMEOUT_CODEEXECUTION=600
+AUTO_RETURN_TIMEOUT_IMAGEGEN=300
+
+# Engagement Configuration
+ENGAGEMENT_CHECK_INTERVAL=1200
+ENGAGEMENT_INTERJECTION_PROBABILITY=0.1
+ENGAGEMENT_MAX_CHANNELS=50
+
+# Memory Configuration
+MEMORY_ENABLE_AUTO_DETECTION=true
+MEMORY_EXPIRATION_DAYS=365
+
+# Chat History
+SHARED_CHAT_HISTORY=false
+
+# Performance
+RATE_LIMIT_MESSAGES_PER_MINUTE=60
+CACHE_ENABLE=true
+
+# Security
+DB_ENABLE_AUTHENTICATION=true
+DB_ENABLE_SSL=true
 ```
 
-### Method 2: Update Existing Users
+## Configuration Validation
 
-To set a default tool for all existing users/guilds in your database, use the provided script:
+Use the configuration validator to check your setup:
 
 ```bash
-# Enable ImageGen for all users
-python scripts/set_default_tool.py ImageGen
+# Validate configuration
+python scripts/config_validator.py
 
-# Enable web search for all users
-python scripts/set_default_tool.py ExaSearch
+# Check security
+python scripts/security_check.py
 
-# Disable all tools for all users
-python scripts/set_default_tool.py None
+# Test database connection
+python scripts/test_database.py
 ```
 
-### Available Tools
+## Troubleshooting Configuration
 
-- **ImageGen** - Image generation and editing with Gemini 2.0 Flash
-- **ExaSearch** - Web search using Exa API
-- **GitHub** - GitHub repository access and file analysis
-- **YouTube** - YouTube search and video analysis
-- **AudioTools** - Audio manipulation and voice cloning
-- **IdeationTools** - Canvas and artifacts for brainstorming
-- **CryptoPrice** - Live crypto token prices
-- **CurrencyConverter** - Live currency conversion between 170+ currencies
-- **CodeExecution** - Python code execution (Gemini only)
-- **None** - Disable all tools
+### **Common Issues**
 
-### Notes
+1. **API Key Errors**: Ensure all required API keys are set correctly
+2. **Database Connection**: Verify MongoDB URL and authentication
+3. **Permission Errors**: Check bot permissions in Discord
+4. **Rate Limiting**: Adjust rate limits if users hit limits frequently
 
-- Setting a default tool only affects **new users/guilds** that haven't used the bot before
-- Existing users will keep their current tool settings
-- Users can still change their tool preference using the `/feature` command
-- The default tool setting is stored per user/guild in the MongoDB database
+### **Configuration Scripts**
+
+```bash
+# Setup environment
+python scripts/setup_env.py
+
+# Validate configuration
+python scripts/validate_config.py
+
+# Test all features
+python scripts/test_all_features.py
+```
+
+---
+
+**⚠️ Security Note**: Never share your `dev.env` file or commit it to version control. Always use environment variables for sensitive data.

@@ -1,289 +1,343 @@
-# 🕐 Auto-Return Tool Manager Guide
+# 🔄 Auto-Return System Guide
 
-JakeyBot now features an **automatic tool switching system** that intelligently manages tool usage and automatically returns users to their default tool (Memory) after a configurable timeout.
+JakeyBot features an intelligent **auto-return system** that automatically manages tool usage, providing a seamless experience without manual intervention.
 
-## 🎯 **What It Does**
+## 🎯 What is the Auto-Return System?
 
-### **Automatic Tool Management**
+The auto-return system is JakeyBot's smart tool management feature that:
 
-- **Smart Switching**: Automatically switches to requested tools
-- **Timeout-Based Return**: Returns to default tool after configurable timeouts
-- **User Experience**: No more forgotten tool switches
-- **Personalization**: Always returns to Memory tool for personalization
+- **Automatically enables tools** when needed
+- **Manages timeouts** intelligently based on tool type
+- **Returns to Memory** after configurable timeouts
+- **Provides smart suggestions** for optimization
+- **Eliminates manual tool switching** for most use cases
 
-### **How It Works**
+## 🚀 Key Features
 
-1. **User switches tool** using `/feature <tool_name>`
-2. **AutoReturnManager activates** and starts a countdown timer
-3. **Timer runs** for the tool-specific timeout period
-4. **Automatic return** to default tool (Memory) when timeout expires
-5. **User continues** with personalized chat experience
+### **Automatic Tool Activation**
 
-## 🚀 **New Commands**
-
-### **`/timeout_status`**
-
-Check remaining time before auto-return to default tool.
-
-**Example:**
+Tools are automatically enabled when JakeyBot detects they're needed:
 
 ```
-User: /timeout_status
-Bot: ⏰ Current Tool: ExaSearch
-     🕐 Time Remaining: 4m 23s
-     🧠 Will Return To: Memory
+User: "What's the price of Bitcoin?"
+JakeyBot: 🔄 **Auto-enabled CryptoPrice** - Jakey needed this tool to help you!
+         "Bitcoin is currently trading at $43,250 USD..."
 ```
 
-### **`/extend_timeout <time>`**
+### **Smart Timeout Management**
 
-Extend the current tool timeout by additional time.
+Different tools have optimized timeout durations:
 
-**Examples:**
+| Tool Type | Default Timeout | Use Case |
+|-----------|----------------|----------|
+| **Memory** | Default | Personal conversations |
+| **ExaSearch** | 3 minutes | Quick web searches |
+| **CodeExecution** | 10 minutes | Complex calculations |
+| **Image Generation** | 5 minutes | Image creation |
+| **AudioTools** | 8 minutes | Audio processing |
 
-```
-User: /extend_timeout 10m
-Bot: ⏰ Timeout Extended!
-     🛠️ Current Tool: ExaSearch
-     🕐 New Time Remaining: 14m 23s
-     🧠 Will Return To: Memory
+### **Intelligent Suggestions**
 
-User: /extend_timeout 2h
-Bot: ⏰ Timeout Extended!
-     🛠️ Current Tool: ExaSearch
-     🕐 New Time Remaining: 2h 4m 23s
-     🧠 Will Return To: Memory
-```
-
-### **`/return_to_default`**
-
-Immediately return to the default tool.
-
-**Example:**
+Get personalized optimization tips:
 
 ```
-User: /return_to_default
-Bot: 🧠 Returned to Default Tool!
-     ✅ Now using: Memory
-     ⏰ Auto-return timer cancelled
+/smart_suggestions
 ```
 
-### **`/auto_return_status`**
+**Example suggestions:**
 
-Check the status of the entire auto-return system.
+- "You've been using CodeExecution for 8 minutes. Consider extending with `/extend_timeout 5m`"
+- "For image generation, try `/generate_image` directly - no tool switching needed!"
+- "You're doing a lot of web searches. Consider using `/feature ExaSearch` for a longer session"
 
-**Example:**
+## 📋 Auto-Return Commands
+
+### **Smart Suggestions**
+
+Get personalized optimization advice:
 
 ```
-User: /auto_return_status
-Bot: 🧠 Auto-Return System Status
-
-     ✅ Default Tool: Memory
-     ⏰ Active Timers: 1
-     🔄 Active Switches: 1
-
-     Tool Timeouts:
-     • AudioTools: 5m
-     • CodeExecution: 10m
-     • CryptoPrice: 3m
-     • CurrencyConverter: 3m
-     • ExaSearch: 3m
-     • GitHub: 4m
-     • IdeationTools: 5m
-     • YouTube: 4m
-     • Default: 5m
+/smart_suggestions
 ```
 
-## ⚙️ **Configuration**
+**What you get:**
+
+- Workflow optimization tips
+- Tool usage recommendations
+- Performance insights
+- Timeout management advice
+
+### **Timeout Management**
+
+#### **Check Remaining Time**
+
+```
+/timeout_status
+```
+
+**Example output:**
+
+```
+⏰ **Current Tool**: ExaSearch
+⏱️ **Time Remaining**: 2 minutes 15 seconds
+🔄 **Auto-return**: Will return to Memory in 2m 15s
+```
+
+#### **Extend Current Session**
+
+```
+/extend_timeout 5m    # Add 5 minutes
+/extend_timeout 2h    # Add 2 hours
+/extend_timeout 30m   # Add 30 minutes
+```
+
+**Supported time formats:**
+
+- **Minutes**: `5m`, `15m`, `30m`
+- **Hours**: `1h`, `2h`, `12h`
+- **Days**: `1d`, `2d`, `1w`
+
+#### **Return to Default Immediately**
+
+```
+/return_to_default
+```
+
+Forces immediate return to Memory tool.
+
+### **System Status**
+
+View auto-return system overview:
+
+```
+/auto_return_status
+```
+
+**Example output:**
+
+```
+🔄 **Auto-Return System Status**
+
+✅ **System**: Active
+🧠 **Default Tool**: Memory
+⏰ **Current Tool**: ExaSearch
+⏱️ **Time Remaining**: 1m 30s
+📊 **Auto-enables**: 15 tools available
+🎯 **Smart Suggestions**: Enabled
+
+**Recent Activity:**
+- Auto-enabled ExaSearch (2 minutes ago)
+- Auto-enabled CryptoPrice (5 minutes ago)
+- Returned to Memory (8 minutes ago)
+```
+
+## 🎯 How It Works
+
+### **1. Automatic Detection**
+
+JakeyBot analyzes your request and determines which tool is needed:
+
+```
+User: "Search for the latest AI news"
+JakeyBot: 🔄 **Auto-enabled ExaSearch** - Jakey needed this tool to help you!
+         [Performs web search and provides results]
+```
+
+### **2. Smart Timeout**
+
+The system starts a countdown based on the tool type:
+
+```
+⏰ **ExaSearch Active** - Auto-returns to Memory in 3 minutes
+```
+
+### **3. Intelligent Return**
+
+After the timeout, the tool automatically returns to Memory:
+
+```
+🔄 **Returned to Memory** - Back to personalized conversations!
+```
+
+### **4. Smart Suggestions**
+
+The system learns from your usage patterns and provides optimization tips:
+
+```
+💡 **Smart Suggestion**: You're doing a lot of web searches. 
+Consider using `/feature ExaSearch` for a longer session!
+```
+
+## 🔧 Configuration
 
 ### **Environment Variables**
 
-Add these to your `dev.env` file to customize timeouts:
+Configure auto-return behavior in your `dev.env`:
 
 ```bash
-# Tool-specific timeouts (in seconds)
-TOOL_TIMEOUT_EXASEARCH=180       # 3 minutes
-TOOL_TIMEOUT_GITHUB=240          # 4 minutes
-TOOL_TIMEOUT_CODEEXECUTION=600   # 10 minutes
-TOOL_TIMEOUT_AUDIOTOOLS=300      # 5 minutes
-TOOL_TIMEOUT_CRYPTOPRICE=180     # 3 minutes
-TOOL_TIMEOUT_CURRENCYCONVERTER=180 # 3 minutes
-TOOL_TIMEOUT_YOUTUBE=240         # 4 minutes
-TOOL_TIMEOUT_IDEATIONTOOLS=300   # 5 minutes
-TOOL_TIMEOUT_DEFAULT=300         # 5 minutes default
+# Default tool (usually Memory)
+DEFAULT_TOOL=Memory
+
+# Auto-return timeouts (in seconds)
+AUTO_RETURN_TIMEOUT_EXASEARCH=180    # 3 minutes
+AUTO_RETURN_TIMEOUT_CODEEXECUTION=600 # 10 minutes
+AUTO_RETURN_TIMEOUT_IMAGEGEN=300     # 5 minutes
+AUTO_RETURN_TIMEOUT_AUDIOTOOLS=480   # 8 minutes
 ```
 
-### **Default Timeouts**
+### **Database Settings**
 
-- **ExaSearch**: 3 minutes (quick web searches)
-- **GitHub**: 4 minutes (repository operations)
-- **CodeExecution**: 10 minutes (coding sessions)
-- **AudioTools**: 5 minutes (audio processing)
-- **CryptoPrice**: 3 minutes (quick price checks)
-- **CurrencyConverter**: 3 minutes (quick conversions)
-- **YouTube**: 4 minutes (video analysis)
-- **IdeationTools**: 5 minutes (creative sessions)
-- **Default**: 5 minutes (other tools)
+Auto-return settings are stored in the database:
 
-## 🎮 **Usage Examples**
-
-### **Scenario 1: Web Search Session**
-
-```
-User: /feature ExaSearch
-Bot: ✅ Feature ExaSearch enabled successfully!
-     ⏰ Will automatically return to Memory in 3m
-
-User: What's the latest news about AI?
-Bot: [Searches web and provides results]
-
-User: Search for cryptocurrency prices
-Bot: [Searches for crypto information]
-
-User: /timeout_status
-Bot: ⏰ Current Tool: ExaSearch
-     🕐 Time Remaining: 1m 45s
-     🧠 Will Return To: Memory
-
-User: /extend_timeout 5m
-Bot: ⏰ Timeout Extended!
-     🛠️ Current Tool: ExaSearch
-     🕐 New Time Remaining: 6m 45s
-     🧠 Will Return To: Memory
-
-[After 6m 45s, bot automatically switches back to Memory]
+```javascript
+// Example database entry
+{
+  "user_id": "123456789",
+  "guild_id": "987654321",
+  "default_tool": "Memory",
+  "auto_return_enabled": true,
+  "timeout_settings": {
+    "ExaSearch": 180,
+    "CodeExecution": 600,
+    "ImageGen": 300
+  }
+}
 ```
 
-### **Scenario 2: Web Search Session**
-
-```
-User: /feature ExaSearch
-Bot: ✅ Feature ExaSearch enabled successfully!
-     ⏰ Will automatically return to Memory in 3m
-
-User: What's the latest news about AI?
-Bot: [Searches web and provides results]
-
-User: Search for cryptocurrency prices
-Bot: [Searches for crypto information]
-
-[After 3 minutes, bot automatically switches back to Memory]
-
-User: What do you know about me?
-Bot: [Uses Memory tool to recall personal information]
-```
-
-### **Scenario 3: Immediate Return**
-
-```
-User: /feature GitHub
-Bot: ✅ Feature GitHub enabled successfully!
-     ⏰ Will automatically return to Memory in 4m
-
-User: /return_to_default
-Bot: 🧠 Returned to Default Tool!
-     ✅ Now using: Memory
-     ⏰ Auto-return timer cancelled
-
-User: What's my favorite color?
-Bot: [Uses Memory tool to recall personal preference]
-```
-
-## 🔧 **Technical Details**
-
-### **How Timeouts Work**
-
-1. **Timer Creation**: When a tool is switched, a countdown timer is created
-2. **Background Processing**: Timer runs asynchronously in the background
-3. **Automatic Return**: When timer expires, bot automatically switches back to default
-4. **Database Update**: Tool configuration is updated in the database
-5. **Timer Cleanup**: Timer and switch information are cleaned up
-
-### **Timer Management**
-
-- **Individual Timers**: Each user/guild has their own timer
-- **Timer Cancellation**: Timers can be cancelled or extended
-- **Cleanup**: All timers are cleaned up when bot shuts down
-- **Error Handling**: Graceful fallback if auto-return fails
-
-### **Database Integration**
-
-- **Tool Configuration**: Integrates with existing tool configuration system
-- **User Isolation**: Each user's tool preferences are maintained
-- **Guild Support**: Works with both individual users and guilds
-- **Shared History**: Compatible with shared chat history setting
-
-## 🎯 **Best Practices**
+## 💡 Best Practices
 
 ### **For Users**
 
-1. **Use `/feature` normally** - Auto-return happens automatically
-2. **Check `/timeout_status`** - Monitor remaining time
-3. **Extend timeouts** - Use `/extend_timeout` for longer sessions
-4. **Return early** - Use `/return_to_default` when done
-5. **Plan your workflow** - Know which tool you need before starting
+1. **Let it auto-enable**: Don't manually enable tools unless needed
+2. **Use smart suggestions**: Get optimization tips regularly
+3. **Extend timeouts**: Use `/extend_timeout` for longer sessions
+4. **Monitor time**: Check `/timeout_status` to plan your work
+5. **Plan workflows**: Since only one tool works at a time, plan your sequence
 
 ### **For Administrators**
 
-1. **Configure timeouts** - Set appropriate timeouts for your server
-2. **Monitor usage** - Use `/auto_return_status` to check system health
-3. **Customize defaults** - Adjust timeouts based on user needs
-4. **Test functionality** - Use test script to verify system works
+1. **Configure timeouts**: Set appropriate timeout values for your use case
+2. **Monitor usage**: Use management scripts to track tool usage
+3. **Optimize defaults**: Set the most common tool as default
+4. **Test thoroughly**: Verify auto-return behavior in your environment
 
-## 🚨 **Troubleshooting**
+## 🚨 Troubleshooting
 
 ### **Common Issues**
 
-**Auto-return not working:**
+#### **Tool Not Auto-Enabling**
 
-1. Check if AutoReturnManager is initialized
-2. Verify database connection
-3. Check bot logs for errors
-4. Ensure environment variables are set
+**Problem**: Tool doesn't automatically enable when needed
 
-**Timer not accurate:**
+**Solutions**:
 
-1. Check system time synchronization
-2. Verify timeout configuration
-3. Monitor for timer conflicts
-4. Check for multiple bot instances
+1. Check if the tool requires an API key
+2. Verify the tool is properly configured
+3. Check bot permissions and database connection
 
-**Tool not switching back:**
+#### **Timeout Too Short**
 
-1. Use `/return_to_default` to force return
-2. Check database tool configuration
-3. Verify AutoReturnManager status
-4. Restart bot if necessary
+**Problem**: Tools return to Memory too quickly
 
-### **Getting Help**
+**Solutions**:
 
-1. **Check system status**: `/auto_return_status`
-2. **Monitor timers**: `/timeout_status`
-3. **Review logs**: Check bot console output
-4. **Test functionality**: Run `python scripts/test_auto_return.py`
+1. Use `/extend_timeout` to add more time
+2. Configure longer timeouts in environment variables
+3. Use `/feature <tool>` for manual control
 
-## 🎉 **Benefits**
+#### **Smart Suggestions Not Working**
 
-### **User Experience**
+**Problem**: `/smart_suggestions` doesn't provide helpful tips
 
-- ✅ **No forgotten tools** - Always returns to Memory
-- ✅ **Seamless workflow** - Automatic tool management
-- ✅ **Personalization** - Memory tool always available
-- ✅ **Flexible timeouts** - Extend or return early
+**Solutions**:
 
-### **Administration**
+1. Ensure database connection is working
+2. Check that usage tracking is enabled
+3. Verify the command is properly registered
 
-- ✅ **Configurable timeouts** - Per-tool customization
-- ✅ **System monitoring** - Status and health checks
-- ✅ **Error handling** - Graceful fallbacks
-- ✅ **Resource management** - Automatic cleanup
+### **Error Messages**
 
-### **Performance**
+#### **"Auto-return system unavailable"**
 
-- ✅ **Efficient timers** - Async background processing
-- ✅ **Memory management** - Automatic cleanup
-- ✅ **Database integration** - Seamless operation
-- ✅ **Scalable design** - Handles multiple users
+The auto-return system is disabled or not properly configured.
+
+**Fix**: Check database connection and configuration.
+
+#### **"Tool auto-enable failed"**
+
+A tool failed to automatically enable.
+
+**Fix**: Check tool configuration and API keys.
+
+#### **"Timeout extension failed"**
+
+Failed to extend the current tool session.
+
+**Fix**: Check if the tool is still active and try again.
+
+## 📊 Monitoring and Analytics
+
+### **Usage Statistics**
+
+Monitor auto-return system usage:
+
+```bash
+# Check system status
+python scripts/manage_tools.py
+
+# View auto-return statistics
+python scripts/auto_return_stats.py
+```
+
+### **Performance Metrics**
+
+Track key metrics:
+
+- **Auto-enable success rate**: Percentage of successful auto-enables
+- **Timeout adherence**: How often tools return on schedule
+- **User satisfaction**: Based on smart suggestion usage
+- **Tool distribution**: Which tools are most commonly auto-enabled
+
+## 🔮 Future Enhancements
+
+### **Planned Features**
+
+- **Multi-tool support**: Use multiple tools simultaneously
+- **Predictive auto-enable**: Anticipate tool needs based on conversation
+- **Advanced analytics**: Detailed usage insights and optimization
+- **Custom timeouts**: User-specific timeout preferences
+- **Tool chaining**: Sequential tool execution with auto-return
+
+### **Technical Improvements**
+
+- **Better error handling**: Graceful fallbacks for tool failures
+- **Performance optimization**: Faster tool switching
+- **Intelligent caching**: Cache results to reduce API calls
+- **Advanced suggestions**: AI-powered optimization recommendations
+
+## 📚 Related Documentation
+
+- **[TOOLS.md](./TOOLS.md)** - Complete tool documentation
+- **[CONFIG.md](./CONFIG.md)** - Configuration guide
+- **[FAQ.md](./FAQ.md)** - Common questions and answers
+- **[MEMORY_QUICKSTART.md](./MEMORY_QUICKSTART.md)** - Memory tool guide
+
+## 🆘 Getting Help
+
+### **For Users**
+
+1. **Check this guide** for detailed information
+2. **Use `/smart_suggestions`** for optimization tips
+3. **Try `/auto_return_status`** for system overview
+4. **Ask server administrators** for configuration issues
+
+### **For Administrators**
+
+1. **Review configuration** in `dev.env`
+2. **Check database connection** for persistence
+3. **Monitor logs** for auto-return activity
+4. **Test thoroughly** in your environment
 
 ---
 
-**🚀 The AutoReturnManager makes JakeyBot truly intelligent by automatically managing tool usage and ensuring users always return to their personalized Memory experience!**
+**🔄 The auto-return system makes JakeyBot more intelligent and user-friendly by automatically managing tools for you!**

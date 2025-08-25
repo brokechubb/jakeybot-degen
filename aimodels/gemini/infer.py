@@ -147,7 +147,74 @@ class Completions(ModelParams):
         else:
             return _response
 
-    # Chat Completion
+    async def _auto_enable_tool_if_needed(self, function_name: str, db_conn) -> bool:
+        """
+        Automatically enable a tool if Jakey tries to use it but it's not currently enabled.
+
+        Args:
+            function_name: The function name that Jakey is trying to call
+            db_conn: Database connection for updating tool configuration
+
+        Returns:
+            bool: True if tool was enabled, False if not needed or failed
+        """
+        # Map function names to tool names
+        function_to_tool_map = {
+            "web_search": "ExaSearch",
+            "get_token_price": "CryptoPrice",
+            "convert_currency": "CurrencyConverter",
+            "github_file_tool": "GitHub",
+            "github_search_tool": "GitHub",
+            "youtube_search": "YouTube",
+            "youtube_summarize": "YouTube",
+            "create_audio": "AudioTools",
+            "clone_voice": "AudioTools",
+            "generate_canvas": "IdeationTools",
+            "create_artifact": "IdeationTools",
+            "remember": "Memory",
+            "recall": "Memory",
+        }
+
+        # Check if this function corresponds to a specific tool
+        tool_name = function_to_tool_map.get(function_name)
+        if not tool_name:
+            return False
+
+        try:
+            # Get current tool configuration
+            current_tool = await db_conn.get_tool_config(guild_id=self._guild_id)
+
+            # If the tool is already enabled, no need to change
+            if current_tool == tool_name:
+                return False
+
+            # Automatically enable the required tool
+            await db_conn.set_tool_config(guild_id=self._guild_id, tool=tool_name)
+
+            # Use auto return manager to set up timeout
+            if hasattr(self._discord_bot, "auto_return_manager"):
+                await self._discord_bot.auto_return_manager.switch_tool_with_timeout(
+                    guild_id=self._guild_id,
+                    new_tool=tool_name,
+                    user_id=getattr(self._discord_ctx, "author", None),
+                )
+
+            # Log the automatic tool switch
+            logging.info(
+                f"Automatically enabled {tool_name} for guild {self._guild_id} when Jakey tried to use {function_name}"
+            )
+
+            # Send a brief notification to the user
+            await self._discord_method_send(
+                f"🔄 **Auto-enabled {tool_name}** - Jakey needed this tool to help you!"
+            )
+
+            return True
+
+        except Exception as e:
+            logging.error(f"Failed to auto-enable tool {tool_name}: {e}")
+            return False
+
     async def chat_completion(self, prompt, db_conn, system_instruction: str = None):
         # Load history
         _chat_thread = await db_conn.load_history(
@@ -286,6 +353,15 @@ class Completions(ModelParams):
                     )
 
                     try:
+                        # Try to auto-enable the tool if needed
+                        tool_was_enabled = await self._auto_enable_tool_if_needed(
+                            _part.function_call.name, db_conn
+                        )
+
+                        # If we auto-enabled a tool, we need to reload the tool configuration
+                        if tool_was_enabled:
+                            _Tool = await self._fetch_tool(db_conn)
+
                         # Removed interstitial message edit for cleaner tool usage
 
                         if hasattr(

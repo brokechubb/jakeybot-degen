@@ -71,12 +71,42 @@ class ModelsList:
         with open("data/models.yaml", "r") as models:
             _internal_model_data = yaml.safe_load(models)
 
-        # Iterate through the models and yield each as a discord.OptionChoice
+        # Priority models that should always be included
+        priority_providers = ["openai", "gemini", "claude", "pollinations"]
+
+        # Separate priority and other models
+        priority_models = []
+        other_models = []
+
         for model in _internal_model_data:
             # Check if the model dict has hide_ui key
             if model.get("hide_ui") is not None and model.get("hide_ui") == True:
                 continue
 
+            model_provider = model["model"].split("::")[0]
+
+            # Add to priority list if it's a priority provider
+            if any(provider in model_provider for provider in priority_providers):
+                priority_models.append(model)
+            else:
+                other_models.append(model)
+
+        # Sort priority models by provider order
+        def sort_key(model):
+            provider = model["model"].split("::")[0]
+            for i, priority_provider in enumerate(priority_providers):
+                if priority_provider in provider:
+                    return i
+            return len(priority_providers)
+
+        priority_models.sort(key=sort_key)
+
+        # Combine priority models first, then others, limiting to 25 total
+        all_models = priority_models + other_models
+        limited_models = all_models[:25]
+
+        # Yield the limited models as discord.OptionChoice
+        for model in limited_models:
             yield discord.OptionChoice(
                 f"{model['name']} - {model['description']}", model["model"]
             )

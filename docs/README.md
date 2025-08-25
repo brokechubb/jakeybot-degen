@@ -12,7 +12,7 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 ### **For Server Administrators**
 
 - **[CONFIG.md](./CONFIG.md)** - **Configuration and environment setup**
-- **[SECURITY.md](./CONFIG.md)** - **Security best practices and guidelines**
+- **[SECURITY.md](./SECURITY.md)** - **Security best practices and guidelines**
 
 ## 🛠️ **Technical Documentation**
 
@@ -21,6 +21,7 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 - **[TOOLS.md](./TOOLS.md)** - **Comprehensive guide to all available tools**
 - **[MEMORY_QUICKSTART.md](./MEMORY_QUICKSTART.md)** - **Memory tool setup and usage**
 - **[MEMORY_IMPLEMENTATION.md](./MEMORY_IMPLEMENTATION.md)** - **Technical implementation details**
+- **[AUTO_RETURN_GUIDE.md](./AUTO_RETURN_GUIDE.md)** - **Auto-return system and smart suggestions**
 
 ### **Security & Management**
 
@@ -38,6 +39,7 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 ### **Specialized Tools**
 
 - **[CURRENCY_CONVERTER.md](./CURRENCY_CONVERTER.md)** - Currency conversion tool guide
+- **[AUTO_IMAGE_TROUBLESHOOTING.md](./AUTO_IMAGE_TROUBLESHOOTING.md)** - Image generation troubleshooting
 
 ## 🎯 **Documentation by User Type**
 
@@ -51,6 +53,7 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 - Using the Memory tool for personalization
 - Generating images and getting information
 - Understanding JakeyBot's personality
+- Using engagement and gambling features
 - Troubleshooting common issues
 
 **Next Step**: [🎮 DISCORD_USER_GUIDE.md](./DISCORD_USER_GUIDE.md) for detailed information
@@ -99,15 +102,25 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 - `/cancel_bet` - Cancel the current betting pool
 - `/trivia` - Start a trivia game
 - `/cancel_trivia` - Cancel the current trivia game
+- `/keno` - Generate random keno numbers
+- `/generate_image <prompt>` - Generate AI images
+- `/edit_image <prompt>` - Edit images with AI
+- `/smart_suggestions` - Get optimization tips
+- `/extend_timeout <time>` - Extend tool session time
+- `/timeout_status` - Check remaining time
 
 ### **Popular Tools**
 
 - **🧠 Memory** - Personal information recall
-
 - **🔍 ExaSearch** - Web search
 - **💰 CryptoPrice** - Live crypto prices
 - **🎲 GamblingGames** - Betting pools and trivia
 - **🗣️ Engagement** - Active channel participation
+- **🎨 Image Generation** - AI image creation and editing
+- **🎵 AudioTools** - Audio manipulation and generation
+- **📚 GitHub** - Repository analysis
+- **🎥 YouTube** - Video summarization
+- **💻 CodeExecution** - Python code execution
 
 ### **Management Scripts for Admins**
 
@@ -139,6 +152,12 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 **New engagement features?**
 → Check the new commands like `/jakey_engage`, `/create_bet`, and `/trivia`!
 
+**Auto-return system?**
+→ Read [AUTO_RETURN_GUIDE.md](./AUTO_RETURN_GUIDE.md) for smart tool management
+
+**Image generation issues?**
+→ Check [AUTO_IMAGE_TROUBLESHOOTING.md](./AUTO_IMAGE_TROUBLESHOOTING.md)
+
 ## 🆘 **Getting Help**
 
 ### **For Users**
@@ -148,6 +167,7 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 3. **Use `/feature` command** to see available tools
 4. **Try `/ask` command** for general questions
 5. **Explore new commands** like `/jakey_engage`, `/create_bet`, and `/trivia` for more interaction!
+6. **Use `/smart_suggestions`** for optimization tips
 
 ### **For Administrators**
 
@@ -170,30 +190,37 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 
 | Document | Status | Last Updated | Target Audience |
 |----------|--------|--------------|-----------------|
-| DISCORD_QUICKSTART.md | ✅ Complete | August 2025 | End Users |
-| DISCORD_USER_GUIDE.md | ✅ Complete | August 2025 | End Users |
-| CONFIG.md | ✅ Complete | August 2025 | Administrators |
-| TOOLS.md | ✅ Complete | August 2025 | All Users |
-| SECURITY.md | ✅ Complete | August 2025 | Administrators |
-| FAQ.md | ✅ Complete | August 2025 | All Users |
-| MEMORY_QUICKSTART.md | ✅ Complete | August 2025 | All Users |
-| MEMORY_IMPLEMENTATION.md | ✅ Complete | August 2025 | Developers |
-| CURRENCY_CONVERTER.md | ✅ Complete | August 2025 | All Users |
-| README.md | ✅ Complete | August 2025 | All Users |
+| DISCORD_QUICKSTART.md | ✅ Complete | January 2025 | End Users |
+| DISCORD_USER_GUIDE.md | ✅ Complete | January 2025 | End Users |
+| CONFIG.md | ✅ Complete | January 2025 | Administrators |
+| TOOLS.md | ✅ Complete | January 2025 | All Users |
+| SECURITY.md | ✅ Complete | January 2025 | Administrators |
+| FAQ.md | ✅ Complete | January 2025 | All Users |
+| MEMORY_QUICKSTART.md | ✅ Complete | January 2025 | All Users |
+| MEMORY_IMPLEMENTATION.md | ✅ Complete | January 2025 | Developers |
+| CURRENCY_CONVERTER.md | ✅ Complete | January 2025 | All Users |
+| AUTO_RETURN_GUIDE.md | ✅ Complete | January 2025 | All Users |
+| AUTO_IMAGE_TROUBLESHOOTING.md | ✅ Complete | January 2025 | All Users |
+| README.md | ✅ Complete | January 2025 | All Users |
 
 ## 🔄 **Keeping Documentation Updated**
 
-### **Recent Updates (August 2025)**
+### **Recent Updates (January 2025)**
 
-- ✅ **Added Python version compatibility warnings**
-- ✅ **Created comprehensive Discord user guides**
+- ✅ **Added comprehensive engagement system documentation**
+- ✅ **Updated gambling games and trivia features**
+- ✅ **Added auto-return system and smart suggestions**
+- ✅ **Updated AI model support (Pollinations.AI, new Gemini models)**
+- ✅ **Added image generation troubleshooting guide**
 - ✅ **Updated all documentation with new features**
 - ✅ **Added management script references**
 - ✅ **Improved troubleshooting sections**
-- ✅ **Introduced new engagement features**: Active channel participation, betting pools, and trivia games.
-- ✅ **Updated `requirements.txt`** with `PyNaCl` for voice support.
-- ✅ **Resolved `cogs.misc` loading error** by removing conflicting help commands.
-- ✅ **Provided guidance** for API key and Azure Blob Storage configuration.
+- ✅ **Introduced new engagement features**: Active channel participation, betting pools, and trivia games
+- ✅ **Updated `requirements.txt`** with `PyNaCl` for voice support
+- ✅ **Resolved `cogs.misc` loading error** by removing conflicting help commands
+- ✅ **Provided guidance** for API key and Azure Blob Storage configuration
+- ✅ **Added auto-return system** with intelligent tool management
+- ✅ **Enhanced help system** with comprehensive guides and troubleshooting
 
 ### **Documentation Maintenance**
 
@@ -212,6 +239,8 @@ Welcome to JakeyBot's comprehensive documentation! This index will help you find
 **🔒 Security?** → [SECURITY.md](./SECURITY.md)
 **❓ Questions?** → [FAQ.md](./FAQ.md)
 **🧠 Memory Tool?** → [MEMORY_QUICKSTART.md](./MEMORY_QUICKSTART.md)
+**🔄 Auto-Return?** → [AUTO_RETURN_GUIDE.md](./AUTO_RETURN_GUIDE.md)
+**🎨 Images?** → [AUTO_IMAGE_TROUBLESHOOTING.md](./AUTO_IMAGE_TROUBLESHOOTING.md)
 
 ---
 

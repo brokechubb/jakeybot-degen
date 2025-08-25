@@ -21,7 +21,87 @@ class Admin(commands.Cog):
         await ctx.send("Shutting down...")
         await self.bot.close()
 
-    @commands.command(name="performance")
+    @commands.slash_command(
+        name="list_commands",
+        description="List all registered slash commands (Owner only)",
+        guild_ids=None,  # Global command
+    )
+    @commands.is_owner()
+    async def list_commands(self, ctx):
+        """List all registered slash commands."""
+        try:
+            await ctx.response.defer(ephemeral=True)
+
+            commands_list = []
+            for command in self.bot.application_commands:
+                commands_list.append(f"• `/{command.name}` - {command.description}")
+
+            if commands_list:
+                embed = discord.Embed(
+                    title="📋 Registered Slash Commands",
+                    description="\n".join(commands_list),
+                    color=discord.Color.green(),
+                )
+                embed.set_footer(text=f"Total: {len(commands_list)} commands")
+                await ctx.respond(embed=embed, ephemeral=True)
+            else:
+                await ctx.respond("❌ No slash commands found!", ephemeral=True)
+
+        except Exception as e:
+            await ctx.respond(f"❌ Error listing commands: {str(e)}", ephemeral=True)
+
+    @commands.slash_command(
+        name="sync",
+        description="Sync slash commands with Discord (Owner only)",
+        guild_ids=None,  # Global command
+    )
+    @commands.is_owner()
+    async def sync_commands(self, ctx):
+        """Sync slash commands with Discord API."""
+        try:
+            await ctx.response.defer(ephemeral=True)
+
+            # Simple sync approach for py-cord
+            try:
+                # Try to sync commands
+                await self.bot.sync_commands()
+                await ctx.respond(
+                    "✅ Commands synced successfully! They should appear in 1-2 minutes.",
+                    ephemeral=True,
+                )
+            except Exception as sync_error:
+                logging.error(f"Sync error: {sync_error}")
+
+                # Try alternative sync method
+                try:
+                    if hasattr(self.bot, "sync_all_application_commands"):
+                        await self.bot.sync_all_application_commands()
+                        await ctx.respond(
+                            "✅ Commands synced using alternative method!",
+                            ephemeral=True,
+                        )
+                    else:
+                        raise sync_error
+                except Exception as alt_error:
+                    logging.error(f"Alternative sync failed: {alt_error}")
+                    await ctx.respond(
+                        f"❌ Sync failed: {str(sync_error)[:100]}...\n\n"
+                        "Try restarting the bot instead.",
+                        ephemeral=True,
+                    )
+
+        except Exception as e:
+            logging.error(f"Sync command error: {e}")
+            await ctx.respond(
+                f"❌ Unexpected error: {str(e)[:100]}...",
+                ephemeral=True,
+            )
+
+    @commands.slash_command(
+        name="performance",
+        description="View bot performance metrics (Admin only)",
+        guild_ids=None,  # Global command
+    )
     @commands.cooldown(1, 30, commands.BucketType.user)
     @commands.has_permissions(administrator=True)
     async def performance(self, ctx):
@@ -51,46 +131,39 @@ class Admin(commands.Cog):
                 )
 
             # Command performance
-            if summary.get("slowest_commands"):
-                slow_cmds = summary["slowest_commands"][:3]  # Top 3
-                cmd_text = "\n".join(
-                    [
-                        f"• **{cmd['name']}**: {cmd['avg_time']:.3f}s avg ({cmd['total_calls']} calls, {cmd['error_rate']:.1%} errors)"
-                        for cmd in slow_cmds
-                    ]
-                )
+            if summary.get("commands"):
+                cmd = summary["commands"]
                 embed.add_field(
-                    name="🐌 Slowest Commands", value=cmd_text, inline=False
+                    name="⚡ Commands",
+                    value=f"**Total Commands:** {cmd.get('total_commands', 0)}\n"
+                    f"**Avg Response Time:** {cmd.get('avg_response_time', 0):.2f}s\n"
+                    f"**Commands/Minute:** {cmd.get('commands_per_minute', 0):.1f}",
+                    inline=False,
                 )
 
-            # API performance
-            if summary.get("slowest_apis"):
-                slow_apis = summary["slowest_apis"][:3]  # Top 3
-                api_text = "\n".join(
-                    [
-                        f"• **{api['name']}**: {api['avg_time']:.3f}s avg ({api['total_calls']} calls, {api['error_rate']:.1%} errors)"
-                        for api in slow_apis
-                    ]
+            # API usage
+            if summary.get("api"):
+                api = summary["api"]
+                embed.add_field(
+                    name="🌐 API Usage",
+                    value=f"**Total Requests:** {api.get('total_requests', 0)}\n"
+                    f"**Success Rate:** {api.get('success_rate', 0):.1%}\n"
+                    f"**Avg Response Time:** {api.get('avg_response_time', 0):.2f}s",
+                    inline=False,
                 )
-                embed.add_field(name="🌐 Slowest APIs", value=api_text, inline=False)
 
-            # Summary stats
-            embed.add_field(
-                name="📈 Summary",
-                value=f"**Commands Monitored:** {summary.get('total_commands_monitored', 0)}\n"
-                f"**APIs Monitored:** {summary.get('total_apis_monitored', 0)}\n"
-                f"**DB Operations:** {summary.get('total_db_operations_monitored', 0)}",
-                inline=False,
+            await ctx.respond(embed=embed, ephemeral=True)
+
+        except Exception as e:
+            await ctx.respond(
+                f"❌ Error getting performance metrics: {e}", ephemeral=True
             )
 
-            await ctx.send(embed=embed)
-
-        except ImportError:
-            await ctx.send("❌ Performance monitoring not available")
-        except Exception as e:
-            await ctx.send(f"❌ Error getting performance metrics: {e}")
-
-    @commands.command(name="cache")
+    @commands.slash_command(
+        name="cache",
+        description="View cache statistics (Admin only)",
+        guild_ids=None,  # Global command
+    )
     @commands.cooldown(1, 30, commands.BucketType.user)
     @commands.has_permissions(administrator=True)
     async def cache(self, ctx):
@@ -123,14 +196,18 @@ class Admin(commands.Cog):
                 inline=False,
             )
 
-            await ctx.send(embed=embed)
+            await ctx.respond(embed=embed, ephemeral=True)
 
         except ImportError:
-            await ctx.send("❌ Cache manager not available")
+            await ctx.respond("❌ Cache manager not available", ephemeral=True)
         except Exception as e:
-            await ctx.send(f"❌ Error getting cache stats: {e}")
+            await ctx.respond(f"❌ Error getting cache stats: {e}", ephemeral=True)
 
-    @commands.command(name="logs")
+    @commands.slash_command(
+        name="logs",
+        description="View recent bot logs (Admin only)",
+        guild_ids=None,  # Global command
+    )
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.has_permissions(administrator=True)
     async def logs(self, ctx, action: str = "status"):
@@ -152,8 +229,9 @@ class Admin(commands.Cog):
                 log_warning("Warning test message")
                 log_error("Error test message")
 
-                await ctx.send(
-                    "🎨 **Log Test Complete!** Check the console for colored output."
+                await ctx.respond(
+                    "🎨 **Log Test Complete!** Check the console for colored output.",
+                    ephemeral=True,
                 )
 
             elif action.lower() == "status":
@@ -176,13 +254,15 @@ class Admin(commands.Cog):
                     inline=False,
                 )
 
-                await ctx.send(embed=embed)
+                await ctx.respond(embed=embed, ephemeral=True)
 
             else:
-                await ctx.send("❌ **Invalid action!** Use: `status` or `test`")
+                await ctx.respond(
+                    "❌ **Invalid action!** Use: `status` or `test`", ephemeral=True
+                )
 
         except Exception as e:
-            await ctx.send(f"❌ Error managing logs: {e}")
+            await ctx.respond(f"❌ Error managing logs: {e}", ephemeral=True)
 
     async def cog_command_error(
         self, ctx: commands.Context, error: commands.CommandError

@@ -90,3 +90,100 @@
 - model: openrouter::openrouter
   name: OpenRouter
   description: Use OpenRouter models, see the openrouter command.
+
+############################################
+# Pollinations.AI Models
+############################################
+# Uncensored Models (Perfect for Jakey's personality)
+- model: pollinations::evil
+  name: Pollinations Evil
+  description: Uncensored model perfect for unfiltered responses
+- model: pollinations::unity
+  name: Pollinations Unity
+  description: Uncensored model with vision support for creative tasks
+
+# Text Generation Models
+- model: pollinations::openai
+  name: Pollinations OpenAI
+  description: Text generation using OpenAI GPT-4.1 Nano via Pollinations.AI
+- model: pollinations::openai-fast
+  name: Pollinations OpenAI Fast
+  description: Fast text generation using OpenAI GPT-4.1 Nano
+- model: pollinations::openai-roblox
+  name: Pollinations OpenAI Roblox
+  description: OpenAI GPT-4.1 Nano optimized for gaming content
+- model: pollinations::openai-large
+  name: Pollinations OpenAI Large
+  description: OpenAI GPT-4.1 for complex reasoning tasks
+- model: pollinations::openai-reasoning
+  name: Pollinations OpenAI Reasoning
+  description: OpenAI o3 reasoning model for complex problem solving
+- model: pollinations::openai-audio
+  name: Pollinations OpenAI Audio
+  description: OpenAI GPT-4o Mini with audio input/output support
+
+# Alternative Text Models
+- model: pollinations::mistral
+  name: Pollinations Mistral
+  description: Text generation using Mistral Small 3.1 24B
+- model: pollinations::mistral-roblox
+  name: Pollinations Mistral Roblox
+  description: Mistral Small 3.1 24B with vision support
+- model: pollinations::mistral-nemo-roblox
+  name: Pollinations Mistral Nemo
+  description: Mistral Nemo Instruct 2407 for creative tasks
+- model: pollinations::gemini
+  name: Pollinations Gemini
+  description: Text generation using Gemini 2.5 Flash Lite
+- model: pollinations::llama-roblox
+  name: Pollinations Llama Roblox
+  description: Llama 3.1 8B Instruct for general tasks
+- model: pollinations::llama-fast-roblox
+  name: Pollinations Llama Fast
+  description: Llama 3.2 1B with vision support
+- model: pollinations::llamascout
+  name: Pollinations Llama Scout
+  description: Llama 4 Scout 17B for advanced reasoning
+- model: pollinations::nova-fast
+  name: Pollinations Nova Fast
+  description: Amazon Nova Micro for quick responses
+- model: pollinations::qwen-coder
+  name: Pollinations Qwen Coder
+  description: Qwen 2.5 Coder 32B for programming tasks
+- model: pollinations::deepseek-reasoning
+  name: Pollinations DeepSeek Reasoning
+  description: DeepSeek R1 0528 for advanced reasoning
+- model: pollinations::gpt-5-nano
+  name: Pollinations GPT-5 Nano
+  description: OpenAI GPT-5 Nano with vision support
+- model: pollinations::roblox-rp
+  name: Pollinations Roblox RP
+  description: Roblox RP Multi-Model for roleplay scenarios
+
+# Community Models
+- model: pollinations::bidara
+  name: Pollinations Bidara
+  description: BIDARA (NASA's Biomimetic Designer and Research Assistant)
+- model: pollinations::midijourney
+  name: Pollinations MIDIjourney
+  description: MIDIjourney for music-related tasks
+- model: pollinations::mirexa
+  name: Pollinations Mirexa
+  description: Mirexa AI Companion for conversational tasks
+- model: pollinations::rtist
+  name: Pollinations Rtist
+  description: Rtist for creative and artistic tasks
+- model: pollinations::sur
+  name: Pollinations Sur
+  description: Sur AI Assistant with vision support
+
+# Image Generation Models (These may need separate implementation)
+- model: pollinations::flux
+  name: Pollinations Flux
+  description: Image generation using Flux model via Pollinations.AI
+- model: pollinations::kontext
+  name: Pollinations Kontext
+  description: Image-to-image generation using Kontext model via Pollinations.AI
+- model: pollinations::sdxl
+  name: Pollinations SDXL
+  description: Image generation using Stable Diffusion XL via Pollinations.AI

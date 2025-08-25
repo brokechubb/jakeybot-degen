@@ -6,9 +6,26 @@ JakeyBot has a powerful tool system that extends its functionality beyond text g
 
 Tools use **function calling** under the hood. When you ask JakeyBot a specific question that requires external functionality, it intelligently calls the appropriate tool by passing the function name and arguments from the tool's schema during the text completion process.
 
+## 🚀 **Auto-Return System**
+
+JakeyBot features an intelligent **auto-return system** that automatically manages tool usage:
+
+- **Automatic Tool Activation**: Tools are automatically enabled when needed
+- **Smart Timeout Management**: Tools return to Memory after configurable timeouts
+- **Intelligent Suggestions**: Get optimization tips with `/smart_suggestions`
+- **Seamless Experience**: No manual tool management required
+
+### **Auto-Return Commands**
+
+- `/smart_suggestions` - Get personalized optimization tips
+- `/extend_timeout <time>` - Extend current tool session (e.g., `5m`, `2h`)
+- `/timeout_status` - Check remaining time on current tool
+- `/return_to_default` - Immediately return to Memory tool
+- `/auto_return_status` - View auto-return system status
+
 ## 📋 Available Tools
 
-### 🧠 **Memory Tool** (Recommended)
+### 🧠 **Memory Tool** (Default)
 
 **Purpose**: Automatically remember and recall information from previous conversations
 
@@ -18,6 +35,7 @@ Tools use **function calling** under the hood. When you ask JakeyBot a specific 
 - Automatic categorization and organization
 - Configurable expiration times
 - Privacy-focused with user isolation
+- **Auto-enabled** as default tool
 
 **Use Cases**:
 
@@ -45,8 +63,9 @@ python scripts/setup_memory.py
 
 - Generate images from text descriptions
 - Edit existing images with AI
-- Powered by Gemini 2.0 Flash
-- No additional configuration required (just Gemini API key)
+- **Direct Commands**: `/generate_image` and `/edit_image`
+- **No Tool Switching**: Works directly without enabling tools
+- Multiple AI models supported (Pollinations.AI, Gemini, etc.)
 
 **Use Cases**:
 
@@ -54,11 +73,11 @@ python scripts/setup_memory.py
 - Generating illustrations for content
 - Modifying existing images
 
-**Setup**:
+**Usage**:
 
-```bash
-# Enable the tool
-/feature ImageGen
+```
+/generate_image a cute cat playing with yarn
+/edit_image add a hat to this person
 ```
 
 ---
@@ -73,6 +92,7 @@ python scripts/setup_memory.py
 - Semantic search capabilities
 - No rate limits on free tier
 - Comprehensive result summaries
+- **Auto-enabled** when needed
 
 **Use Cases**:
 
@@ -86,8 +106,7 @@ python scripts/setup_memory.py
 # Configure API key in dev.env
 EXA_API_KEY=your_api_key_here
 
-# Enable the tool
-/feature ExaSearch
+# Auto-enabled when needed
 ```
 
 ---
@@ -102,6 +121,7 @@ EXA_API_KEY=your_api_key_here
 - Analyze code and documentation
 - Summarize README files and code
 - Public repository access only
+- **Auto-enabled** when needed
 
 **Use Cases**:
 
@@ -115,8 +135,7 @@ EXA_API_KEY=your_api_key_here
 # Configure GitHub token in dev.env
 GITHUB_TOKEN=your_github_token_here
 
-# Enable the tool
-/feature GitHub
+# Auto-enabled when needed
 ```
 
 ---
@@ -131,6 +150,7 @@ GITHUB_TOKEN=your_github_token_here
 - Extract video metadata from URLs
 - Get video information and statistics
 - Real-time search results
+- **Auto-enabled** when needed
 
 **Use Cases**:
 
@@ -144,8 +164,7 @@ GITHUB_TOKEN=your_github_token_here
 # Configure YouTube API key in dev.env
 YOUTUBE_DATA_v3_API_KEY=your_api_key_here
 
-# Enable the tool
-/feature YouTube
+# Auto-enabled when needed
 ```
 
 ---
@@ -160,6 +179,7 @@ YOUTUBE_DATA_v3_API_KEY=your_api_key_here
 - Audio file editing
 - Format conversion
 - Audio enhancement
+- **Auto-enabled** when needed
 
 **Use Cases**:
 
@@ -173,8 +193,7 @@ YOUTUBE_DATA_v3_API_KEY=your_api_key_here
 # Install dependencies
 pip install gradio_client
 
-# Enable the tool
-/feature AudioTools
+# Auto-enabled when needed
 ```
 
 ---
@@ -189,6 +208,7 @@ pip install gradio_client
 - **Artifacts**: Generate and share files (code, markdown, etc.)
 - Thread-based organization
 - File generation capabilities
+- **Auto-enabled** when needed
 
 **Use Cases**:
 
@@ -199,8 +219,7 @@ pip install gradio_client
 **Setup**:
 
 ```bash
-# Enable the tool
-/feature IdeationTools
+# Auto-enabled when needed
 ```
 
 ---
@@ -215,6 +234,7 @@ pip install gradio_client
 - Price comparisons and trends
 - Market information
 - No API key required
+- **Auto-enabled** when needed
 
 **Use Cases**:
 
@@ -225,8 +245,7 @@ pip install gradio_client
 **Setup**:
 
 ```bash
-# Enable the tool
-/feature CryptoPrice
+# Auto-enabled when needed
 ```
 
 ---
@@ -241,6 +260,7 @@ pip install gradio_client
 - Live exchange rates
 - Real-time conversion
 - No API key required
+- **Auto-enabled** when needed
 
 **Use Cases**:
 
@@ -251,8 +271,7 @@ pip install gradio_client
 **Setup**:
 
 ```bash
-# Enable the tool
-/feature CurrencyConverter
+# Auto-enabled when needed
 ```
 
 ---
@@ -267,6 +286,7 @@ pip install gradio_client
 - Mathematical calculations
 - Data processing
 - Gemini models only
+- **Auto-enabled** when needed
 
 **Use Cases**:
 
@@ -277,23 +297,95 @@ pip install gradio_client
 **Setup**:
 
 ```bash
-# Enable the tool
-/feature CodeExecution
+# Auto-enabled when needed
+```
+
+---
+
+### 🎮 **Engagement System**
+
+**Purpose**: Active channel participation and community engagement
+
+**Features**:
+
+- **Active Participation**: Jakey can actively engage in channels
+- **Persistent Settings**: Engagement settings survive bot restarts
+- **Smart Interjections**: Context-aware participation
+- **Configurable Behavior**: Adjust engagement frequency and style
+- **Commands**: `/jakey_engage`, `/jakey_disengage`
+
+**Use Cases**:
+
+- Community building
+- Active channel participation
+- Automated engagement
+
+**Setup**:
+
+```bash
+# Enable engagement in a channel
+/jakey_engage
+
+# Disable engagement
+/jakey_disengage
+```
+
+---
+
+### 🎲 **Gambling Games**
+
+**Purpose**: Interactive gambling and gaming features
+
+**Features**:
+
+- **Betting Pools**: Create community betting pools
+- **Trivia Games**: Interactive trivia with AI-generated questions
+- **Keno Numbers**: Generate random keno numbers
+- **Leaderboards**: Track scores and winners
+- **Commands**: `/create_bet`, `/trivia`, `/keno`
+
+**Use Cases**:
+
+- Community entertainment
+- Interactive gaming
+- Gambling-themed activities
+
+**Setup**:
+
+```bash
+# Create a betting pool
+/create_bet "Who will win?" "Team A,Team B,Team C"
+
+# Start trivia
+/trivia
+
+# Generate keno numbers
+/keno
 ```
 
 ## 🚀 Getting Started with Tools
 
-### 1. **Enable a Tool**
+### 1. **Auto-Enabled Tools**
 
-Use the `/feature` command to enable a specific tool:
+Most tools are now **auto-enabled** when needed:
+
+```
+# Just ask - tools are automatically enabled
+"Check the price of Bitcoin"
+"Search for the latest AI news"
+"Convert 100 USD to EUR"
+```
+
+### 2. **Manual Tool Management**
+
+For specific tool usage:
 
 ```
 /feature Memory          # Enable Memory tool
-/generate_image         # Generate images directly
 /feature ExaSearch       # Enable Web Search
 ```
 
-### 2. **Check Tool Status**
+### 3. **Check Tool Status**
 
 View currently enabled tools:
 
@@ -301,12 +393,12 @@ View currently enabled tools:
 /feature                 # Shows current tool status
 ```
 
-### 3. **Disable Tools**
+### 4. **Smart Suggestions**
 
-Disable all tools:
+Get optimization tips:
 
 ```
-/feature capability:Disabled
+/smart_suggestions       # Get personalized tips
 ```
 
 ## ⚙️ Tool Configuration
@@ -322,6 +414,7 @@ GITHUB_TOKEN=your_github_token
 YOUTUBE_DATA_v3_API_KEY=your_youtube_api_key
 OPENAI_API_KEY=your_openai_api_key
 GEMINI_API_KEY=your_gemini_api_key
+POLLINATIONS_API_KEY=your_pollinations_api_key  # Optional
 ```
 
 ### Default Tool Setting
@@ -386,10 +479,11 @@ This shows:
 
 ### Best Practices
 
-1. **Choose tools wisely**: Enable only the tools you need
-2. **Plan conversations**: Tool switching clears context
-3. **Monitor usage**: Use management scripts to track performance
-4. **Test thoroughly**: Verify tool functionality before production use
+1. **Let tools auto-enable**: Most tools are automatically enabled when needed
+2. **Use smart suggestions**: Get optimization tips with `/smart_suggestions`
+3. **Monitor timeouts**: Check `/timeout_status` to plan your work
+4. **Extend sessions**: Use `/extend_timeout` for longer sessions
+5. **Test thoroughly**: Verify tool functionality before production use
 
 ## 🧪 Testing Tools
 
@@ -408,10 +502,10 @@ python scripts/security_check.py
 
 ### Manual Testing
 
-1. Enable a tool with `/feature <tool_name>`
-2. Ask relevant questions to trigger tool usage
-3. Verify the tool interstitial appears
-4. Check that results are accurate and helpful
+1. Ask relevant questions to trigger tool usage
+2. Verify the tool is automatically enabled
+3. Check that results are accurate and helpful
+4. Test auto-return functionality
 
 ## 🔮 Future Enhancements
 
@@ -437,6 +531,7 @@ python scripts/security_check.py
 - **Configuration Guide**: `docs/CONFIG.md`
 - **Memory Implementation**: `docs/MEMORY_IMPLEMENTATION.md`
 - **Security Guide**: `docs/SECURITY.md`
+- **Auto-Return Guide**: `docs/AUTO_RETURN_GUIDE.md`
 - **Scripts Documentation**: `scripts/README.md`
 
 ### Examples
@@ -455,12 +550,13 @@ python scripts/security_check.py
 Before using tools in production:
 
 - [ ] Required API keys configured
-- [ ] Tools properly enabled with `/feature`
+- [ ] Tools properly auto-enabled
 - [ ] Dependencies installed (if required)
 - [ ] Database connection working
 - [ ] Tool functionality tested
 - [ ] Security measures in place
 - [ ] Documentation reviewed
+- [ ] Auto-return system configured
 
 ---
 

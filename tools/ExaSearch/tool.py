@@ -103,6 +103,7 @@ class Tool(ToolManifest):
             logging.info(f"Making request to Exa API with params: {_params}")
 
             # Make a request
+            _data = None
             try:
                 async with _session.post(
                     _endpoint, headers=_header, json=_params
@@ -135,6 +136,10 @@ class Tool(ToolManifest):
             except Exception as e:
                 logging.error(f"Unexpected error during web search: {e}")
                 raise Exception(f"Unexpected error during web search: {str(e)}")
+
+            # Ensure we have data before proceeding
+            if not _data:
+                raise Exception("Failed to retrieve data from Exa API")
 
             # Build output
             _output = {

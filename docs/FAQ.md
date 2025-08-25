@@ -19,6 +19,7 @@ This document answers the most common questions about JakeyBot. If you don't fin
 - **Gemini 2.5 Flash** for balanced chat experiences with thinking capability
 - **GPT-4.1 mini** for OpenRouter-based chats
 - **Gemini 2.5 Flash Nonthinking** for most commands like `/summarize` or message actions
+- **Pollinations.AI models** for uncensored responses
 
 You can change models using:
 
@@ -34,8 +35,162 @@ You can change models using:
 - **OpenAI conversations** have their own memory
 - **Claude conversations** have their own memory  
 - **Gemini conversations** have their own memory
+- **Pollinations.AI conversations** have their own memory
 
 Each model maintains separate conversation contexts for optimal performance and privacy.
+
+---
+
+## 🔄 **Auto-Return System**
+
+### Q: What is the auto-return system?
+
+**A**: The auto-return system automatically manages tool usage for you:
+
+- **Automatic Tool Activation**: Tools are automatically enabled when needed
+- **Smart Timeout Management**: Tools return to Memory after configurable timeouts
+- **Intelligent Suggestions**: Get optimization tips with `/smart_suggestions`
+- **Seamless Experience**: No manual tool management required
+
+---
+
+### Q: How do I extend the timeout for a tool?
+
+**A**: Use the `/extend_timeout` command:
+
+```
+/extend_timeout 5m    # Add 5 minutes
+/extend_timeout 2h    # Add 2 hours
+/extend_timeout 30m   # Add 30 minutes
+```
+
+---
+
+### Q: How do I check how much time is left on my current tool?
+
+**A**: Use `/timeout_status` to see remaining time:
+
+```
+/timeout_status
+```
+
+This will show you the current tool and how much time is left before it auto-returns to Memory.
+
+---
+
+### Q: What are smart suggestions?
+
+**A**: Smart suggestions provide personalized optimization tips:
+
+```
+/smart_suggestions
+```
+
+**Example suggestions:**
+
+- "You've been using CodeExecution for 8 minutes. Consider extending with `/extend_timeout 5m`"
+- "For image generation, try `/generate_image` directly - no tool switching needed!"
+- "You're doing a lot of web searches. Consider using `/feature ExaSearch` for a longer session"
+
+---
+
+### Q: How do I return to Memory immediately?
+
+**A**: Use `/return_to_default` to immediately return to the Memory tool:
+
+```
+/return_to_default
+```
+
+---
+
+## 🎮 **Interactive Features**
+
+### Q: How do I make Jakey actively engage in a channel?
+
+**A**: Use the `/jakey_engage` command to make Jakey actively participate in the current channel:
+
+```
+/jakey_engage
+```
+
+This will make Jakey periodically interject with relevant comments and engage with the conversation.
+
+---
+
+### Q: How do I stop Jakey's active engagement?
+
+**A**: Use `/jakey_disengage` to stop Jakey's active participation:
+
+```
+/jakey_disengage
+```
+
+---
+
+### Q: How do I create a betting pool?
+
+**A**: Use `/create_bet` with a title and options:
+
+```
+/create_bet "Who will win the game?" "Team A,Team B,Team C"
+```
+
+This creates an interactive betting pool where users can vote on the options.
+
+---
+
+### Q: How do I start a trivia game?
+
+**A**: Use `/trivia` to start an interactive trivia game:
+
+```
+/trivia
+```
+
+Jakey will generate AI-powered trivia questions for the channel to answer.
+
+---
+
+### Q: How do I generate keno numbers?
+
+**A**: Use `/keno` to generate random keno numbers:
+
+```
+/keno
+```
+
+---
+
+## 🎨 **Image Generation**
+
+### Q: How do I generate images?
+
+**A**: Use `/generate_image` directly - no tool switching required:
+
+```
+/generate_image a cute cat playing with yarn
+/generate_image futuristic city skyline at sunset
+```
+
+---
+
+### Q: How do I edit images?
+
+**A**: Use `/edit_image` with an attached image:
+
+```
+/edit_image add a hat to this person
+/edit_image make this image more colorful
+```
+
+Attach the image you want to edit when using this command.
+
+---
+
+### Q: Do I need to enable a tool for image generation?
+
+**A**: No! Image generation commands work directly without enabling any tools. Just use `/generate_image` or `/edit_image`.
 
 ---
 
@@ -43,11 +198,18 @@ Each model maintains separate conversation contexts for optimal performance and 
 
 ### Q: How do I enable tools?
 
-**A**: Use the `/feature` command to enable specific tools:
+**A**: Most tools are now **auto-enabled** when needed! Just ask JakeyBot what you need:
+
+```
+"Check the price of Bitcoin"  # Auto-enables CryptoPrice
+"Search for the latest AI news"  # Auto-enables ExaSearch
+"Convert 100 USD to EUR"  # Auto-enables CurrencyConverter
+```
+
+For manual control, use `/feature <tool_name>`:
 
 ```
 /feature Memory          # Enable Memory tool
-/generate_image         # Generate images directly
 /feature ExaSearch       # Enable Web Search
 /feature GitHub          # Enable GitHub integration
 ```
@@ -61,7 +223,6 @@ Each model maintains separate conversation contexts for optimal performance and 
 **A**: JakeyBot offers many tools:
 
 - **🧠 Memory** - Remember and recall information
-
 - **🔍 ExaSearch** - Web search capabilities
 - **📚 GitHub** - Repository analysis
 - **🎥 YouTube** - Video search and analysis
@@ -70,6 +231,9 @@ Each model maintains separate conversation contexts for optimal performance and 
 - **💰 CryptoPrice** - Cryptocurrency prices
 - **💱 CurrencyConverter** - Currency conversion
 - **🐍 CodeExecution** - Python code execution
+- **🎮 Engagement** - Active channel participation
+- **🎲 GamblingGames** - Betting pools and trivia
+- **🎨 Image Generation** - AI image creation and editing
 
 See `docs/TOOLS.md` for complete details.
 
@@ -99,281 +263,344 @@ python scripts/set_default_tool.py Memory
 
 ### Q: Are models free to use?
 
-**A**:
+**A**: It depends on the model provider:
 
-- **Gemini models**: Free with API key (no billing required)
-- **OpenAI models**: Requires credits from [OpenAI](https://help.openai.com/en/articles/8264644-how-can-i-set-up-prepaid-billing)
-- **Other models**: Purchase credits from [OpenRouter](https://openrouter.ai)
+- **Gemini**: Free tier available with rate limits
+- **OpenAI**: Requires API key with usage costs
+- **Claude**: Requires API key with usage costs
+- **Pollinations.AI**: Free tier available, optional API key for premium features
 
-**Self-hosting**: Use your own paid API keys for full control and privacy.
+Check each provider's pricing for current rates.
 
 ---
 
 ### Q: What API keys do I need?
 
-**A**: Required API keys depend on which features you want:
+**A**: Required API keys depend on which features you want to use:
 
-**Essential**:
+**Essential:**
 
-- `DISCORD_TOKEN` - Your Discord bot token
-- `MONGO_DB_URL` - MongoDB connection string
-
-**AI Models**:
-
+- `OPENAI_API_KEY` - For OpenAI models
 - `GEMINI_API_KEY` - For Gemini models
-- `OPENAI_API_KEY` - For GPT models
-- `ANTHROPIC_API_KEY` - For Claude models
+- `MONGO_DB_URL` - For database functionality
 
-**Tools**:
+**Optional:**
 
-- `EXA_API_KEY` - For web search
+- `EXA_API_KEY` - For web search (ExaSearch)
 - `GITHUB_TOKEN` - For GitHub integration
-- `YOUTUBE_DATA_v3_API_KEY` - For YouTube search
-
-See `docs/CONFIG.md` for complete configuration details.
+- `YOUTUBE_DATA_v3_API_KEY` - For YouTube analysis
+- `POLLINATIONS_API_KEY` - For Pollinations.AI premium features
 
 ---
 
-### Q: How do I set up my environment?
+### Q: How do I configure API keys?
 
-**A**: Use the setup script:
+**A**: Add your API keys to the `dev.env` file:
 
 ```bash
-# Create your environment file
-python scripts/setup_env.py
+# Required
+OPENAI_API_KEY=your_openai_key_here
+GEMINI_API_KEY=your_gemini_key_here
+MONGO_DB_URL=your_mongodb_url_here
 
-# Edit dev.env with your actual API keys
-# Then verify security
-python scripts/security_check.py
+# Optional
+EXA_API_KEY=your_exa_key_here
+GITHUB_TOKEN=your_github_token_here
+YOUTUBE_DATA_v3_API_KEY=your_youtube_key_here
+POLLINATIONS_API_KEY=your_pollinations_key_here
 ```
 
 ---
 
-## 📁 **File Support & Attachments**
+## 🧠 **Memory System**
 
-### Q: What type of files can I provide with my prompts?
+### Q: How does the Memory system work?
 
-**A**: File support varies by model:
+**A**: The Memory system automatically remembers information about you:
 
-- **Gemini**: Images, Audio, Video, PDF
-- **Anthropic/OpenRouter**: Images, PDF
-
-**Note**: Files are automatically deleted after processing for privacy.
-
----
-
-### Q: How do I use IdeationTools for file generation?
-
-**A**:
-
-1. Enable the tool: `/feature IdeationTools`
-2. Ask JakeyBot to create files (code, markdown, etc.)
-3. Ensure the bot has permission to send attachments
-4. Files will be generated and shared in the chat
+- **Automatic Detection**: JakeyBot detects and remembers personal information
+- **Natural Sharing**: Just share information naturally in conversation
+- **Personal Recall**: JakeyBot can recall your preferences and details
+- **Privacy Focused**: Information is stored per user and server
 
 ---
 
-## 🏠 **Self-Hosting & DMs**
+### Q: How do I manually store information in Memory?
 
-### Q: I get errors when using JakeyBot in DMs
+**A**: Use the `/remember` command:
 
-**A**: You need to install the app first:
-
-1. Go to JakeyBot's profile card
-2. Tap "Add app"
-3. Click "Try it yourself"
-4. Then you can use `/ask` and `/sweep` commands in DMs
-
-Without this, you'll get "Integration error" when using commands directly.
+```
+/remember My favorite color is blue
+/remember I work as a software developer
+/remember My birthday is March 15th
+```
 
 ---
 
-### Q: Why can't I use the ask command in other servers?
+### Q: How do I check if Memory is working?
 
-**A**: The `/ask` command has restrictions due to Discord's user-installable app limitations:
+**A**: Use `/memory_debug` to check the Memory system status:
 
-- **Works in**: DMs and authorized guilds
-- **Doesn't work in**: Servers where JakeyBot isn't fully authorized
+```
+/memory_debug
+```
 
-This is because the command uses `ctx.send` which isn't allowed with user-installable apps.
-
-**Reference**: [Discord App Moderation](https://support.discord.com/hc/en-us/articles/23957313048343/Moderating-Apps-on-Discord#h_01HZQQQEADYVN2CM4AX4EZGKHM)
-
----
-
-## 🧠 **Memory & Context**
-
-### Q: How does the Memory tool work?
-
-**A**: The Memory tool automatically:
-
-1. **Detects** when you share personal information
-2. **Stores** facts with automatic categorization
-3. **Recalls** relevant information when you ask questions
-4. **Maintains** privacy with user isolation
-
-**Setup**: Run `python scripts/setup_memory.py` to enable it as default.
+This will show you if the system is working properly and display statistics.
 
 ---
 
-### Q: What information gets remembered?
+### Q: What if Memory search isn't working?
 
-**A**: The Memory tool remembers:
+**A**: Try `/memory_reindex` to fix search issues:
 
-**✅ Personal Information**:
+```
+/memory_reindex
+```
 
-- Names and details
-- Preferences and favorites
-- Interests and hobbies
-- Skills and expertise
-
-**❌ Not Remembered**:
-
-- Commands and instructions
-- Temporary requests
-- Non-personal information
+This rebuilds the search index and can resolve missing information problems.
 
 ---
 
-## 🔒 **Privacy & Data Handling**
+## ⏰ **Reminders & Time**
 
-### Q: How is my data handled?
+### Q: How do I set a reminder?
 
-**A**:
+**A**: Use `/remind` with natural language:
 
-- **Chat history**: Stored in MongoDB database (self-hosted)
-- **Files**: Automatically deleted after processing
-- **Privacy**: User isolation and guild separation
-- **Training**: Your data is NOT used to train models
-
-**Self-hosting**: Use your own paid API keys for full control and privacy.
+```
+/remind time_in:1h message:Take a break
+/remind time_in:tomorrow 10am message:Team meeting
+/remind time_in:2d message:Pay rent
+```
 
 ---
 
-### Q: Is my data secure?
+### Q: What time formats are supported?
 
-**A**: JakeyBot implements several security measures:
+**A**: Both simple and natural language formats:
 
-- **Environment variables** for all sensitive data
-- **Database isolation** by user and guild
-- **File cleanup** after processing
-- **Security scripts** to prevent credential exposure
+**Simple:**
 
-**Recommendation**: Add authentication to your MongoDB database for production use.
+- `30m`, `1h`, `2d`, `1w`
+
+**Natural Language:**
+
+- `tomorrow 10am`
+- `next week`
+- `in 2 hours`
+- `next Monday`
+
+---
+
+### Q: How do I check the current time?
+
+**A**: Use `/time` to get the current time and timezone information:
+
+```
+/time
+```
 
 ---
 
 ## 🚨 **Troubleshooting**
 
-### Q: Tools aren't working properly
+### Q: JakeyBot isn't responding to my messages
+
+**A**: Check these common issues:
+
+1. **Bot Status**: Make sure the bot is online (green indicator)
+2. **Permissions**: Verify the bot has "Send Messages" permission
+3. **Channel Access**: Ensure the bot can see the channel
+4. **Try `/ask`**: Use `/ask <question>` for direct responses
+
+---
+
+### Q: Tools aren't working
+
+**A**: Try these solutions:
+
+1. **Auto-enablement**: Most tools are automatically enabled when needed
+2. **Manual Enable**: Use `/feature <tool_name>` if auto-enablement fails
+3. **API Keys**: Check if the tool requires an API key
+4. **Server Admins**: Contact server administrators for configuration issues
+
+---
+
+### Q: Memory isn't working
 
 **A**: Try these steps:
 
-1. **Check tool status**: `/feature`
-2. **Verify configuration**: `python scripts/manage_tools.py`
-3. **Test specific tools**: `python scripts/test_memory.py`
-4. **Check database**: Ensure MongoDB is running
-5. **Restart bot**: After configuration changes
+1. **Enable Memory**: Use `/feature Memory`
+2. **Share Information**: Tell JakeyBot something about yourself
+3. **Debug**: Use `/memory_debug` to check system status
+4. **Reindex**: Use `/memory_reindex` to fix search issues
 
 ---
 
-### Q: Bot isn't responding to commands
+### Q: Auto-return system isn't working
 
-**A**: Common causes:
+**A**: Check these items:
 
-1. **Permissions**: Bot needs proper Discord permissions
-2. **Configuration**: Check your `.env` file
-3. **API keys**: Verify API keys are valid
-4. **Database**: Ensure MongoDB connection works
-5. **Restart**: Restart the bot after changes
-
----
-
-### Q: Memory tool isn't remembering information
-
-**A**: Troubleshooting steps:
-
-1. **Enable tool**: `/feature Memory`
-2. **Check configuration**: `python scripts/setup_memory.py`
-3. **Verify database**: MongoDB connection and permissions
-4. **Test functionality**: `python scripts/test_memory.py`
-5. **Check model**: Ensure AI model supports tool calling
+1. **System Status**: Use `/auto_return_status` to check system health
+2. **Database**: Ensure database connection is working
+3. **Configuration**: Check environment variables
+4. **Smart Suggestions**: Use `/smart_suggestions` for optimization tips
 
 ---
 
-## 🔮 **Future Features**
+### Q: Image generation isn't working
 
-### Q: Will you support locally hosted models like OLLAMA?
+**A**: Try these solutions:
 
-**A**: Yes, but not immediately. Current focus is on:
-
-1. **Flagship models** that most people use
-2. **OpenRouter models** for variety
-3. **Stable, reliable** API-based models
-
-Local model support will come in future versions.
+1. **Direct Commands**: Use `/generate_image` or `/edit_image` directly
+2. **API Keys**: Check if image generation models require API keys
+3. **Attachments**: Make sure to attach images when using `/edit_image`
+4. **Permissions**: Verify the bot can send images
 
 ---
 
-### Q: What improvements are planned?
+## 🎭 **Personality & Behavior**
 
-**A**: Planned enhancements include:
+### Q: Why is JakeyBot so sarcastic?
 
-- **Multi-tool support** - Use multiple tools simultaneously
-- **Local model support** - OLLAMA and other local models
-- **Advanced analytics** - Better usage insights
-- **Custom tools** - User-defined tool creation
-- **Performance optimization** - Faster response times
+**A**: JakeyBot is designed with a unique, unfiltered personality:
+
+- **Direct and honest** - No sugar-coating
+- **Crypto and gambling expert** - Knows about trading, betting, casinos
+- **Internet culture savvy** - Uses modern slang and emojis
+- **Slightly rude** - But in a fun, entertaining way
+
+This is part of JakeyBot's character as the "degenerate gambling mascot" of the Courtyard.
+
+---
+
+### Q: Can I change JakeyBot's personality?
+
+**A**: JakeyBot's personality is part of its core identity and cannot be changed by users. However, you can:
+
+- **Use different models** for different response styles
+- **Be specific in prompts** to get different types of responses
+- **Contact server admins** for server-specific customization
+
+---
+
+## 🔒 **Privacy & Security**
+
+### Q: What information does JakeyBot store?
+
+**A**: JakeyBot stores:
+
+- **Conversation context** - For better responses
+- **Personal preferences** - To personalize your experience
+- **Tool usage** - To improve functionality
+- **Personal reminders** - Only visible to you
+
+**JakeyBot does NOT store:**
+
+- Sensitive personal information
+- Passwords or credentials
+- Private messages (unless explicitly shared)
+
+---
+
+### Q: How do I clear my conversation history?
+
+**A**: Use `/sweep` to clear your conversation history:
+
+```
+/sweep
+```
+
+This will clear the current chat session but won't delete stored memories.
+
+---
+
+### Q: Is my data secure?
+
+**A**: JakeyBot follows security best practices:
+
+- **User isolation** - Each user's data is separate
+- **Server isolation** - Data is separated by Discord server
+- **Database security** - Uses secure MongoDB connections
+- **API key protection** - Keys are stored securely in environment variables
 
 ---
 
 ## 📚 **Getting Help**
 
-### Q: Where can I find more help?
+### Q: Where can I get more help?
 
-**A**:
+**A**: Try these resources:
 
-**Documentation**:
-
-- `docs/CONFIG.md` - Configuration guide
-- `docs/TOOLS.md` - Tools documentation
-- `docs/SECURITY.md` - Security guide
-- `scripts/README.md` - Scripts documentation
-
-**Scripts**:
-
-- `python scripts/manage_tools.py` - Tool management
-- `python scripts/manage_ai_models.py` - AI model status
-- `python scripts/security_check.py` - Security verification
-
-**Community**: Join the JakeyBot community for support and updates.
+1. **Documentation**: Check the docs folder for detailed guides
+2. **Help Commands**: Use `/help` and `/quickstart`
+3. **Server Admins**: Contact your server administrators
+4. **Community**: Join JakeyBot community servers
+5. **Smart Suggestions**: Use `/smart_suggestions` for optimization tips
 
 ---
 
-### Q: How do I report bugs or request features?
+### Q: How do I report a bug?
 
-**A**:
+**A**: Report bugs to your server administrators or through the community channels. Include:
 
-1. **Check existing issues** first
-2. **Provide clear reproduction steps**
-3. **Include relevant logs** (without sensitive data)
-4. **Describe expected vs actual behavior**
-5. **Mention your configuration** (without API keys)
-
----
-
-## ✅ **Quick Setup Checklist**
-
-Before using JakeyBot:
-
-- [ ] Environment file configured (`python scripts/setup_env.py`)
-- [ ] API keys set up in `dev.env`
-- [ ] MongoDB connection working
-- [ ] Security check passed (`python scripts/security_check.py`)
-- [ ] Bot has proper Discord permissions
-- [ ] Tools enabled as needed (`/feature <tool_name>`)
-- [ ] Memory tool configured (`python scripts/setup_memory.py`)
+- **What you were trying to do**
+- **What happened instead**
+- **Error messages** (if any)
+- **Steps to reproduce** the issue
 
 ---
 
-*Need more help? Check the other documentation files or reach out to the community!*
+### Q: How do I suggest a new feature?
+
+**A**: Feature suggestions can be made to:
+
+- **Server administrators** for server-specific features
+- **Community channels** for general feature requests
+- **GitHub repository** for technical contributions
+
+---
+
+## 🎯 **Quick Reference**
+
+### **Essential Commands**
+
+- `/ask <question>` - Ask anything
+- `/help` - Comprehensive help
+- `/quickstart` - Getting started guide
+- `/sweep` - Clear conversation history
+
+### **Auto-Return Commands**
+
+- `/smart_suggestions` - Get optimization tips
+- `/extend_timeout <time>` - Extend tool session
+- `/timeout_status` - Check remaining time
+- `/return_to_default` - Return to Memory immediately
+
+### **Interactive Commands**
+
+- `/jakey_engage` - Make Jakey actively engage
+- `/create_bet <title> <options>` - Create betting pool
+- `/trivia` - Start trivia game
+- `/keno` - Generate keno numbers
+
+### **Image Commands**
+
+- `/generate_image <prompt>` - Generate AI images
+- `/edit_image <prompt>` - Edit images with AI
+
+### **Memory Commands**
+
+- `/remember <fact>` - Store information
+- `/memory_debug` - Check system status
+- `/memory_reindex` - Fix search issues
+
+### **Utility Commands**
+
+- `/time` - Current time
+- `/remind <time> <message>` - Set reminder
+- `/feature <tool>` - Enable tools
+
+---
+
+**💡 Pro Tip**: Use `/smart_suggestions` regularly to get personalized optimization tips for using JakeyBot more effectively!

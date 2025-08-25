@@ -167,6 +167,9 @@ class InitBot(ServicesInitBot):
         self.loop.create_task(self.start_services())
         logging.info("Services initialization started")
 
+        # Set a placeholder for DBConn to prevent AttributeError
+        self.DBConn = None
+
         # Initialize non-async performance services
         try:
             from core.services.cache_manager import get_cache_manager
@@ -313,6 +316,15 @@ async def on_ready():
     await bot.change_presence(
         activity=discord.Game(f"/ask me anything or {bot.command_prefix}help")
     )
+
+    # Sync slash commands
+    try:
+        logging.info("Syncing slash commands with Discord...")
+        await bot.sync_commands()
+        logging.info("✅ Slash commands synced successfully!")
+    except Exception as e:
+        logging.error(f"❌ Failed to sync slash commands: {e}")
+
     try:
         from core.services.colored_logging import log_success
 

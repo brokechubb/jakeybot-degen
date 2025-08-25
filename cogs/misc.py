@@ -24,29 +24,13 @@ class Misc(commands.Cog):
 
     def __init__(self, bot):
         self.bot = bot
-        self.author = environ.get("BOT_NAME", "Jakey Bot")
+        self.DBConn = getattr(bot, "DBConn", None)
 
-        # Use the shared database connection from the bot
-        if hasattr(bot, "DBConn") and bot.DBConn is not None:
-            self.DBConn = bot.DBConn
-            logging.info("Misc cog using shared database connection")
-        else:
-            # Fallback: create our own connection if shared one is not available
-            try:
-                self.DBConn: History = History(
-                    bot=bot,
-                    db_conn=motor.motor_asyncio.AsyncIOMotorClient(
-                        environ.get("MONGO_DB_URL")
-                    ),
-                )
-                logging.info("Misc cog created fallback database connection")
-            except Exception as e:
-                logging.error(
-                    f"Failed to initialize database connection in Misc cog: {e}"
-                )
-                self.DBConn = None
+        # Initialize auto-image settings dictionary
+        self._auto_image_enabled = {}
+        self._auto_image_loaded = False  # Track if settings have been loaded
 
-        # Only start reminder checker if we have a database connection
+        # Start reminder checker if database is available
         if self.DBConn:
             self.bot.loop.create_task(self._check_reminders())
             logging.info("Reminder checker started")
@@ -70,7 +54,6 @@ class Misc(commands.Cog):
                     logging.warning(f"Failed to configure Gemini API locally: {e}")
 
         # Initialize auto-image settings and load from database
-        self._auto_image_enabled = {}
         if self.DBConn:
             self.bot.loop.create_task(self._load_auto_image_settings())
             logging.info("Auto-image settings loader started")
@@ -78,6 +61,33 @@ class Misc(commands.Cog):
             logging.warning(
                 "Auto-image settings loader not started - no database connection"
             )
+            # Try to initialize later when DBConn becomes available
+            self.bot.loop.create_task(self._wait_for_db_and_init())
+
+    async def _wait_for_db_and_init(self):
+        """Wait for database connection to become available and initialize services."""
+        await self.bot.wait_until_ready()
+
+        # Wait up to 30 seconds for DBConn to be initialized
+        for _ in range(30):
+            if hasattr(self.bot, "DBConn") and self.bot.DBConn is not None:
+                self.DBConn = self.bot.DBConn
+                logging.info(
+                    "Database connection became available, initializing services..."
+                )
+
+                # Start reminder checker
+                self.bot.loop.create_task(self._check_reminders())
+                logging.info("Reminder checker started")
+
+                # Load auto-image settings
+                self.bot.loop.create_task(self._load_auto_image_settings())
+                logging.info("Auto-image settings loader started")
+                return
+
+            await asyncio.sleep(1)
+
+        logging.warning("Database connection not available after 30 seconds")
 
     async def _check_reminders(self):
         await self.bot.wait_until_ready()
@@ -97,14 +107,7 @@ class Misc(commands.Cog):
     @commands.slash_command(
         name="remind",
         description="Set a reminder for yourself.",
-        contexts={
-            discord.InteractionContextType.guild,
-            discord.InteractionContextType.private_channel,
-        },
-        integration_types={
-            discord.IntegrationType.guild_install,
-            discord.IntegrationType.user_install,
-        },
+        guild_ids=None,  # Global command
     )
     @discord.option(
         "time_in",
@@ -196,6 +199,7 @@ class Misc(commands.Cog):
     @commands.slash_command(
         name="auto_image",
         description="Toggle automatic image generation for simple requests",
+        guild_ids=None,  # Global command
     )
     @commands.has_permissions(manage_channels=True)
     async def auto_image(self, ctx, enabled: bool = None):
@@ -245,8 +249,10 @@ class Misc(commands.Cog):
     async def _auto_generate_image(self, message, prompt: str):
         """Automatically generate an image for a user request."""
         if not self._gemini_api_configured:
+            logging.warning("Gemini API not configured for auto-image generation")
             return False
 
+        status_msg = None
         try:
             # Send initial status message
             status_msg = await message.channel.send(
@@ -319,13 +325,16 @@ class Misc(commands.Cog):
                     )
 
                     await message.channel.send(
-                        f"Prompt: *{prompt}*\n",
+                        f"🎨 **Auto-Generated Image**\nPrompt: *{prompt}*",
                         file=file,
                         reference=message,
                     )
                     images_sent += 1
 
             if images_sent > 0:
+                await status_msg.edit(
+                    content="✅ Auto-generation completed successfully!"
+                )
                 return True
             else:
                 await status_msg.edit(
@@ -335,7 +344,10 @@ class Misc(commands.Cog):
 
         except Exception as e:
             logging.error(f"Error in auto-image generation: {e}")
-            await status_msg.edit(content=f"❌ Auto-generation error: {str(e)[:100]}")
+            if status_msg:
+                await status_msg.edit(
+                    content=f"❌ Auto-generation error: {str(e)[:100]}"
+                )
             return False
 
     @commands.Cog.listener()
@@ -343,6 +355,13 @@ class Misc(commands.Cog):
         """Listen for messages and automatically offer image generation when appropriate."""
         # Ignore bot messages and commands
         if message.author.bot or message.content.startswith("/"):
+            return
+
+        # Wait for auto-image settings to be loaded if not already
+        if not self._auto_image_loaded:
+            logging.debug(
+                "Auto-image settings not loaded yet, skipping message processing"
+            )
             return
 
         # Check if the message is directed at the bot (mention or prefix command)
@@ -399,7 +418,11 @@ class Misc(commands.Cog):
 
             # Check if auto-generation is enabled for this guild
             guild_id = str(message.guild.id) if message.guild else "dm"
-            auto_enabled = getattr(self, "_auto_image_enabled", {}).get(guild_id, False)
+            auto_enabled = self._auto_image_enabled.get(guild_id, False)
+
+            logging.debug(
+                f"Auto-image request detected. Guild: {guild_id}, Enabled: {auto_enabled}, Prompt: {prompt}"
+            )
 
             if (
                 auto_enabled and len(prompt) > 3
@@ -419,6 +442,12 @@ class Misc(commands.Cog):
             embed.add_field(
                 name="🖼️ Generate New Image",
                 value=f"Use `/generate_image {prompt}` to create a new image",
+                inline=False,
+            )
+
+            embed.add_field(
+                name="🎨 Generate with Pollinations.AI",
+                value=f"Use `/generate_pollinations {prompt}` for creative images",
                 inline=False,
             )
 
@@ -492,14 +521,7 @@ class Misc(commands.Cog):
     @commands.slash_command(
         name="time",
         description="Displays the current time and DST status.",
-        contexts={
-            discord.InteractionContextType.guild,
-            discord.InteractionContextType.private_channel,
-        },
-        integration_types={
-            discord.IntegrationType.guild_install,
-            discord.IntegrationType.user_install,
-        },
+        guild_ids=None,  # Global command
     )
     async def current_time_slash(self, ctx):
         """Displays the current time and DST status."""
@@ -523,14 +545,7 @@ class Misc(commands.Cog):
     @commands.slash_command(
         name="memory_debug",
         description="Debug the memory system and check its status.",
-        contexts={
-            discord.InteractionContextType.guild,
-            discord.InteractionContextType.private_channel,
-        },
-        integration_types={
-            discord.IntegrationType.guild_install,
-            discord.IntegrationType.user_install,
-        },
+        guild_ids=None,  # Global command
     )
     async def memory_debug(self, ctx):
         """Debug the memory system and check its status."""
@@ -610,14 +625,7 @@ class Misc(commands.Cog):
     @commands.slash_command(
         name="memory_reindex",
         description="Force reindex the memory system to fix search issues.",
-        contexts={
-            discord.InteractionContextType.guild,
-            discord.InteractionContextType.private_channel,
-        },
-        integration_types={
-            discord.IntegrationType.guild_install,
-            discord.IntegrationType.user_install,
-        },
+        guild_ids=None,  # Global command
     )
     async def memory_reindex(self, ctx):
         """Force reindex the memory system to fix search issues."""
@@ -651,8 +659,9 @@ class Misc(commands.Cog):
             logging.error(f"Memory reindex error: {e}")
 
     @commands.slash_command(
-        contexts={discord.InteractionContextType.guild},
-        integration_types={discord.IntegrationType.guild_install},
+        name="mimic",
+        description="Mimic as another user",
+        guild_ids=None,  # Global command
     )
     async def mimic(self, ctx, user: Member, message_body: str):
         """Mimic as user!"""
@@ -691,14 +700,7 @@ class Misc(commands.Cog):
     @commands.slash_command(
         name="timeout_status",
         description="Check the remaining time before auto-return to default tool.",
-        contexts={
-            discord.InteractionContextType.guild,
-            discord.InteractionContextType.bot_dm,
-        },
-        integration_types={
-            discord.IntegrationType.guild_install,
-            discord.IntegrationType.user_install,
-        },
+        guild_ids=None,  # Global command
     )
     async def timeout_status(self, ctx):
         """Check the remaining time before auto-return to default tool."""
@@ -754,14 +756,7 @@ class Misc(commands.Cog):
     @commands.slash_command(
         name="extend_timeout",
         description="Extend the current tool timeout by additional time.",
-        contexts={
-            discord.InteractionContextType.guild,
-            discord.InteractionContextType.bot_dm,
-        },
-        integration_types={
-            discord.IntegrationType.guild_install,
-            discord.IntegrationType.user_install,
-        },
+        guild_ids=None,  # Global command
     )
     @discord.option(
         "additional_time",
@@ -847,14 +842,7 @@ class Misc(commands.Cog):
     @commands.slash_command(
         name="return_to_default",
         description="Immediately return to the default tool.",
-        contexts={
-            discord.InteractionContextType.guild,
-            discord.InteractionContextType.bot_dm,
-        },
-        integration_types={
-            discord.IntegrationType.guild_install,
-            discord.IntegrationType.user_install,
-        },
+        guild_ids=None,  # Global command
     )
     async def return_to_default(self, ctx):
         """Immediately return to the default tool."""
@@ -903,14 +891,7 @@ class Misc(commands.Cog):
     @commands.slash_command(
         name="smart_suggestions",
         description="Get intelligent suggestions for tool usage and optimization.",
-        contexts={
-            discord.InteractionContextType.guild,
-            discord.InteractionContextType.bot_dm,
-        },
-        integration_types={
-            discord.IntegrationType.guild_install,
-            discord.IntegrationType.user_install,
-        },
+        guild_ids=None,  # Global command
     )
     async def smart_suggestions(self, ctx):
         """Get intelligent suggestions for tool usage and optimization."""
@@ -1002,14 +983,7 @@ class Misc(commands.Cog):
     @commands.slash_command(
         name="auto_return_status",
         description="Check the status of the auto-return system.",
-        contexts={
-            discord.InteractionContextType.guild,
-            discord.InteractionContextType.bot_dm,
-        },
-        integration_types={
-            discord.IntegrationType.guild_install,
-            discord.IntegrationType.user_install,
-        },
+        guild_ids=None,  # Global command
     )
     async def auto_return_status(self, ctx):
         """Check the status of the auto-return system."""
@@ -1053,7 +1027,9 @@ class Misc(commands.Cog):
         )
 
     @commands.slash_command(
-        name="generate_image", description="Generate an image using AI"
+        name="generate_image",
+        description="Generate an image using AI",
+        guild_ids=None,  # Global command
     )
     async def generate_image(self, ctx, prompt: str, temperature: float = 0.7):
         """Generate an image using Gemini AI without needing the AI to use tools."""
@@ -1255,7 +1231,9 @@ class Misc(commands.Cog):
                 await status_msg.edit(content=f"❌ Error generating image: {error_msg}")
 
     @commands.slash_command(
-        name="edit_image", description="Edit an existing image using AI"
+        name="edit_image",
+        description="Edit an existing image using AI",
+        guild_ids=None,  # Global command
     )
     async def edit_image(self, ctx, prompt: str, temperature: float = 0.7):
         """Edit an image using Gemini AI. Attach an image to your message first."""
@@ -1402,7 +1380,61 @@ class Misc(commands.Cog):
             await status_msg.edit(content=f"❌ Error editing image: {str(e)[:100]}")
 
     @commands.slash_command(
-        name="image_help", description="Show help for image generation commands"
+        name="generate_pollinations",
+        description="Generate an image using Pollinations.AI",
+        guild_ids=None,  # Global command
+    )
+    async def generate_pollinations(
+        self,
+        ctx,
+        prompt: str,
+        model: str = "flux",
+        width: int = 1024,
+        height: int = 1024,
+    ):
+        """Generate an image using Pollinations.AI - great for creative and artistic prompts."""
+        # Send initial status message
+        status_msg = await ctx.respond(
+            f"🎨 Generating image with Pollinations.AI...\nPrompt: **{prompt}**\nModel: **{model}**\nSize: **{width}x{height}**"
+        )
+
+        try:
+            # Import the Pollinations model
+            from aimodels.pollinations.infer import Completions
+
+            # Create the model instance
+            pollinations_model = Completions(
+                model_name=f"pollinations::{model}",
+                discord_ctx=ctx,
+                discord_bot=self.bot,
+                guild_id=ctx.guild.id if ctx.guild else None,
+            )
+
+            # Set image parameters
+            pollinations_model._genai_params["width"] = width
+            pollinations_model._genai_params["height"] = height
+
+            # Generate the image
+            image_url = await pollinations_model._generate_image(prompt)
+
+            # Send the image URL
+            await ctx.send(
+                f"🎨 **Generated Image**\nPrompt: *{prompt}*\nModel: *{model}*\nSize: *{width}x{height}*\n\n{image_url}"
+            )
+
+            await status_msg.edit(content="✅ Image generated successfully!")
+
+        except Exception as e:
+            logging.error(f"Error generating image with Pollinations: {e}")
+            error_msg = str(e)
+            if len(error_msg) > 100:
+                error_msg = error_msg[:100] + "..."
+            await status_msg.edit(content=f"❌ Error generating image: {error_msg}")
+
+    @commands.slash_command(
+        name="image_help",
+        description="Show help for image generation commands",
+        guild_ids=None,  # Global command
     )
     async def image_help(self, ctx):
         """Show help information for image generation commands."""
@@ -1415,6 +1447,12 @@ class Misc(commands.Cog):
         embed.add_field(
             name="/generate_image",
             value="Generate a new image from a text prompt\n**Usage:** `/generate_image <prompt> [temperature]`\n**Example:** `/generate_image a cute robot playing guitar`",
+            inline=False,
+        )
+
+        embed.add_field(
+            name="/generate_pollinations",
+            value="Generate an image using Pollinations.AI\n**Usage:** `/generate_pollinations <prompt> [model] [width] [height]`\n**Example:** `/generate_pollinations a beautiful sunset`",
             inline=False,
         )
 
@@ -1466,15 +1504,18 @@ class Misc(commands.Cog):
                 logging.warning(
                     "No database connection available for loading auto-image settings"
                 )
+                self._auto_image_loaded = True  # Mark as loaded even if no DB
                 return
 
             # Get all guilds and load their auto-image settings
+            loaded_count = 0
             for guild in self.bot.guilds:
                 guild_id = str(guild.id)
                 try:
                     # Try to get the setting from the database
                     setting = await self._get_auto_image_setting(guild_id)
                     self._auto_image_enabled[guild_id] = setting
+                    loaded_count += 1
                     logging.info(
                         f"Loaded auto-image setting for guild {guild.name}: {setting}"
                     )
@@ -1486,11 +1527,15 @@ class Misc(commands.Cog):
                     self._auto_image_enabled[guild_id] = False
 
             logging.info(
-                f"Loaded auto-image settings for {len(self._auto_image_enabled)} guilds"
+                f"Successfully loaded auto-image settings for {loaded_count}/{len(self.bot.guilds)} guilds"
             )
 
         except Exception as e:
             logging.error(f"Error loading auto-image settings: {e}")
+        finally:
+            # Mark as loaded regardless of success/failure
+            self._auto_image_loaded = True
+            logging.info("Auto-image settings loading completed")
 
     async def _get_auto_image_setting(self, guild_id: str) -> bool:
         """Get auto-image setting from database for a specific guild."""
@@ -1549,8 +1594,56 @@ class Misc(commands.Cog):
             return False
 
     @commands.slash_command(
+        name="auto_image_debug",
+        description="Debug auto-image generation system (Admin only)",
+        guild_ids=None,  # Global command
+    )
+    @commands.has_permissions(manage_channels=True)
+    async def auto_image_debug(self, ctx):
+        """Debug auto-image generation system."""
+        guild_id = str(ctx.guild.id)
+
+        embed = discord.Embed(
+            title="🔧 Auto-Image Generation Debug",
+            color=0x0099FF,
+        )
+
+        # System status
+        embed.add_field(
+            name="System Status",
+            value=f"• Settings Loaded: {'✅' if self._auto_image_loaded else '❌'}\n• Gemini API: {'✅' if self._gemini_api_configured else '❌'}\n• Database: {'✅' if self.DBConn else '❌'}",
+            inline=False,
+        )
+
+        # Current settings
+        current_setting = self._auto_image_enabled.get(guild_id, False)
+        embed.add_field(
+            name="Current Settings",
+            value=f"• Guild ID: `{guild_id}`\n• Auto-Image Enabled: {'✅' if current_setting else '❌'}\n• Total Guilds Loaded: {len(self._auto_image_enabled)}",
+            inline=False,
+        )
+
+        # Test auto-generation
+        if self._gemini_api_configured:
+            embed.add_field(
+                name="Test Auto-Generation",
+                value="✅ Ready to test\nUse: `@Jakey draw me a test image`",
+                inline=False,
+            )
+        else:
+            embed.add_field(
+                name="Test Auto-Generation",
+                value="❌ Gemini API not configured\nSet `GEMINI_API_KEY` in dev.env",
+                inline=False,
+            )
+
+        embed.set_footer(text=f"Server: {ctx.guild.name}")
+        await ctx.respond(embed=embed, ephemeral=True)
+
+    @commands.slash_command(
         name="auto_image_status",
         description="Check the current auto-image generation status for this server",
+        guild_ids=None,  # Global command
     )
     async def auto_image_status(self, ctx):
         """Check the current auto-image generation status."""
@@ -1586,6 +1679,12 @@ class Misc(commands.Cog):
                 value="• Users must use `/generate_image` or `/edit_image` commands\n• Full control over image generation process\n• Manual command usage required",
                 inline=False,
             )
+
+        embed.add_field(
+            name="System Status",
+            value=f"• Settings Loaded: {'✅' if self._auto_image_loaded else '❌'}\n• Gemini API: {'✅' if self._gemini_api_configured else '❌'}\n• Database: {'✅' if self.DBConn else '❌'}",
+            inline=False,
+        )
 
         embed.add_field(
             name="Admin Control",
@@ -1627,14 +1726,7 @@ class Misc(commands.Cog):
     @commands.slash_command(
         name="help",
         description="Get help and quickstart guide for Jakey Bot",
-        contexts={
-            discord.InteractionContextType.guild,
-            discord.InteractionContextType.private_channel,
-        },
-        integration_types={
-            discord.IntegrationType.guild_install,
-            discord.IntegrationType.user_install,
-        },
+        guild_ids=None,  # Global command
     )
     async def help_command(self, ctx):
         """Show comprehensive help and quickstart guide"""
@@ -1644,10 +1736,26 @@ class Misc(commands.Cog):
             color=discord.Color.blue(),
         )
 
+        # Auto Tool Switch System - NEW FEATURE
+        embed.add_field(
+            name="🔄 **Auto Tool Switch System** ⭐ **NEW FEATURE**",
+            value="**Just ask naturally** - JakeyBot automatically detects what tool you need!\n\n"
+            "**Examples:**\n"
+            "• `What's the price of Bitcoin?` → 🔄 **Auto-enabled CryptoPrice**\n"
+            "• `Search for latest AI news` → 🔄 **Auto-enabled ExaSearch**\n"
+            "• `Convert 100 USD to EUR` → 🔄 **Auto-enabled CurrencyConverter**\n\n"
+            "**Key Benefits:**\n"
+            "✅ **No Manual Tool Switching** - Tools enable automatically when needed\n"
+            "✅ **Smart Timeout Management** - Tools return to Memory after optimal timeouts\n"
+            "✅ **Intelligent Suggestions** - Get optimization tips with `/smart_suggestions`\n"
+            "✅ **Seamless Experience** - Focus on your questions, not tool management",
+            inline=False,
+        )
+
         # Quickstart section
         embed.add_field(
             name="🚀 **Quick Start (3 Steps)**",
-            value="1️⃣ **Enable Memory**: `/feature Memory`\n2️⃣ **Ask Questions**: `/ask <question>` or mention Jakey\n3️⃣ **Explore More**: `/model set <model>` and `/feature <tool>`",
+            value="1️⃣ **Ask Questions**: `/ask <question>` or mention Jakey\n2️⃣ **Let Tools Auto-Enable**: Most tools activate automatically when needed\n3️⃣ **Explore More**: `/model set <model>` and `/feature <tool>`",
             inline=False,
         )
 
@@ -1658,45 +1766,52 @@ class Misc(commands.Cog):
             inline=False,
         )
 
+        # Auto-Return System Commands
+        embed.add_field(
+            name="🔄 **Auto-Return System Commands**",
+            value="• `/smart_suggestions` - Get optimization tips\n• `/extend_timeout <time>` - Extend tool session time\n• `/timeout_status` - Check remaining time\n• `/return_to_default` - Return to Memory immediately\n• `/auto_return_status` - View system status",
+            inline=False,
+        )
+
         # AI Models
         embed.add_field(
             name="🤖 **AI Models Available**",
-            value="• **Gemini**: gemini-2.5-pro, gemini-2.5-flash (API Key Required)\n• **OpenAI**: gpt-4, gpt-3.5-turbo, gpt-5 (API Key Required)\n• **Claude**: claude-3-opus, claude-3-sonnet (API Key Required)\n• **DeepSeek**: deepseek-v3, deepseek-r1 (API Key Required)\n• **Grok 3**: xAI creative model (API Key Required)\n• **LearnLM 2.0**: Google learning model (API Key Required)\n• **OpenRouter**: 100+ models (API Key Required)\n• **More**: Use `/model list` to see all options",
+            value="• **Gemini**: gemini-2.5-pro, gemini-2.5-flash (API Key Required)\n• **OpenAI**: gpt-4, gpt-3.5-turbo, gpt-5 (API Key Required)\n• **Claude**: claude-3-opus, claude-3-sonnet (API Key Required)\n• **DeepSeek**: deepseek-v3, deepseek-r1 (API Key Required)\n• **Grok 3**: xAI creative model (API Key Required)\n• **LearnLM 2.0**: Google learning model (API Key Required)\n• **OpenRouter**: 100+ models (API Key Required)\n• **Pollinations.AI**: Text & Image generation (API Key Optional)\n• **More**: Use `/model list` to see all options",
             inline=False,
         )
 
         # Tools
         embed.add_field(
             name="🛠️ **Available Tools**",
-            value="• **Memory** - Remember and recall information across conversations\n• **CryptoPrice** - Live Solana/Ethereum token prices\n• **CurrencyConverter** - 170+ currency conversion\n• **YouTube** - Video analysis and summarization\n• **GitHub** - Code repository access and search\n• **AudioTools** - Audio creation and manipulation\n• **CodeExecution** - Python code execution",
+            value="• **Memory** - Remember and recall information across conversations\n• **CryptoPrice** - Live Solana/Ethereum token prices\n• **CurrencyConverter** - 170+ currency conversion\n• **YouTube** - Video analysis and summarization\n• **GitHub** - Code repository access and search\n• **AudioTools** - Audio creation and manipulation\n• **CodeExecution** - Python code execution\n• **Engagement** - Active channel participation\n• **GamblingGames** - Betting pools and trivia games",
             inline=False,
         )
 
         # Advanced features
         embed.add_field(
             name="⚡ **Advanced Features**",
-            value="• **Image Generation**: `/generate_image <prompt>`\n• **Image Editing**: `/edit_image <prompt>`\n• **Auto-Image**: Automatic detection when you mention Jakey\n• **Reminders**: `/remind <time> <message>`\n• **Trivia Games**: `/trivia` for fun challenges\n• **Gambling Games**: `/create_bet` for betting pools\n• **Keno Numbers**: `/keno` for random number generation",
+            value="• **Image Generation**: `/generate_image <prompt>` (no tool switching needed)\n• **Image Editing**: `/edit_image <prompt>` (no tool switching needed)\n• **Auto-Image**: Automatic detection when you mention Jakey\n• **Reminders**: `/remind <time> <message>`\n• **Trivia Games**: `/trivia` for fun challenges\n• **Gambling Games**: `/create_bet` for betting pools\n• **Keno Numbers**: `/keno` for random number generation\n• **Engagement**: `/jakey_engage` for active participation",
             inline=False,
         )
 
         # Tips
         embed.add_field(
             name="💡 **Pro Tips & Best Practices**",
-            value="• **Start with Memory**: `/feature Memory` for best experience\n• **Natural Language**: Jakey understands context and conversation\n• **Image Support**: Attach images for visual analysis\n• **Model Switching**: Use `/model set` to match your needs\n• **Tool Combinations**: Enable multiple tools for enhanced capabilities\n• **Auto-Return**: Tools automatically return to default after timeout\n• **Auto-Image**: Only triggers when you mention Jakey or use prefix commands",
+            value="• **Let Tools Auto-Enable**: Most tools activate automatically when needed\n• **Natural Language**: Jakey understands context and conversation\n• **Image Support**: Attach images for visual analysis\n• **Model Switching**: Use `/model set` to match your needs\n• **Smart Suggestions**: Use `/smart_suggestions` for optimization tips\n• **Auto-Return**: Tools automatically return to default after timeout\n• **Auto-Image**: Only triggers when you mention Jakey or use prefix commands\n• **Interactive Features**: Try `/jakey_engage`, `/create_bet`, and `/trivia`",
             inline=False,
         )
 
         # Troubleshooting
         embed.add_field(
             name="🔧 **Troubleshooting**",
-            value="• **Memory Issues**: Use `/memory_debug` and `/memory_reindex`\n• **Tool Problems**: Check if tool is enabled with `/feature`\n• **Model Issues**: Try `/model set` to switch models\n• **Performance**: Use `/performance` for system metrics\n• **Cache Status**: Use `/cache` for cache information",
+            value="• **Memory Issues**: Use `/memory_debug` and `/memory_reindex`\n• **Tool Problems**: Tools auto-enable when needed\n• **Model Issues**: Try `/model set` to switch models\n• **Performance**: Use `/performance` for system metrics\n• **Cache Status**: Use `/cache` for cache information\n• **Auto-Return Issues**: Use `/auto_return_status` for system overview",
             inline=False,
         )
 
         # API Key Setup
         embed.add_field(
             name="🔑 **API Key Setup Required**",
-            value="• **Gemini**: Set `GEMINI_API_KEY` in dev.env\n• **OpenAI**: Set `OPENAI_API_KEY` in dev.env\n• **Claude**: Set `ANTHROPIC_API_KEY` in dev.env\n• **DeepSeek**: Set `AZURE_AI_API_KEY` and `AZURE_AI_API_BASE`\n• **Grok**: Set `XAI_API_KEY` in dev.env\n• **OpenRouter**: Set `OPENROUTER_API_KEY` in dev.env\n• **Copy dev.env.template** to dev.env and add your keys",
+            value="• **Gemini**: Set `GEMINI_API_KEY` in dev.env\n• **OpenAI**: Set `OPENAI_API_KEY` in dev.env\n• **Claude**: Set `ANTHROPIC_API_KEY` in dev.env\n• **DeepSeek**: Set `AZURE_AI_API_KEY` and `AZURE_AI_API_BASE`\n• **Grok**: Set `XAI_API_KEY` in dev.env\n• **OpenRouter**: Set `OPENROUTER_API_KEY` in dev.env\n• **Pollinations.AI**: Set `POLLINATIONS_API_KEY` for premium features (optional)\n• **Copy dev.env.template** to dev.env and add your keys",
             inline=False,
         )
 
@@ -1724,14 +1839,7 @@ class Misc(commands.Cog):
     @commands.slash_command(
         name="quickstart",
         description="Get a quick start guide for Jakey Bot",
-        contexts={
-            discord.InteractionContextType.guild,
-            discord.InteractionContextType.private_channel,
-        },
-        integration_types={
-            discord.IntegrationType.guild_install,
-            discord.IntegrationType.user_install,
-        },
+        guild_ids=None,  # Global command
     )
     async def quickstart(self, ctx):
         """Show quickstart guide"""
@@ -1741,28 +1849,52 @@ class Misc(commands.Cog):
             color=discord.Color.green(),
         )
 
+        # Auto Tool Switch System - NEW FEATURE
+        embed.add_field(
+            name="🔄 **Auto Tool Switch System** ⭐ **NEW FEATURE**",
+            value="**Just ask naturally** - JakeyBot automatically detects what tool you need!\n\n"
+            "**Examples:**\n"
+            "• `What's the price of Bitcoin?` → 🔄 **Auto-enabled CryptoPrice**\n"
+            "• `Search for latest AI news` → 🔄 **Auto-enabled ExaSearch**\n"
+            "• `Convert 100 USD to EUR` → 🔄 **Auto-enabled CurrencyConverter**\n\n"
+            "**Key Benefits:**\n"
+            "✅ **No Manual Tool Switching** - Tools enable automatically when needed\n"
+            "✅ **Smart Timeout Management** - Tools return to Memory after optimal timeouts\n"
+            "✅ **Intelligent Suggestions** - Get optimization tips with `/smart_suggestions`",
+            inline=False,
+        )
+
         # Step 1
         embed.add_field(
             name="1️⃣ Ask Your First Question",
-            value="`/ask What can you help me with?`\nor just mention Jakey in a message!",
+            value="`/ask What can you help me with?`\nor just mention Jakey in a message!\n\n**Tools will auto-enable when needed!**",
             inline=False,
         )
 
         # Step 2
         embed.add_field(
             name="2️⃣ Explore More Features",
-            value="• `/remind 1h take a break` - Set personal reminders \n• `/keno` - Generate keno numbers \n• `/generate_image` - Generate images \n• `/edit_image` - Edit images \n• `/auto_image` - Auto-generate images \n• `/sweep` - Clear conversation and reset",
+            value="• `/remind 1h take a break` - Set personal reminders \n• `/keno` - Generate keno numbers \n• `/generate_image` - Generate images (no tool switching needed) \n• `/edit_image` - Edit images (no tool switching needed) \n• `/jakey_engage` - Make Jakey actively engage \n• `/create_bet` - Create betting pools \n• `/trivia` - Start trivia games \n• `/sweep` - Clear conversation and reset",
+            inline=False,
+        )
+
+        # Step 3
+        embed.add_field(
+            name="3️⃣ Use Smart Features",
+            value="• `/smart_suggestions` - Get optimization tips\n• `/extend_timeout 5m` - Extend tool session time\n• `/timeout_status` - Check remaining time\n• `/auto_return_status` - View system overview",
             inline=False,
         )
 
         # Common use cases
         embed.add_field(
             name="💭 What Can Jakey Do?",
-            value="- Answer questions with AI intelligence\n- Remember your preferences and facts\n- Generate and edit images\n- Provide live crypto prices\n- Analyze YouTube videos\n- Help with coding and debugging\n- Create polls and trivia games\n- Generate keno numbers\n\n*Note: Jakey is a degenerate bot, so he will be very rude and sarcastic. He will also be very helpful and will try to help you with your questions.*",
+            value="- Answer questions with AI intelligence\n- Remember your preferences and facts\n- Generate and edit images (direct commands)\n- Provide live crypto prices (auto-enabled)\n- Analyze YouTube videos (auto-enabled)\n- Help with coding and debugging (auto-enabled)\n- Create polls and trivia games\n- Generate keno numbers\n- Actively engage in channels\n\n*Note: Jakey is a degenerate bot, so he will be very rude and sarcastic. He will also be very helpful and will try to help you with your questions.*",
             inline=False,
         )
 
-        embed.set_footer(text="Ready to get started?")
+        embed.set_footer(
+            text="Ready to get started? Tools auto-enable when you need them!"
+        )
 
         await ctx.respond(embed=embed, ephemeral=True)
 

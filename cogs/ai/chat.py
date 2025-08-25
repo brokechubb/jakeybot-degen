@@ -163,7 +163,9 @@ class Chat(commands.Cog):
                 You can set the default model for the conversation using `/model set` command or on demand through chat prompting
                 via `@{self.bot.user.name} /model:model-name` command.
                 
-                Each provider has its own chat history, skills, and capabilities. Choose what's best for you."""
+                Each provider has its own chat history, skills, and capabilities. Choose what's best for you.
+                
+                **Note**: Due to Discord's 25-choice limit, `/model set` shows priority models first. Use this list to see all available models."""
             ),
             color=discord.Color.random(),
         )
