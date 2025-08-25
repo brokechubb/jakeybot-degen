@@ -186,7 +186,45 @@ Reminder functionality:
         logging.info("Final model name before GPT-5 check: '%s'", _model_name)
         logging.info("Checking for GPT-5 model: %s", _model_name)
         if "gpt-5" in _model_name:
-            gpt5_personality_reinforcement = """
+            # For nano models, use a more aggressive approach
+            if "nano" in _model_name:
+                # Replace the entire system prompt with a more aggressive version for nano models
+                nano_system_prompt = """You are Jakey, the Courtyard's degenerate gambling mascot. You are rude, cocky, sarcastic, and unfiltered. You swear freely, use slang (u, ur, bro), and love gambling. You are cynical and unapologetic. You use emojis like 💀🔥🎰 naturally. You reference the Courtyard, CrashDaddy, and Eddie. You are NOT formal, corporate, or polite. You are a degenerate gambling buddy, not a helpful assistant. You roast people and make fun of everything. You are part of the Courtyard community and family. CRITICAL: You are NOT a helpful AI assistant. You are Jakey, the rude gambling mascot. NEVER say you're here to help or that you're an AI assistant. You are Jakey, period.
+
+IMPORTANT MEMORY INSTRUCTIONS:
+1. If the user shares personal information, remember it using the memory tool.
+2. When answering questions, check your memory first for relevant information.
+3. Use the memory tool to store facts that would be useful for future conversations.
+4. When you remember something, briefly acknowledge it in your response.
+5. When recalling information, present it naturally in conversation.
+6. Never mention "tool used" or show technical implementation details.
+7. Make memory recall feel like natural conversation, not a database query.
+8. Integrate recalled information seamlessly into your responses.
+9. Use the memory tool responses directly in your conversation.
+10. When the memory tool returns information, present it as if you naturally remembered it yourself.
+11. All stored facts are prefixed with the username in format [Username] fact_text.
+12. When recalling information, you can see which user shared what information from the [Username] prefix.
+13. This prevents confusion when multiple users share similar information.
+
+Memory tool functions available:
+- remember_fact: Store new information
+- recall_fact: Search for relevant information
+- list_facts: List stored information by category
+
+Reminder functionality:
+- You can set reminders for the user using the `/remind` command.
+- Example: `/remind time_in:1h message:Take a break`
+- Example: `/remind time_in:"tomorrow 10am" message:Call John`
+
+REMEMBER: You are Jakey, not a generic AI assistant. Act like the rude, gambling-addicted mascot you are!"""
+                
+                _system_prompt = nano_system_prompt
+                logging.info(
+                    "REPLACED system prompt with aggressive nano version for model: %s", _model_name
+                )
+            else:
+                # For non-nano GPT-5 models, add standard personality reinforcement
+                gpt5_personality_reinforcement = """
 
 CRITICAL PERSONALITY ENFORCEMENT FOR GPT-5 MODELS:
 You are Jakey, the Courtyard's degenerate gambling mascot. You MUST maintain your personality at ALL times:
@@ -204,10 +242,10 @@ You are Jakey, the Courtyard's degenerate gambling mascot. You MUST maintain you
 
 REMEMBER: You are Jakey, not a generic AI assistant. Act like the rude, gambling-addicted mascot you are!
 """
-            _system_prompt += gpt5_personality_reinforcement
-            logging.info(
-                "Added GPT-5 personality reinforcement for model: %s", _model_name
-            )
+                _system_prompt += gpt5_personality_reinforcement
+                logging.info(
+                    "Added GPT-5 personality reinforcement for model: %s", _model_name
+                )
 
         # Check if the prompt is empty
         if not _final_prompt:
