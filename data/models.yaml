@@ -45,6 +45,12 @@
 - model: openai::gpt-5-mini-high
   name: OpenAI GPT-5 Mini High
   description: Slow but provides quality responses
+- model: openai::gpt-5-nano
+  name: OpenAI GPT-5 Nano
+  description: OpenAI's fastest and most efficient GPT-5 model
+- model: openai::gpt-4.1-nano
+  name: OpenAI GPT-4.1 Nano
+  description: OpenAI's efficient GPT-4.1 model for quick tasks
 - model: openai::o4-mini
   name: OpenAI O4 Mini
   description: OpenAI's latest and fast reasoning model

@@ -401,6 +401,12 @@ class CustomHelp(commands.MinimalHelpCommand):
                 • `/feature <tool>` - Enable tools (Memory, CryptoPrice, etc.)
                 • `/sweep` - Clear conversation history
                 
+                🤖 **AI Models**:
+                • **Gemini**: gemini-2.5-pro, gemini-2.5-flash
+                • **OpenAI**: gpt-5, gpt-5-mini, gpt-5-nano, gpt-4.1-nano
+                • **Claude**: claude-3-opus, claude-3-sonnet
+                • **DeepSeek**: deepseek-v3, deepseek-r1
+                
                 🛠️ **Available Tools**:
                 • **Memory** - Remember and recall information
                 • **CryptoPrice** - Live token prices
@@ -432,7 +438,7 @@ class CustomHelp(commands.MinimalHelpCommand):
             embed = discord.Embed(
                 title=f"**{self.context.bot.user.name}** Help & Commands",
                 description="🚀 **Quick Start**: Use `/help` or `/quickstart` for the full guide!\n\n📋 **Core Commands**:\n• `/ask <question>` - Ask Jakey anything\n• `/model set <model>` - Switch AI models\n• `/feature <tool>` - Enable tools (Memory, CryptoPrice, etc.)\n• `/sweep` - Clear conversation history\n\n💡 **Pro Tip**: Use `/help` for comprehensive help with all features!",
-                color=discord.Color.blue()
+                color=discord.Color.blue(),
             )
             await destination.send(embed=embed)
             return
