@@ -135,31 +135,42 @@ class Completions(ModelParams):
             # Some models might not support all parameters, so we'll add them conditionally
             personality_params = {}
             
-            # Add top_p if not already set
-            if "top_p" not in self._genai_params:
-                personality_params["top_p"] = 0.95  # Jakey's preferred top_p
+            # Check which models support which parameters
+            # Models that support full parameter set
+            full_param_models = ["gpt-5", "gpt-5-mini", "gpt-5-mini-high"]
+            # Models that support limited parameters (like gpt-5-nano)
+            limited_param_models = ["gpt-5-nano", "gpt-4.1-nano"]
             
-            # Add frequency_penalty if not already set
-            if "frequency_penalty" not in self._genai_params:
-                personality_params["frequency_penalty"] = 0.1  # Reduce repetition
-            
-            # Add presence_penalty if not already set
-            if "presence_penalty" not in self._genai_params:
-                personality_params["presence_penalty"] = 0.05  # Encourage new topics
+            if self._model_name in full_param_models:
+                # These models support all personality parameters
+                if "top_p" not in self._genai_params:
+                    personality_params["top_p"] = 0.95  # Jakey's preferred top_p
+                if "frequency_penalty" not in self._genai_params:
+                    personality_params["frequency_penalty"] = 0.1  # Reduce repetition
+                if "presence_penalty" not in self._genai_params:
+                    personality_params["presence_penalty"] = 0.05  # Encourage new topics
+                
+                logging.info(
+                    "Applied full personality reinforcement parameters for GPT-5 model: %s - %s",
+                    self._model_name,
+                    list(personality_params.keys())
+                )
+            elif self._model_name in limited_param_models:
+                # These models only support basic parameters (temperature, reasoning_effort)
+                logging.info(
+                    "Using limited parameters for GPT-5 model (relying on system prompt for personality): %s",
+                    self._model_name,
+                )
+            else:
+                # Unknown model, try to add parameters but be conservative
+                logging.info(
+                    "Unknown GPT-5 model, using conservative parameter approach: %s",
+                    self._model_name,
+                )
             
             # Update parameters if we have any to add
             if personality_params:
                 self._genai_params.update(personality_params)
-                logging.info(
-                    "Applied personality reinforcement parameters for GPT-5 model: %s - %s",
-                    self._model_name,
-                    list(personality_params.keys())
-                )
-            else:
-                logging.info(
-                    "No additional personality parameters needed for GPT-5 model: %s",
-                    self._model_name,
-                )
 
         _response = await self._openai_client.chat.completions.create(
             model=self._model_name,
