@@ -112,8 +112,25 @@ class Completions(ModelParams):
                         self._model_name,
                     )
 
-            # Always set temperature to 1 for reasoning models
-            self._genai_params["temperature"] = 1
+            # For GPT-5 models, maintain personality by using Jakey's recommended temperature
+            # Only override if temperature hasn't been set to Jakey's preferred value
+            if self._genai_params.get("temperature") == 0.7:  # Default OpenAI temperature
+                self._genai_params["temperature"] = 1.1  # Jakey's preferred temperature
+                logging.info(
+                    "Using Jakey's personality temperature (1.1) for GPT-5 model: %s",
+                    self._model_name,
+                )
+            
+            # Add personality reinforcement parameters for GPT-5 models
+            self._genai_params.update({
+                "top_p": 0.95,  # Jakey's preferred top_p
+                "frequency_penalty": 0.1,  # Reduce repetition
+                "presence_penalty": 0.05,  # Encourage new topics
+            })
+            logging.info(
+                "Applied personality reinforcement parameters for GPT-5 model: %s",
+                self._model_name,
+            )
 
         _response = await self._openai_client.chat.completions.create(
             model=self._model_name,
