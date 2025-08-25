@@ -350,7 +350,7 @@ class Misc(commands.Cog):
 
         # Get the bot's command prefix and check for common variations
         prefix = getattr(self.bot, "command_prefix", "!")
-        possible_prefixes = [prefix, "jakey", "Jakey", "jakey ", "Jakey "]
+        possible_prefixes = [prefix, "jakey", "Jakey"]
         starts_with_prefix = any(
             message.content.startswith(p) for p in possible_prefixes
         )

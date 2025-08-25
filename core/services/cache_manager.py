@@ -68,7 +68,7 @@ class CacheManager:
         # Only create the task if we're in an event loop
         try:
             loop = asyncio.get_running_loop()
-            
+
             async def cleanup_loop():
                 while True:
                     try:
@@ -88,7 +88,7 @@ class CacheManager:
             # Use the current event loop to create the task
             try:
                 loop = asyncio.get_running_loop()
-                
+
                 async def cleanup_loop():
                     while True:
                         try:
