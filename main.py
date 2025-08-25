@@ -414,12 +414,21 @@ class CustomHelp(commands.MinimalHelpCommand):
                 • Set reminders with `/remind <time> <message>`
                 
                 📚 **More Help**:
-                Use `{self.context.clean_prefix}{command_name} [command]` for detailed command info
-                Use `{self.context.clean_prefix}{command_name} [category]` for category info""")
+                Use `{self.context.clean_prefix}{command_name} [command]` for detailed command info""")
 
     async def send_pages(self):
         destination = self.get_destination()
+        
+        # Filter out unwanted categories (Admin, Misc, etc.)
+        filtered_pages = []
         for page in self.paginator.pages:
+            # Skip pages that contain unwanted category headers
+            if any(unwanted in page for unwanted in ["**Admin**", "**Misc**"]):
+                continue
+            filtered_pages.append(page)
+        
+        # Send filtered pages
+        for page in filtered_pages:
             embed = discord.Embed(description=page, color=discord.Color.random())
             await destination.send(embed=embed)
 
