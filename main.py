@@ -418,7 +418,7 @@ class CustomHelp(commands.MinimalHelpCommand):
 
     async def send_pages(self):
         destination = self.get_destination()
-        
+
         # Filter out unwanted categories (Admin, Misc, etc.)
         filtered_pages = []
         for page in self.paginator.pages:
@@ -426,7 +426,17 @@ class CustomHelp(commands.MinimalHelpCommand):
             if any(unwanted in page for unwanted in ["**Admin**", "**Misc**"]):
                 continue
             filtered_pages.append(page)
-        
+
+        # If no pages remain after filtering, send a default help message
+        if not filtered_pages:
+            embed = discord.Embed(
+                title=f"**{self.context.bot.user.name}** Help & Commands",
+                description="🚀 **Quick Start**: Use `/help` or `/quickstart` for the full guide!\n\n📋 **Core Commands**:\n• `/ask <question>` - Ask Jakey anything\n• `/model set <model>` - Switch AI models\n• `/feature <tool>` - Enable tools (Memory, CryptoPrice, etc.)\n• `/sweep` - Clear conversation history\n\n💡 **Pro Tip**: Use `/help` for comprehensive help with all features!",
+                color=discord.Color.blue()
+            )
+            await destination.send(embed=embed)
+            return
+
         # Send filtered pages
         for page in filtered_pages:
             embed = discord.Embed(description=page, color=discord.Color.random())
