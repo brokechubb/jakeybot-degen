@@ -9,6 +9,7 @@ import json
 import logging
 import openai
 
+
 class Completions(ModelParams):
     def __init__(self, model_name, discord_ctx, discord_bot, guild_id: int = None):
         super().__init__()
@@ -112,65 +113,8 @@ class Completions(ModelParams):
                         self._model_name,
                     )
 
-            # For GPT-5 models, check if they support custom temperature
-            # Some GPT-5 models only support default temperature (1.0)
-            if self._genai_params.get("temperature") == 0.7:  # Default OpenAI temperature
-                # Check if this is a model that supports custom temperature
-                if self._model_name in ["gpt-5", "gpt-5-mini", "gpt-5-mini-high"]:
-                    # These models support custom temperature
-                    self._genai_params["temperature"] = 1.1  # Jakey's preferred temperature
-                    logging.info(
-                        "Using Jakey's personality temperature (1.1) for GPT-5 model: %s",
-                        self._model_name,
-                    )
-                else:
-                    # For models like gpt-5-nano, use default temperature (1.0)
-                    self._genai_params["temperature"] = 1.0
-                    logging.info(
-                        "Using default temperature (1.0) for GPT-5 model that doesn't support custom temperature: %s",
-                        self._model_name,
-                    )
-            
-            # Add personality reinforcement parameters for GPT-5 models
-            # Some models might not support all parameters, so we'll add them conditionally
-            personality_params = {}
-            
-            # Check which models support which parameters
-            # Models that support full parameter set
-            full_param_models = ["gpt-5", "gpt-5-mini", "gpt-5-mini-high"]
-            # Models that support limited parameters (like gpt-5-nano)
-            limited_param_models = ["gpt-5-nano", "gpt-4.1-nano"]
-            
-            if self._model_name in full_param_models:
-                # These models support all personality parameters
-                if "top_p" not in self._genai_params:
-                    personality_params["top_p"] = 0.95  # Jakey's preferred top_p
-                if "frequency_penalty" not in self._genai_params:
-                    personality_params["frequency_penalty"] = 0.1  # Reduce repetition
-                if "presence_penalty" not in self._genai_params:
-                    personality_params["presence_penalty"] = 0.05  # Encourage new topics
-                
-                logging.info(
-                    "Applied full personality reinforcement parameters for GPT-5 model: %s - %s",
-                    self._model_name,
-                    list(personality_params.keys())
-                )
-            elif self._model_name in limited_param_models:
-                # These models only support basic parameters (temperature, reasoning_effort)
-                logging.info(
-                    "Using limited parameters for GPT-5 model (relying on system prompt for personality): %s",
-                    self._model_name,
-                )
-            else:
-                # Unknown model, try to add parameters but be conservative
-                logging.info(
-                    "Unknown GPT-5 model, using conservative parameter approach: %s",
-                    self._model_name,
-                )
-            
-            # Update parameters if we have any to add
-            if personality_params:
-                self._genai_params.update(personality_params)
+            # Always set temperature to 1 for reasoning models
+            self._genai_params["temperature"] = 1
 
         _response = await self._openai_client.chat.completions.create(
             model=self._model_name,
@@ -184,9 +128,6 @@ class Completions(ModelParams):
         # Removed interstitial message variable
         _toolUseErrorOccurred = False
         while True:
-            # Initialize _toolParts at the start of each iteration
-            _toolParts = []
-            
             # Check for tools
             if _response.choices[0].message.tool_calls:
                 # Removed interstitial message for cleaner tool usage
@@ -207,6 +148,7 @@ class Completions(ModelParams):
 
                 # Execute tools
                 _toolCalls = _response.choices[0].message.tool_calls
+                _toolParts = []
                 for _tool in _toolCalls:
                     # Removed interstitial message edit for cleaner tool usage
 

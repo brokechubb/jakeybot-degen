@@ -1661,7 +1661,7 @@ class Misc(commands.Cog):
         # AI Models
         embed.add_field(
             name="🤖 **AI Models Available**",
-            value="• **Gemini**: gemini-2.5-pro, gemini-2.5-flash (API Key Required)\n• **OpenAI**: gpt-5, gpt-5-mini, gpt-5-nano, gpt-4.1-nano (API Key Required)\n• **Claude**: claude-3-opus, claude-3-sonnet (API Key Required)\n• **DeepSeek**: deepseek-v3, deepseek-r1 (API Key Required)\n• **Grok 3**: xAI creative model (API Key Required)\n• **LearnLM 2.0**: Google learning model (API Key Required)\n• **OpenRouter**: 100+ models (API Key Required)\n• **More**: Use `/model list` to see all options",
+            value="• **Gemini**: gemini-2.5-pro, gemini-2.5-flash (API Key Required)\n• **OpenAI**: gpt-4, gpt-3.5-turbo, gpt-5 (API Key Required)\n• **Claude**: claude-3-opus, claude-3-sonnet (API Key Required)\n• **DeepSeek**: deepseek-v3, deepseek-r1 (API Key Required)\n• **Grok 3**: xAI creative model (API Key Required)\n• **LearnLM 2.0**: Google learning model (API Key Required)\n• **OpenRouter**: 100+ models (API Key Required)\n• **More**: Use `/model list` to see all options",
             inline=False,
         )
 

@@ -401,12 +401,6 @@ class CustomHelp(commands.MinimalHelpCommand):
                 • `/feature <tool>` - Enable tools (Memory, CryptoPrice, etc.)
                 • `/sweep` - Clear conversation history
                 
-                🤖 **AI Models**:
-                • **Gemini**: gemini-2.5-pro, gemini-2.5-flash
-                • **OpenAI**: gpt-5, gpt-5-mini, gpt-5-nano, gpt-4.1-nano
-                • **Claude**: claude-3-opus, claude-3-sonnet
-                • **DeepSeek**: deepseek-v3, deepseek-r1
-                
                 🛠️ **Available Tools**:
                 • **Memory** - Remember and recall information
                 • **CryptoPrice** - Live token prices
