@@ -127,6 +127,9 @@ class Completions(ModelParams):
         # Removed interstitial message variable
         _toolUseErrorOccurred = False
         while True:
+            # Initialize _toolParts at the start of each iteration
+            _toolParts = []
+            
             # Check for tools
             if _response.choices[0].message.tool_calls:
                 # Removed interstitial message for cleaner tool usage
@@ -147,7 +150,6 @@ class Completions(ModelParams):
 
                 # Execute tools
                 _toolCalls = _response.choices[0].message.tool_calls
-                _toolParts = []
                 for _tool in _toolCalls:
                     # Removed interstitial message edit for cleaner tool usage
 
