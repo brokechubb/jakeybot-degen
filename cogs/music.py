@@ -32,7 +32,7 @@ class MusicPlayer(wavelink.Player):
     @property
     def connected(self) -> bool:
         """Check if the player is connected to a voice channel."""
-        return hasattr(self, 'channel') and self.channel is not None
+        return hasattr(self, "channel") and self.channel is not None
 
     async def add_track(self, track: wavelink.Playable) -> None:
         """Add a track to the queue."""
@@ -131,31 +131,38 @@ class Music(commands.Cog):
     async def queue_monitor(self):
         """Monitor queues and ensure tracks continue playing."""
         await self.bot.wait_until_ready()
-        
+
         while not self.bot.is_closed():
             try:
                 for guild_id, player in self.players.items():
                     # Check if player is connected but not playing and has tracks in queue
-                    if (player.connected and 
-                        not player.playing and 
-                        len(player.custom_queue) > 0):
-                        
-                        logging.info(f"Queue monitor: Player not playing but has {len(player.custom_queue)} tracks in queue")
-                        
+                    if (
+                        player.connected
+                        and not player.playing
+                        and len(player.custom_queue) > 0
+                    ):
+                        logging.info(
+                            f"Queue monitor: Player not playing but has {len(player.custom_queue)} tracks in queue"
+                        )
+
                         # Try to play the next track
                         next_track = await player.get_next_track()
                         if isinstance(next_track, wavelink.Playable):
                             try:
                                 await player.play(next_track)
-                                logging.info(f"Queue monitor: Started playing {next_track.title}")
+                                logging.info(
+                                    f"Queue monitor: Started playing {next_track.title}"
+                                )
                             except Exception as e:
-                                logging.error(f"Queue monitor: Failed to play {next_track.title}: {e}")
+                                logging.error(
+                                    f"Queue monitor: Failed to play {next_track.title}: {e}"
+                                )
                                 # Put the track back in the queue
                                 await player.add_track(next_track)
-                
+
                 # Check every 10 seconds
                 await asyncio.sleep(10)
-                
+
             except Exception as e:
                 logging.error(f"Error in queue monitor: {e}")
                 await asyncio.sleep(10)
@@ -536,6 +543,9 @@ class Music(commands.Cog):
             return
 
         player = self.get_player(ctx.guild.id)
+        if not player:
+            await ctx.respond("❌ No active music player found!", ephemeral=True)
+            return
 
         if player.playing:
             await player.pause()
@@ -559,6 +569,9 @@ class Music(commands.Cog):
             return
 
         player = self.get_player(ctx.guild.id)
+        if not player:
+            await ctx.respond("❌ No active music player found!", ephemeral=True)
+            return
 
         if player.is_paused():
             await player.resume()
@@ -582,6 +595,9 @@ class Music(commands.Cog):
             return
 
         player = self.get_player(ctx.guild.id)
+        if not player:
+            await ctx.respond("❌ No active music player found!", ephemeral=True)
+            return
 
         await player.stop()
         await player.clear_queue()
@@ -604,6 +620,9 @@ class Music(commands.Cog):
             return
 
         player = self.get_player(ctx.guild.id)
+        if not player:
+            await ctx.respond("❌ No active music player found!", ephemeral=True)
+            return
 
         if not player.playing:
             await ctx.respond("❌ Nothing is currently playing!", ephemeral=True)
@@ -633,7 +652,14 @@ class Music(commands.Cog):
             await ctx.respond("❌ Voice features are disabled.", ephemeral=True)
             return
 
+        if not ctx.voice_client:
+            await ctx.respond("❌ I'm not in a voice channel!", ephemeral=True)
+            return
+
         player = self.get_player(ctx.guild.id)
+        if not player:
+            await ctx.respond("❌ No active music player found!", ephemeral=True)
+            return
 
         queue_info = await player.get_queue_info()
         await ctx.respond(queue_info)
@@ -661,6 +687,9 @@ class Music(commands.Cog):
             return
 
         player = self.get_player(ctx.guild.id)
+        if not player:
+            await ctx.respond("❌ No active music player found!", ephemeral=True)
+            return
 
         await player.set_volume(level)
         player.volume = level
@@ -682,6 +711,9 @@ class Music(commands.Cog):
             return
 
         player = self.get_player(ctx.guild.id)
+        if not player:
+            await ctx.respond("❌ No active music player found!", ephemeral=True)
+            return
 
         if not player.playing or not player.current_track:
             await ctx.respond("❌ Nothing is currently playing!", ephemeral=True)
@@ -789,9 +821,13 @@ class Music(commands.Cog):
                     if isinstance(next_next_track, wavelink.Playable):
                         try:
                             await player.play(next_next_track)
-                            logging.info(f"Successfully started playing fallback track: {next_next_track.title}")
+                            logging.info(
+                                f"Successfully started playing fallback track: {next_next_track.title}"
+                            )
                         except Exception as fallback_error:
-                            logging.error(f"Failed to play fallback track: {fallback_error}")
+                            logging.error(
+                                f"Failed to play fallback track: {fallback_error}"
+                            )
             else:
                 logging.info("No more tracks in queue, scheduling disconnect")
                 # Schedule disconnect after 5 minutes of inactivity
@@ -812,7 +848,9 @@ class Music(commands.Cog):
                     await player.play(next_track)
                     logging.info(f"Recovered and playing: {next_track.title}")
             except Exception as recovery_error:
-                logging.error(f"Failed to recover from track end error: {recovery_error}")
+                logging.error(
+                    f"Failed to recover from track end error: {recovery_error}"
+                )
 
 
 def setup(bot):
