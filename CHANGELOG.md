@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+### Added
+
+- **Auto-Return System**: Intelligent tool management with automatic activation and timeout management
+- **Enhanced Engagement System**: Persistent engagement settings with MongoDB storage and configurable behavior
+- **Gambling Games**: Interactive betting pools, trivia games, and keno number generation
+- **Direct Image Generation**: No tool switching required for image creation and editing
+- **Pollinations.AI Integration**: New AI provider with uncensored models and premium features
+- **Smart Suggestions**: Context-aware optimization tips for tool usage and workflow efficiency
+- **LavaLink v4 Music System**: Complete voice channel music functionality with queue management
+- **Music Commands**: `/play`, `/pause`, `/resume`, `/stop`, `/skip`, `/queue`, `/volume`, `/nowplaying`, `/disconnect`
+- **Vote-based Skipping**: Democratic music control with vote system
+- **Music Queue Management**: Advanced queue system with shuffle and track management
+- **Voice Channel Integration**: Seamless voice channel connection and management
+
 ### 🆘 Added
 
 - **Enhanced Help System**: New `/help` and `/quickstart` slash commands

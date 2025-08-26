@@ -41,6 +41,75 @@ To use Google Search, Bing Search, and YouTube tools, you must set the following
 - `GITHUB_TOKEN` - Get one at <https://github.com/settings/personal-access-tokens> with public access, used for GitHub file tool.
 - `EXA_API_KEY` - ExaSearch API key for web search capabilities. [Get an API key from Exa](https://exa.ai/). Optional - works without API key for basic features.
 
+## Voice Configuration
+
+### **LavaLink v4 Setup**
+
+JakeyBot supports LavaLink v4 for voice channel music features. You can enable VC-related commands such as `/play` (which plays videos from YouTube and other supported sources) by providing appropriate LavaLink sources.
+
+#### **Free LavaLink Servers**
+
+You can use the list of 3rd party servers from [LavaLink Servers](https://lavalink.darrennathanael.com/NoSSL/lavalink-without-ssl/) and configure the `dev.env` file pointing to the third party LavaLink servers, no installation required.
+
+#### **Environment Variables**
+
+```bash
+# Enable voice features (set to true to enable music commands)
+ENABLE_VOICE_FEATURES=false
+
+# LavaLink v4 server configuration
+ENV_LAVALINK_URI=http://127.0.0.1:2333
+ENV_LAVALINK_PASS=youshallnotpass
+ENV_LAVALINK_IDENTIFIER=main
+
+# LavaLink v4 specific settings
+LAVALINK_V4_ENABLED=false
+LAVALINK_V4_RETRY_ATTEMPTS=3
+LAVALINK_V4_RETRY_DELAY=5
+
+# Voice command timeout (how long to wait before disconnecting from voice channel)
+VOICE_TIMEOUT=300
+
+# Maximum queue size for music
+MAX_QUEUE_SIZE=50
+
+# Volume settings
+DEFAULT_VOLUME=50
+MAX_VOLUME=100
+```
+
+#### **Configuration Options**
+
+- **`ENABLE_VOICE_FEATURES`** - Set to `true` to enable voice commands
+- **`LAVALINK_V4_ENABLED`** - Set to `true` to enable LavaLink v4 support
+- **`ENV_LAVALINK_URI`** - LavaLink server URI (defaults to local server)
+- **`ENV_LAVALINK_PASS`** - LavaLink password (change this if connecting remotely)
+- **`ENV_LAVALINK_IDENTIFIER`** - LavaLink identifier (optional, used for some servers)
+- **`VOICE_TIMEOUT`** - How long to wait before disconnecting from voice channel (in seconds)
+- **`MAX_QUEUE_SIZE`** - Maximum number of tracks in the music queue
+- **`DEFAULT_VOLUME`** - Default volume level (0-100)
+- **`MAX_VOLUME`** - Maximum allowed volume level (0-100)
+
+#### **Available Music Commands**
+
+When voice features are enabled, the following commands become available:
+
+- **`/play <query>`** - Play music from YouTube, Spotify, or other sources
+- **`/pause`** - Pause the current music
+- **`/resume`** - Resume the paused music
+- **`/stop`** - Stop playing and clear the queue
+- **`/skip`** - Skip the current track (vote-based)
+- **`/queue`** - Show the current music queue
+- **`/volume <level>`** - Set the music volume (0-100)
+- **`/nowplaying`** - Show information about the currently playing track
+- **`/disconnect`** - Disconnect from the voice channel
+
+#### **Hosting Your Own LavaLink Server**
+
+Alternatively, you can also host your own LavaLink server. Refer to [LavaLink documentation](https://github.com/lavalink-devs/Lavalink) to configure your own LavaLink setup. Make sure to install OpenJDK before you proceed.
+
+**⚠️ Important Note**: Please do not use this module in production unless you're serving it yourself or other remote content than YouTube. Never verify your bot with YouTube playback or you'll risk violating terms in both parties.
+
 ## Auto-Return System Configuration
 
 ### **Default Tool Setting**
@@ -159,74 +228,29 @@ python scripts/cleanup_shared_history.py
 # (Be careful - this will delete ALL chat history)
 ```
 
-## Memory System Configuration
+### **Memory System Configuration**
 
-### **Memory Settings**
-
-Configure the Memory tool behavior:
+Configure the memory system for personalized conversations:
 
 ```bash
-# Memory system configuration
-MEMORY_ENABLE_AUTO_DETECTION=true    # Automatically detect and store personal information
-MEMORY_EXPIRATION_DAYS=365           # How long to keep memories (default: 1 year)
-MEMORY_MAX_MEMORIES_PER_USER=1000    # Maximum memories per user
-MEMORY_ENABLE_CATEGORIZATION=true    # Automatically categorize memories
-MEMORY_ENABLE_PRIORITY_SYSTEM=true   # Use priority system for memory recall
-```
-
-### **Memory Database**
-
-- `MEMORY_COLLECTION_NAME` - Database collection for storing memories (defaults to "memories")
-- `MEMORY_ENABLE_INDEXING` - Enable search indexing for better recall (defaults to "true")
-
-## Image Generation Configuration
-
-### **Image Generation Settings**
-
-Configure AI image generation features:
-
-```bash
-# Image generation configuration
-IMAGE_GENERATION_ENABLE_DIRECT_COMMANDS=true  # Enable /generate_image and /edit_image
-IMAGE_GENERATION_DEFAULT_MODEL=pollinations::flux  # Default image generation model
-IMAGE_GENERATION_MAX_SIZE=1024                # Maximum image size
-IMAGE_GENERATION_QUALITY=high                 # Image quality setting
-```
-
-### **Supported Image Models**
-
-- **Pollinations.AI**: `pollinations::flux`, `pollinations::kontext`, `pollinations::sdxl`
-- **Gemini**: `gemini::gemini-2.0-flash-001` (for image generation)
-- **OpenAI**: `openai::dall-e-3` (if available)
-
-## Gambling Games Configuration
-
-### **Gambling Games Settings**
-
-Configure interactive gambling features:
-
-```bash
-# Gambling games configuration
-GAMBLING_ENABLE_BETTING_POOLS=true   # Enable betting pool creation
-GAMBLING_ENABLE_TRIVIA=true          # Enable trivia games
-GAMBLING_ENABLE_KENO=true            # Enable keno number generation
-GAMBLING_MAX_BETTING_POOLS=10        # Maximum active betting pools per guild
-GAMBLING_TRIVIA_ROUNDS=5             # Default number of trivia rounds
-GAMBLING_ENABLE_LEADERBOARDS=true    # Enable score tracking
+# Memory system settings
+MEMORY_ENABLE_AUTO_DETECTION=true    # Automatically detect and store user information
+MEMORY_EXPIRATION_DAYS=365           # How long to keep memory entries (in days)
+MEMORY_MAX_ENTRIES_PER_USER=100      # Maximum memory entries per user
+MEMORY_ENABLE_DEBUGGING=false        # Enable memory debugging features
 ```
 
 ## Performance Configuration
 
 ### **Rate Limiting**
 
-Configure rate limits to prevent abuse:
+Configure rate limiting to prevent abuse:
 
 ```bash
-# Rate limiting configuration
+# Rate limiting settings
 RATE_LIMIT_MESSAGES_PER_MINUTE=60    # Maximum messages per minute per user
 RATE_LIMIT_COMMANDS_PER_MINUTE=30    # Maximum commands per minute per user
-RATE_LIMIT_IMAGE_GENERATION_PER_HOUR=10  # Maximum image generations per hour per user
-RATE_LIMIT_TOOL_USAGE_PER_HOUR=100   # Maximum tool usage per hour per user
+RATE_LIMIT_GLOBAL_MESSAGES_PER_MINUTE=1000  # Global message limit per minute
 ```
 
 ### **Caching**
@@ -234,36 +258,30 @@ RATE_LIMIT_TOOL_USAGE_PER_HOUR=100   # Maximum tool usage per hour per user
 Configure caching for better performance:
 
 ```bash
-# Caching configuration
-CACHE_ENABLE=true                    # Enable response caching
-CACHE_DURATION_MINUTES=30            # How long to cache responses
-CACHE_MAX_SIZE=1000                  # Maximum cached items
-CACHE_ENABLE_TOOL_RESULTS=true       # Cache tool results
+# Cache settings
+CACHE_ENABLE=true                    # Enable caching system
+CACHE_TTL=3600                       # Cache time-to-live in seconds
+CACHE_MAX_SIZE=1000                  # Maximum cache entries
 ```
 
 ## Security Configuration
-
-### **API Key Security**
-
-- **Never commit API keys** to version control
-- **Use environment variables** for all sensitive data
-- **Rotate API keys** regularly
-- **Monitor API usage** for unusual activity
 
 ### **Database Security**
 
 ```bash
 # Database security settings
-DB_ENABLE_AUTHENTICATION=true        # Enable MongoDB authentication
-DB_ENABLE_SSL=true                   # Enable SSL connections
-DB_CONNECTION_POOL_SIZE=10           # Connection pool size
-DB_MAX_RETRY_ATTEMPTS=3              # Maximum retry attempts
+DB_ENABLE_AUTHENTICATION=true        # Enable database authentication
+DB_ENABLE_SSL=true                   # Enable SSL for database connections
+DB_ENABLE_ENCRYPTION=true            # Enable data encryption
 ```
 
 ### **Bot Permissions**
 
-Ensure the bot has the minimum required permissions:
+Ensure your bot has the following permissions in Discord:
 
+- **Connect** - Required for voice channel access
+- **Speak** - Required for voice channel audio
+- **Use Voice Activity** - Required for voice features
 - **Send Messages** - Required for bot responses
 - **Read Message History** - Required for context
 - **Attach Files** - Required for image generation
@@ -295,6 +313,17 @@ POLLINATIONS_API_KEY=your_pollinations_api_key_here
 EXA_API_KEY=your_exa_api_key_here
 GITHUB_TOKEN=your_github_token_here
 YOUTUBE_DATA_v3_API_KEY=your_youtube_api_key_here
+
+# Voice Configuration
+ENABLE_VOICE_FEATURES=true
+LAVALINK_V4_ENABLED=true
+ENV_LAVALINK_URI=http://127.0.0.1:2333
+ENV_LAVALINK_PASS=youshallnotpass
+ENV_LAVALINK_IDENTIFIER=main
+VOICE_TIMEOUT=300
+MAX_QUEUE_SIZE=50
+DEFAULT_VOLUME=50
+MAX_VOLUME=100
 
 # Auto-Return Configuration
 DEFAULT_TOOL=Memory
@@ -346,6 +375,8 @@ python scripts/test_database.py
 2. **Database Connection**: Verify MongoDB URL and authentication
 3. **Permission Errors**: Check bot permissions in Discord
 4. **Rate Limiting**: Adjust rate limits if users hit limits frequently
+5. **Voice Connection Issues**: Verify LavaLink server is running and accessible
+6. **Music Playback Issues**: Check if LavaLink server supports the requested audio sources
 
 ### **Configuration Scripts**
 

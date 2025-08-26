@@ -56,6 +56,10 @@ source venv/bin/activate
 - **Real-time chat** with personality
 - **Image generation & editing** (Direct commands with multiple AI models)
 - **Audio manipulation** (TTS, voice cloning, editing)
+- **Voice channel music** (LavaLink v4 support)
+- **Music playback** (YouTube, Spotify, and other sources)
+- **Queue management** (play, pause, skip, volume control)
+- **Vote-based skipping** (democratic music control)
 - **Code execution** (Python)
 - **Web search** & **YouTube analysis**
 
@@ -181,6 +185,15 @@ Different tools have optimized timeout durations:
 
 ### Image Generation Commands
 
+- `/play <query>` - Play music from YouTube, Spotify, or other sources
+- `/pause` - Pause the current music
+- `/resume` - Resume the paused music
+- `/stop` - Stop playing and clear the queue
+- `/skip` - Skip the current track (vote-based)
+- `/queue` - Show the current music queue
+- `/volume <level>` - Set the music volume (0-100)
+- `/nowplaying` - Show information about the currently playing track
+- `/disconnect` - Disconnect from the voice channel
 - `/generate_image <prompt>` - Generate images using AI (no tool switching needed)
 - `/edit_image <prompt>` - Edit existing images (attach image first)
 - `/image_help` - Show image generation help
