@@ -29,6 +29,11 @@ class MusicPlayer(wavelink.Player):
     def volume(self, value: int):
         self._volume = value
 
+    @property
+    def connected(self) -> bool:
+        """Check if the player is connected to a voice channel."""
+        return hasattr(self, 'channel') and self.channel is not None
+
     async def add_track(self, track: wavelink.Playable) -> None:
         """Add a track to the queue."""
         if not isinstance(track, wavelink.Playable):
@@ -101,6 +106,7 @@ class Music(commands.Cog):
 
         if self.lavalink_enabled and self.voice_enabled:
             self.bot.loop.create_task(self.connect_nodes())
+            self.bot.loop.create_task(self.queue_monitor())
             logging.info("Music cog initialized with LavaLink v4 support")
         else:
             logging.info("Music cog initialized (LavaLink disabled)")
@@ -121,6 +127,38 @@ class Music(commands.Cog):
 
         except Exception as e:
             logging.error(f"Failed to connect to LavaLink node: {e}")
+
+    async def queue_monitor(self):
+        """Monitor queues and ensure tracks continue playing."""
+        await self.bot.wait_until_ready()
+        
+        while not self.bot.is_closed():
+            try:
+                for guild_id, player in self.players.items():
+                    # Check if player is connected but not playing and has tracks in queue
+                    if (player.connected and 
+                        not player.playing and 
+                        len(player.custom_queue) > 0):
+                        
+                        logging.info(f"Queue monitor: Player not playing but has {len(player.custom_queue)} tracks in queue")
+                        
+                        # Try to play the next track
+                        next_track = await player.get_next_track()
+                        if isinstance(next_track, wavelink.Playable):
+                            try:
+                                await player.play(next_track)
+                                logging.info(f"Queue monitor: Started playing {next_track.title}")
+                            except Exception as e:
+                                logging.error(f"Queue monitor: Failed to play {next_track.title}: {e}")
+                                # Put the track back in the queue
+                                await player.add_track(next_track)
+                
+                # Check every 10 seconds
+                await asyncio.sleep(10)
+                
+            except Exception as e:
+                logging.error(f"Error in queue monitor: {e}")
+                await asyncio.sleep(10)
 
     def get_player(self, guild_id: int) -> Optional[MusicPlayer]:
         """Get a music player for a guild."""
@@ -741,15 +779,40 @@ class Music(commands.Cog):
 
             if isinstance(next_track, wavelink.Playable):
                 logging.info(f"Playing next track from queue: {next_track.title}")
-                await player.play(next_track)
+                try:
+                    await player.play(next_track)
+                    logging.info(f"Successfully started playing: {next_track.title}")
+                except Exception as play_error:
+                    logging.error(f"Failed to play next track: {play_error}")
+                    # Try to play the next track in queue
+                    next_next_track = await player.get_next_track()
+                    if isinstance(next_next_track, wavelink.Playable):
+                        try:
+                            await player.play(next_next_track)
+                            logging.info(f"Successfully started playing fallback track: {next_next_track.title}")
+                        except Exception as fallback_error:
+                            logging.error(f"Failed to play fallback track: {fallback_error}")
             else:
                 logging.info("No more tracks in queue, scheduling disconnect")
+                # Schedule disconnect after 5 minutes of inactivity
                 await asyncio.sleep(300)  # 5 minutes
-                if not player.playing:
-                    await player.disconnect()
+                if not player.playing and len(player.custom_queue) == 0:
+                    try:
+                        await player.disconnect()
+                        logging.info("Disconnected due to inactivity")
+                    except Exception as disconnect_error:
+                        logging.error(f"Error disconnecting: {disconnect_error}")
 
         except Exception as e:
             logging.error(f"Error in track end handler: {e}")
+            # Try to recover by playing next track if available
+            try:
+                next_track = await player.get_next_track()
+                if isinstance(next_track, wavelink.Playable):
+                    await player.play(next_track)
+                    logging.info(f"Recovered and playing: {next_track.title}")
+            except Exception as recovery_error:
+                logging.error(f"Failed to recover from track end error: {recovery_error}")
 
 
 def setup(bot):
