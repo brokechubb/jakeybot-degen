@@ -1790,7 +1790,22 @@ class Misc(commands.Cog):
         # Advanced features
         embed.add_field(
             name="⚡ **Advanced Features**",
-            value="• **Image Generation**: `/generate_image <prompt>` (no tool switching needed)\n• **Image Editing**: `/edit_image <prompt>` (no tool switching needed)\n• **Auto-Image**: Automatic detection when you mention Jakey\n• **Reminders**: `/remind <time> <message>`\n• **Trivia Games**: `/trivia` for fun challenges\n• **Gambling Games**: `/create_bet` for betting pools\n• **Keno Numbers**: `/keno` for random number generation\n• **Engagement**: `/jakey_engage` for active participation",
+            value="• **Image Generation**: `/generate_image <prompt>` (no tool switching needed)\n• **Image Editing**: `/edit_image <prompt>` (no tool switching needed)\n• **Auto-Image**: Automatic detection when you mention Jakey\n• **Reminders**: `/remind <time> <message>`\n• **Trivia Games**: `/trivia` for fun challenges\n• **Gambling Games**: `/create_bet` for betting pools\n• **Keno Numbers**: `/keno` for random number generation\n• **Engagement**: `/jakey_engage` for active participation\n• **Music**: `/play <query>` for voice channel music (LavaLink v4)",
+            inline=False,
+        )
+
+        # Music commands
+        embed.add_field(
+            name="🎵 **Music Commands**",
+            value="• `/play <query>` - Play from YouTube/Spotify/etc.\n"
+            "• `/pause` - Pause playback\n"
+            "• `/resume` - Resume playback\n"
+            "• `/stop` - Stop and clear the queue\n"
+            "• `/skip` - Vote to skip the current track\n"
+            "• `/queue` - Show the current queue\n"
+            "• `/nowplaying` - Show the current track\n"
+            "• `/volume <0-100>` - Set the volume level\n"
+            "• `/disconnect` - Leave the voice channel",
             inline=False,
         )
 
@@ -1874,7 +1889,7 @@ class Misc(commands.Cog):
         # Step 2
         embed.add_field(
             name="2️⃣ Explore More Features",
-            value="• `/remind 1h take a break` - Set personal reminders \n• `/keno` - Generate keno numbers \n• `/generate_image` - Generate images (no tool switching needed) \n• `/edit_image` - Edit images (no tool switching needed) \n• `/jakey_engage` - Make Jakey actively engage \n• `/create_bet` - Create betting pools \n• `/trivia` - Start trivia games \n• `/sweep` - Clear conversation and reset",
+            value="• `/remind 1h take a break` - Set personal reminders \n• `/keno` - Generate keno numbers \n• `/generate_image` - Generate images (no tool switching needed) \n• `/edit_image` - Edit images (no tool switching needed) \n• `/jakey_engage` - Make Jakey actively engage \n• `/create_bet` - Create betting pools \n• `/trivia` - Start trivia games \n• `/play <song>` - Play music in voice channels \n• `/sweep` - Clear conversation and reset",
             inline=False,
         )
 
@@ -1882,6 +1897,19 @@ class Misc(commands.Cog):
         embed.add_field(
             name="3️⃣ Use Smart Features",
             value="• `/smart_suggestions` - Get optimization tips\n• `/extend_timeout 5m` - Extend tool session time\n• `/timeout_status` - Check remaining time\n• `/auto_return_status` - View system overview",
+            inline=False,
+        )
+
+        # Music quick reference
+        embed.add_field(
+            name="🎵 Music Commands (Quick)",
+            value="• `/play <query>` - Start playback\n"
+            "• `/skip` - Vote to skip\n"
+            "• `/queue` - View upcoming tracks\n"
+            "• `/nowplaying` - See current track\n"
+            "• `/volume <0-100>` - Set volume\n"
+            "• `/disconnect` - Leave voice channel\n\n"
+            "More: use `/help` → Music Commands",
             inline=False,
         )
 
