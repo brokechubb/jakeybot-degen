@@ -85,6 +85,13 @@ class Chat(commands.Cog):
         """Set the default model whenever you mention me!"""
         await ctx.response.defer(ephemeral=True)
 
+        # Check if user has administrator permissions
+        if ctx.guild and not ctx.author.guild_permissions.administrator:
+            await ctx.respond(
+                "❌ **Administrator permission required** to change the server's default model."
+            )
+            return
+
         # Determine guild/user based on SHARED_CHAT_HISTORY setting
         if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
             guild_id = ctx.guild.id if ctx.guild else ctx.author.id
@@ -128,6 +135,10 @@ class Chat(commands.Cog):
         if isinstance(_error, ConcurrentRequestError):
             await ctx.respond(
                 "⚠️ Please wait until processing your previous request is completed before changing the model..."
+            )
+        elif isinstance(_error, discord.Forbidden):
+            await ctx.respond(
+                "❌ **Permission denied**. Administrator permission required to change the server's default model."
             )
         else:
             await ctx.respond("❌ Something went wrong, please try again later.")
@@ -190,6 +201,94 @@ class Chat(commands.Cog):
         await ctx.respond("❌ Something went wrong, please try again later.")
         logging.error(
             "An error has occurred while executing models command, reason: ",
+            exc_info=True,
+        )
+
+    #######################################################
+    # Slash Command Group: model.current
+    #######################################################
+    @model.command(
+        contexts={
+            discord.InteractionContextType.guild,
+            discord.InteractionContextType.bot_dm,
+        },
+        integration_types={
+            discord.IntegrationType.guild_install,
+            discord.IntegrationType.user_install,
+        },
+    )
+    async def current(self, ctx):
+        """Show the current default model for this server"""
+        await ctx.response.defer(ephemeral=True)
+
+        # Determine guild/user based on SHARED_CHAT_HISTORY setting
+        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
+        else:
+            guild_id = ctx.author.id
+
+        try:
+            # Get the current default model from the database
+            current_model = await self.DBConn.get_default_model(guild_id=guild_id)
+
+            if current_model:
+                # Parse the model to get provider and name
+                if "::" in current_model:
+                    _model = current_model.split("::")
+                    _model_provider = _model[0]
+                    _model_name = _model[-1]
+
+                    # Create an embed to show current model
+                    embed = discord.Embed(
+                        title="🤖 Current Model",
+                        description=f"**Server**: {ctx.guild.name if ctx.guild else 'DM'}\n**Provider**: {_model_provider}\n**Model**: {_model_name}",
+                        color=discord.Color.green(),
+                    )
+
+                    # Add additional info based on provider
+                    if _model_provider in [
+                        "gemini",
+                        "claude",
+                        "openrouter",
+                        "openai",
+                        "kimi",
+                    ]:
+                        embed.add_field(
+                            name="✅ Features",
+                            value="• Real-time information\n• Tool support\n• Web search capabilities",
+                            inline=False,
+                        )
+                    else:
+                        embed.add_field(
+                            name="⚠️ Features",
+                            value="• Basic chat capabilities\n• Limited real-time information\n• No tool support",
+                            inline=False,
+                        )
+
+                    embed.set_footer(text="Use /model set to change the model")
+
+                    await ctx.respond(embed=embed)
+                else:
+                    await ctx.respond("❌ Invalid model format stored in database")
+            else:
+                # No model set, show default
+                embed = discord.Embed(
+                    title="🤖 Current Model",
+                    description="**No model set** - Using system default\n\nUse `/model set` to choose a specific model",
+                    color=discord.Color.blue(),
+                )
+                embed.set_footer(text="Default: Gemini 2.5 Flash")
+                await ctx.respond(embed=embed)
+
+        except Exception as e:
+            logging.error(f"Error getting current model: {e}")
+            await ctx.respond("❌ Error retrieving current model. Please try again.")
+
+    @current.error
+    async def current_on_error(self, ctx: discord.ApplicationContext, error):
+        await ctx.respond("❌ Something went wrong, please try again later.")
+        logging.error(
+            "An error has occurred while executing model current command, reason: ",
             exc_info=True,
         )
 

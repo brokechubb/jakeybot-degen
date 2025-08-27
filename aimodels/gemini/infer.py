@@ -171,8 +171,11 @@ class Completions(ModelParams):
             "clone_voice": "AudioTools",
             "generate_canvas": "IdeationTools",
             "create_artifact": "IdeationTools",
-            "remember": "Memory",
-            "recall": "Memory",
+            "remember_fact": "Memory",
+            "recall_fact": "Memory",
+            "list_facts": "Memory",
+            "my_facts": "Memory",
+            "forget_fact": "Memory",
         }
 
         # Check if this function corresponds to a specific tool
@@ -274,7 +277,11 @@ class Completions(ModelParams):
                     system_instruction=system_instruction,
                     return_text=False,
                 )
-            elif e.status_code == 429:
+            elif (
+                "RESOURCE_EXHAUSTED" in str(e)
+                or "429" in str(e)
+                or "quota" in str(e).lower()
+            ):
                 log_warning(
                     "Gemini API quota exceeded (429 RESOURCE_EXHAUSTED). Retrying after 30 seconds."
                 )

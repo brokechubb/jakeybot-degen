@@ -55,7 +55,7 @@ class ToolManifest:
                             "description": "Optional category to filter facts by",
                         },
                         "limit": {
-                            "type": "string",
+                            "type": "integer",
                             "description": "Maximum number of facts to return (default: 10, max: 20)",
                         },
                     },

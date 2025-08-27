@@ -40,6 +40,7 @@ To use Google Search, Bing Search, and YouTube tools, you must set the following
 - `YOUTUBE_DATA_v3_API_KEY` - YouTube Data API key. [Enable this API](https://console.cloud.google.com/apis/api/youtube.googleapis.com)
 - `GITHUB_TOKEN` - Get one at <https://github.com/settings/personal-access-tokens> with public access, used for GitHub file tool.
 - `EXA_API_KEY` - ExaSearch API key for web search capabilities. [Get an API key from Exa](https://exa.ai/). Optional - works without API key for basic features.
+- `FAL_KEY` - FAL API key for image generation capabilities. [Get an API key from FAL](https://fal.ai/). Required for ImageGen tool functionality.
 
 ## Voice Configuration
 

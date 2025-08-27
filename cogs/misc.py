@@ -1762,7 +1762,7 @@ class Misc(commands.Cog):
         # Core commands
         embed.add_field(
             name="📋 **Essential Commands**",
-            value="• `/ask <question>` - Ask Jakey anything\n• `/model set <model>` - Switch AI models\n• `/feature <tool>` - Enable tools (Memory, CryptoPrice, etc.)\n• `/sweep` - Clear conversation and reset\n• `/quickstart` - Get step-by-step guide",
+            value="• `/ask <question>` - Ask Jakey anything\n• `/model set <model>` - Switch AI models (Admin only)\n• `/model current` - Show current model\n• `/model list` - List all available models\n• `/feature <tool>` - Enable tools (Memory, CryptoPrice, etc.)\n• `/sweep` - Clear conversation and reset\n• `/quickstart` - Get step-by-step guide",
             inline=False,
         )
 
@@ -1776,14 +1776,14 @@ class Misc(commands.Cog):
         # AI Models
         embed.add_field(
             name="🤖 **AI Models Available**",
-            value="• **Gemini**: gemini-2.5-pro, gemini-2.5-flash (API Key Required)\n• **OpenAI**: gpt-4, gpt-3.5-turbo, gpt-5 (API Key Required)\n• **Claude**: claude-3-opus, claude-3-sonnet (API Key Required)\n• **DeepSeek**: deepseek-v3, deepseek-r1 (API Key Required)\n• **Grok 3**: xAI creative model (API Key Required)\n• **LearnLM 2.0**: Google learning model (API Key Required)\n• **OpenRouter**: 100+ models (API Key Required)\n• **Pollinations.AI**: Text & Image generation (API Key Optional)\n• **More**: Use `/model list` to see all options",
+            value="• **Gemini**: gemini-2.5-pro, gemini-2.5-flash (API Key Required)\n• **OpenAI**: gpt-4, gpt-3.5-turbo, gpt-5 (API Key Required)\n• **Claude**: claude-3-opus, claude-3-sonnet (API Key Required)\n• **DeepSeek**: deepseek-v3, deepseek-r1 (API Key Required)\n• **Grok 3**: xAI creative model (API Key Required)\n• **LearnLM 2.0**: Google learning model (API Key Required)\n• **OpenRouter**: 100+ models (API Key Required)\n• **Pollinations.AI**: Text & Image generation (API Key Optional)\n• **More**: Use `/model list` to see all options\n• **Note**: `/model set` requires Administrator permissions",
             inline=False,
         )
 
         # Tools
         embed.add_field(
             name="🛠️ **Available Tools**",
-            value="• **Memory** - Remember and recall information across conversations\n• **CryptoPrice** - Live Solana/Ethereum token prices\n• **CurrencyConverter** - 170+ currency conversion\n• **YouTube** - Video analysis and summarization\n• **GitHub** - Code repository access and search\n• **AudioTools** - Audio creation and manipulation\n• **CodeExecution** - Python code execution\n• **Engagement** - Active channel participation\n• **GamblingGames** - Betting pools and trivia games",
+            value="• **Memory** - Remember and recall information across conversations\n• **CryptoPrice** - Live Solana/Ethereum token prices\n• **CurrencyConverter** - 170+ currency conversion\n• **YouTube** - Video analysis and summarization\n• **GitHub** - Code repository access and search\n• **AudioTools** - Audio creation and manipulation\n• **ImageGen** - AI image generation and editing\n• **CodeExecution** - Python code execution\n• **Engagement** - Active channel participation\n• **GamblingGames** - Betting pools and trivia games",
             inline=False,
         )
 

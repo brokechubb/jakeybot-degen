@@ -74,8 +74,11 @@ class Completions(ModelParams):
             "clone_voice": "AudioTools",
             "generate_canvas": "IdeationTools",
             "create_artifact": "IdeationTools",
-            "remember": "Memory",
-            "recall": "Memory",
+            "remember_fact": "Memory",
+            "recall_fact": "Memory",
+            "list_facts": "Memory",
+            "my_facts": "Memory",
+            "forget_fact": "Memory",
         }
 
         # Check if this function corresponds to a specific tool

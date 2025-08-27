@@ -11,9 +11,11 @@ import discord
 import logging
 import yaml
 
+
 class DefaultModelDict(TypedDict):
     provider: Literal["gemini"]
     model_name: str
+
 
 # You can choose other service like GCP or your custom solution
 class HelperFunctions:
@@ -43,7 +45,7 @@ class HelperFunctions:
         if provider == "gemini":
             if output_modalities == "text":
                 if model_type == "base":
-                    _constructed_dict["model_name"] = "gemini-2.5-flash"
+                    _constructed_dict["model_name"] = "gemini-2.5-flash-nonthinking"
                 elif model_type == "reasoning":
                     _constructed_dict["model_name"] = "gemini-2.5-flash"
             elif output_modalities == "image":
@@ -120,4 +122,6 @@ class HelperFunctions:
     async def check_file_size(bot: discord.Bot, url: str, max_size: int):
         async with bot._aiohttp_main_client_session.head(url) as response:
             if int(response.headers.get("Content-Length")) > max_size:
-                raise CustomErrorMessage(f"File size is too large, please use files smaller than {max_size / 1000000}MB")
+                raise CustomErrorMessage(
+                    f"File size is too large, please use files smaller than {max_size / 1000000}MB"
+                )

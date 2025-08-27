@@ -1,6 +1,6 @@
 class ToolManifest:
-    tool_human_name = "Solana Token Price"
-    token_price_description = "Fetch the current trading price of any Solana token (by symbol or mint address) using Jupiter price oracle."
+    tool_human_name = "Cryptocurrency Price"
+    token_price_description = "Fetch the current trading price of any cryptocurrency (by symbol or CoinMarketCap ID) using CoinMarketCap API."
 
     def __init__(self):
         _schema = {
@@ -11,7 +11,7 @@ class ToolManifest:
                 "properties": {
                     "token": {
                         "type": "string",
-                        "description": "Token symbol (e.g. 'SOL', 'BONK') or Solana mint address.",
+                        "description": "Cryptocurrency symbol (e.g. 'BTC', 'ETH', 'SOL') or CoinMarketCap ID.",
                     }
                 },
                 "required": ["token"],

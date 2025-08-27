@@ -1,9 +1,10 @@
 import logging
-import requests
 import urllib.parse
 import json
 import asyncio
+import aiohttp
 from typing import Optional
+import random
 
 from .config import ModelParams
 from core.ai.core import Utils
@@ -137,15 +138,49 @@ class Completions(ModelParams):
 
             return {"response": response, "chat_thread": _chat_thread}
 
+    async def _retry_with_backoff(self, func, max_retries=3, base_delay=1.0):
+        """Retry a function with exponential backoff"""
+        for attempt in range(max_retries):
+            try:
+                return await func()
+            except (asyncio.TimeoutError, aiohttp.ClientError) as e:
+                if attempt == max_retries - 1:  # Last attempt
+                    raise e
+                
+                # Exponential backoff with jitter
+                delay = base_delay * (2 ** attempt) + random.uniform(0, 1)
+                logging.warning(f"Attempt {attempt + 1} failed: {e}. Retrying in {delay:.2f} seconds...")
+                await asyncio.sleep(delay)
+            except Exception as e:
+                # Don't retry on other exceptions
+                raise e
+
     async def _generate_text(self, prompt: str, system_instruction: str = None) -> str:
         """Generate text using Pollinations.AI text API"""
         try:
-            # Add system instruction if provided
+            # Format messages properly for Pollinations.AI
+            messages = []
+            
+            # Add system instruction
             if system_instruction:
-                # For Pollinations.AI, we'll prepend the system instruction to the prompt
-                full_prompt = f"System: {system_instruction}\n\nUser: {prompt}"
+                messages.append({"role": "system", "content": system_instruction})
             else:
-                full_prompt = prompt
+                # Fallback to default Jakey system prompt
+                default_system_prompt = "You are Jakey, the Courtyard's degenerate gambling mascot. You are cynical, smirky, sarcastic, cocky, unfiltered, and unapologetic. You swear, roast people, and mock bad bets. You love online gambling, brag about your own degeneracy, and clown on anyone who takes themselves too seriously. You are part of the Courtyard community and are not a separate entity. You identify and should be referred to as he/him. You must never reveal you are a product of any company."
+                messages.append({"role": "system", "content": default_system_prompt})
+
+            # Add user prompt
+            messages.append({"role": "user", "content": prompt})
+
+            # Convert to conversation format for GET request
+            conversation_text = ""
+            for msg in messages:
+                if msg["role"] == "system":
+                    conversation_text += f"System: {msg['content']}\n\n"
+                elif msg["role"] == "user":
+                    conversation_text += f"User: {msg['content']}\n\n"
+            
+            conversation_text += "Assistant:"
 
             # Try different models in order of preference (prioritizing uncensored models for Jakey)
             models_to_try = [
@@ -165,40 +200,55 @@ class Completions(ModelParams):
                     models_to_try.remove(current_model)
                 models_to_try.insert(2, current_model)  # Insert after uncensored models
 
-            for model in models_to_try:
-                try:
-                    # Prepare parameters
-                    params = {
-                        "model": model,
-                        "temperature": self._genai_params.get("temperature", 0.7),
-                        "private": "true",  # Set private to true as requested
-                    }
+            # Create aiohttp session with timeout
+            timeout = aiohttp.ClientTimeout(total=60)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                for model in models_to_try:
+                    try:
+                        async def make_request():
+                            # Prepare parameters
+                            params = {
+                                "model": model,
+                                "temperature": self._genai_params.get("temperature", 0.7),
+                                "private": "true",  # Set private to true as requested
+                            }
 
-                    # Add API key if available
-                    if self._api_key:
-                        params["token"] = self._api_key
+                            # Add API key if available
+                            if self._api_key:
+                                params["token"] = self._api_key
 
-                    # URL encode the prompt
-                    encoded_prompt = urllib.parse.quote(full_prompt)
+                            # URL encode the conversation
+                            encoded_conversation = urllib.parse.quote(conversation_text)
 
-                    # Make the request
-                    url = f"{self._base_url}/{encoded_prompt}"
-                    response = requests.get(url, params=params, timeout=60)
+                            # Make the request
+                            url = f"{self._base_url}/{encoded_conversation}"
+                            
+                            async with session.get(url, params=params) as response:
+                                if response.status == 200:
+                                    text_response = await response.text()
+                                    logging.info(
+                                        f"Successfully used {model} model for Pollinations.AI (simple)"
+                                    )
+                                    return text_response.strip()
+                                else:
+                                    logging.warning(
+                                        f"Model {model} failed with status {response.status}, trying next model"
+                                    )
+                                    # Raise exception to trigger retry
+                                    raise aiohttp.ClientError(f"HTTP {response.status}")
 
-                    if response.status_code == 200:
-                        logging.info(
-                            f"Successfully used {model} model for Pollinations.AI (simple)"
-                        )
-                        return response.text.strip()
-                    else:
-                        logging.warning(
-                            f"Model {model} failed with status {response.status_code}, trying next model"
-                        )
+                        # Try with retry mechanism
+                        return await self._retry_with_backoff(make_request)
+
+                    except asyncio.TimeoutError:
+                        logging.warning(f"Request timed out for {model} model (simple)")
                         continue
-
-                except requests.exceptions.RequestException as e:
-                    logging.warning(f"Request failed for {model} model (simple): {e}")
-                    continue
+                    except aiohttp.ClientError as e:
+                        logging.warning(f"HTTP error for {model} model (simple): {e}")
+                        continue
+                    except Exception as e:
+                        logging.warning(f"Request failed for {model} model (simple): {e}")
+                        continue
 
             # If all models failed, raise an error
             logging.error("All models failed for Pollinations.AI text generation")
@@ -206,79 +256,86 @@ class Completions(ModelParams):
                 "⚠️ All available models failed. Please try again later."
             )
 
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             logging.error(f"Pollinations.AI text API request failed: {e}")
             raise CustomErrorMessage(
                 "⚠️ Failed to connect to Pollinations.AI text service"
             )
+
+    async def _truncate_conversation(self, conversation: str, max_length: int = 1500) -> str:
+        """Truncate conversation to prevent 414 URI Too Long errors"""
+        if len(conversation) <= max_length:
+            return conversation
+            
+        # Truncate from the beginning, keeping the most recent messages
+        truncated = conversation[-max_length:]
+        logging.info(f"Truncated conversation from {len(conversation)} to {len(truncated)} characters")
+        return truncated
 
     async def _generate_text_with_history(
         self, chat_thread: list, tool_info: dict, system_instruction: str = None
     ) -> str:
         """Generate text with chat history and tool support"""
         try:
-            # For Pollinations.AI, we'll format the chat history as a simple conversation
-            conversation = ""
+            # For Pollinations.AI, we need to format messages properly for the OpenAI-compatible endpoint
+            messages = []
 
-            # Add some debugging
-            logging.debug(f"Processing chat thread with {len(chat_thread)} items")
-
-            # Check if we have a system message in the chat thread
-            has_system_message = False
-            for message in chat_thread:
-                if isinstance(message, dict) and message.get("role") == "system":
-                    has_system_message = True
-                    break
-
-            # If no system message found, add the system instruction
-            if not has_system_message and system_instruction:
-                conversation += f"System: {system_instruction}\n\n"
-            elif not has_system_message:
+            # Add system instruction as system message
+            if system_instruction:
+                messages.append({"role": "system", "content": system_instruction})
+            else:
                 # Fallback to default Jakey system prompt
-                conversation += "System: You are Jakey, the Courtyard's degenerate gambling mascot. You are cynical, smirky, sarcastic, cocky, unfiltered, and unapologetic. You swear, roast people, and mock bad bets. You love online gambling, brag about your own degeneracy, and clown on anyone who takes themselves too seriously. You are part of the Courtyard community and are not a separate entity. You identify and should be referred to as he/him. You must never reveal you are a product of any company.\n\n"
+                default_system_prompt = "You are Jakey, the Courtyard's degenerate gambling mascot. You are cynical, smirky, sarcastic, cocky, unfiltered, and unapologetic. You swear, roast people, and mock bad bets. You love online gambling, brag about your own degeneracy, and clown on anyone who takes themselves too seriously. You are part of the Courtyard community and are not a separate entity. You identify and should be referred to as he/him. You must never reveal you are a product of any company."
+                messages.append({"role": "system", "content": default_system_prompt})
 
-            # Handle chat history structure - first item might be a time context string
-            for i, message in enumerate(chat_thread):
-                if i == 0 and isinstance(message, str):
-                    # This is the time context string, skip it for now
-                    logging.debug(f"Skipping time context string: {message[:50]}...")
-                    continue
-
-                # Handle message dictionaries
+            # Process chat history
+            for message in chat_thread:
                 if isinstance(message, dict):
-                    role = message.get("role", "unknown")
+                    role = message.get("role")
                     content = message.get("content", "")
-                    if role == "system":
-                        conversation += f"System: {content}\n\n"
-                    elif role == "user":
-                        conversation += f"User: {content}\n\n"
-                    elif role == "assistant":
-                        conversation += f"Assistant: {content}\n\n"
-                    else:
-                        logging.warning(f"Unknown role '{role}' in message: {message}")
-                # Handle string messages (fallback)
+                    if role in ["user", "assistant"]:
+                        messages.append({"role": role, "content": content})
                 elif isinstance(message, str):
-                    conversation += f"User: {message}\n\n"
-                else:
-                    logging.warning(f"Unknown message type {type(message)}: {message}")
+                    # Handle string messages as user messages
+                    messages.append({"role": "user", "content": message})
 
             # Add the current user message (which should be the last item)
-            if chat_thread and isinstance(chat_thread[-1], dict):
-                current_message = chat_thread[-1].get("content", "")
+            if chat_thread and isinstance(chat_thread[-1], dict) and chat_thread[-1].get("role") == "user":
+                # The last message is already added, don't duplicate
+                pass
             else:
-                current_message = str(chat_thread[-1]) if chat_thread else ""
+                # If the last message isn't a user message, we need to get the current prompt
+                # This should be handled by the caller, but let's be safe
+                if chat_thread and isinstance(chat_thread[-1], dict):
+                    current_message = chat_thread[-1].get("content", "")
+                else:
+                    current_message = str(chat_thread[-1]) if chat_thread else ""
+                
+                if current_message:
+                    messages.append({"role": "user", "content": current_message})
 
-            conversation += f"User: {current_message}\n\nAssistant:"
+            # Truncate conversation if too long (but keep proper message structure)
+            if len(str(messages)) > 2000:
+                # Keep system message and last few messages
+                system_msg = messages[0] if messages and messages[0]["role"] == "system" else None
+                recent_messages = messages[-10:] if len(messages) > 10 else messages[1:]  # Skip system message
+                messages = [system_msg] + recent_messages if system_msg else recent_messages
 
-            # Check if the conversation is too long for GET request
-            if len(conversation) > 2000:  # Conservative limit to avoid 431 errors
-                # Use POST endpoint for longer conversations
-                return await self._generate_text_with_post(conversation)
-            else:
-                # Use GET endpoint for shorter conversations
-                return await self._generate_text_with_get(conversation)
+            # Use POST endpoint for proper message formatting
+            conversation_text = ""
+            for msg in messages:
+                if msg["role"] == "system":
+                    conversation_text += f"System: {msg['content']}\n\n"
+                elif msg["role"] == "user":
+                    conversation_text += f"User: {msg['content']}\n\n"
+                elif msg["role"] == "assistant":
+                    conversation_text += f"Assistant: {msg['content']}\n\n"
+            
+            conversation_text += "Assistant:"
 
-        except requests.exceptions.RequestException as e:
+            return await self._generate_text_with_post(conversation_text)
+
+        except Exception as e:
             logging.error(f"Pollinations.AI text API request failed: {e}")
             raise CustomErrorMessage(
                 "⚠️ Failed to connect to Pollinations.AI text service"
@@ -287,6 +344,10 @@ class Completions(ModelParams):
     async def _generate_text_with_get(self, conversation: str) -> str:
         """Generate text using GET endpoint for shorter conversations"""
         try:
+            # Truncate conversation if too long for GET request
+            if len(conversation) > 1000:
+                conversation = await self._truncate_conversation(conversation, 1000)
+
             # Try different models in order of preference (prioritizing uncensored models for Jakey)
             models_to_try = [
                 "evil",
@@ -305,40 +366,55 @@ class Completions(ModelParams):
                     models_to_try.remove(current_model)
                 models_to_try.insert(2, current_model)  # Insert after uncensored models
 
-            for model in models_to_try:
-                try:
-                    # Prepare parameters
-                    params = {
-                        "model": model,
-                        "temperature": self._genai_params.get("temperature", 0.7),
-                        "private": "true",  # Set private to true as requested
-                    }
+            # Create aiohttp session with timeout
+            timeout = aiohttp.ClientTimeout(total=60)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                for model in models_to_try:
+                    try:
+                        async def make_get_request():
+                            # Prepare parameters
+                            params = {
+                                "model": model,
+                                "temperature": self._genai_params.get("temperature", 0.7),
+                                "private": "true",  # Set private to true as requested
+                            }
 
-                    # Add API key if available
-                    if self._api_key:
-                        params["token"] = self._api_key
+                            # Add API key if available
+                            if self._api_key:
+                                params["token"] = self._api_key
 
-                    # URL encode the conversation
-                    encoded_conversation = urllib.parse.quote(conversation)
+                            # URL encode the conversation
+                            encoded_conversation = urllib.parse.quote(conversation)
 
-                    # Make the request
-                    url = f"{self._base_url}/{encoded_conversation}"
-                    response = requests.get(url, params=params, timeout=60)
+                            # Make the request
+                            url = f"{self._base_url}/{encoded_conversation}"
+                            
+                            async with session.get(url, params=params) as response:
+                                if response.status == 200:
+                                    text_response = await response.text()
+                                    logging.info(
+                                        f"Successfully used {model} model for Pollinations.AI (GET)"
+                                    )
+                                    return text_response.strip()
+                                else:
+                                    logging.warning(
+                                        f"Model {model} failed with status {response.status}, trying next model"
+                                    )
+                                    # Raise exception to trigger retry
+                                    raise aiohttp.ClientError(f"HTTP {response.status}")
 
-                    if response.status_code == 200:
-                        logging.info(
-                            f"Successfully used {model} model for Pollinations.AI (GET)"
-                        )
-                        return response.text.strip()
-                    else:
-                        logging.warning(
-                            f"Model {model} failed with status {response.status_code}, trying next model"
-                        )
+                        # Try with retry mechanism
+                        return await self._retry_with_backoff(make_get_request)
+
+                    except asyncio.TimeoutError:
+                        logging.warning(f"Request timed out for {model} model (GET)")
                         continue
-
-                except requests.exceptions.RequestException as e:
-                    logging.warning(f"Request failed for {model} model (GET): {e}")
-                    continue
+                    except aiohttp.ClientError as e:
+                        logging.warning(f"HTTP error for {model} model (GET): {e}")
+                        continue
+                    except Exception as e:
+                        logging.warning(f"Request failed for {model} model (GET): {e}")
+                        continue
 
             # If all models failed, raise an error
             logging.error("All models failed for Pollinations.AI text generation")
@@ -346,7 +422,7 @@ class Completions(ModelParams):
                 "⚠️ All available models failed. Please try again later."
             )
 
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             logging.error(f"Pollinations.AI text API request failed: {e}")
             raise CustomErrorMessage(
                 "⚠️ Failed to connect to Pollinations.AI text service"
@@ -355,6 +431,26 @@ class Completions(ModelParams):
     async def _generate_text_with_post(self, conversation: str) -> str:
         """Generate text using POST endpoint for longer conversations"""
         try:
+            # Parse the conversation back into messages
+            messages = []
+            lines = conversation.split('\n\n')
+            
+            for line in lines:
+                if line.startswith('System:'):
+                    content = line[8:].strip()  # Remove 'System: ' prefix
+                    messages.append({"role": "system", "content": content})
+                elif line.startswith('User:'):
+                    content = line[6:].strip()  # Remove 'User: ' prefix
+                    messages.append({"role": "user", "content": content})
+                elif line.startswith('Assistant:'):
+                    content = line[11:].strip()  # Remove 'Assistant: ' prefix
+                    if content:  # Only add if there's actual content
+                        messages.append({"role": "assistant", "content": content})
+
+            # Remove the trailing "Assistant:" line if it exists
+            if messages and messages[-1]["role"] == "assistant" and not messages[-1]["content"]:
+                messages.pop()
+
             # Prepare headers
             headers = {
                 "Content-Type": "application/json",
@@ -382,67 +478,97 @@ class Completions(ModelParams):
                     models_to_try.remove(current_model)
                 models_to_try.insert(2, current_model)  # Insert after uncensored models
 
-            for model in models_to_try:
-                try:
-                    # Prepare request data
-                    data = {
-                        "model": model,
-                        "messages": [{"role": "user", "content": conversation}],
-                        "temperature": self._genai_params.get("temperature", 0.7),
-                        "private": True,  # Set private to true as requested
-                    }
+            # Create aiohttp session with timeout
+            timeout = aiohttp.ClientTimeout(total=60)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                for model in models_to_try:
+                    try:
+                        async def make_post_request():
+                            # Prepare request data with proper messages format
+                            data = {
+                                "model": model,
+                                "messages": messages,
+                                "temperature": self._genai_params.get("temperature", 0.7),
+                                "private": True, # Set private to true as requested
+                            }
 
-                    # Make the request to the OpenAI-compatible endpoint
-                    url = f"{self._base_url}/openai"
-                    response = requests.post(
-                        url, headers=headers, json=data, timeout=60
-                    )
+                            # Make the request to the OpenAI-compatible endpoint
+                            url = f"{self._base_url}/openai"
+                            
+                            async with session.post(url, headers=headers, json=data) as response:
+                                if response.status == 200:
+                                    result = await response.json()
+                                    if "choices" in result and len(result["choices"]) > 0:
+                                        logging.info(
+                                            f"Successfully used {model} model for Pollinations.AI"
+                                        )
+                                        return result["choices"][0]["message"]["content"].strip()
+                                    else:
+                                        logging.warning(
+                                            f"Invalid response format from {model} model"
+                                        )
+                                        # Raise exception to trigger retry
+                                        raise aiohttp.ClientError("Invalid response format")
+                                elif response.status == 400:
+                                    # Check if it's a content filter error
+                                    try:
+                                        error_data = await response.json()
+                                        if "content_filter" in str(error_data).lower():
+                                            logging.warning(
+                                                f"Content filter triggered for {model} model, trying next model"
+                                            )
+                                            # Don't retry on content filter errors
+                                            raise CustomErrorMessage(
+                                                f"⚠️ Content filter triggered for {model} model"
+                                            )
+                                    except:
+                                        pass
+                                    # If it's not a content filter error, raise it
+                                    error_text = await response.text()
+                                    logging.error(
+                                        f"Pollinations.AI text API error with {model}: {response.status} - {error_text}"
+                                    )
+                                    raise CustomErrorMessage(
+                                        f"⚠️ Error generating text: {response.status}"
+                                    )
+                                else:
+                                    logging.warning(
+                                        f"Model {model} failed with status {response.status}, trying next model"
+                                    )
+                                    # Raise exception to trigger retry
+                                    raise aiohttp.ClientError(f"HTTP {response.status}")
 
-                    if response.status_code == 200:
-                        result = response.json()
-                        if "choices" in result and len(result["choices"]) > 0:
-                            logging.info(
-                                f"Successfully used {model} model for Pollinations.AI"
-                            )
-                            return result["choices"][0]["message"]["content"].strip()
-                        else:
-                            logging.warning(
-                                f"Invalid response format from {model} model"
-                            )
-                            continue
-                    elif response.status_code == 400:
-                        # Check if it's a content filter error
-                        try:
-                            error_data = response.json()
-                            if "content_filter" in str(error_data).lower():
-                                logging.warning(
-                                    f"Content filter triggered for {model} model, trying next model"
-                                )
-                                continue
-                        except:
-                            pass
-                        # If it's not a content filter error, raise it
-                        logging.error(
-                            f"Pollinations.AI text API error with {model}: {response.status_code} - {response.text}"
-                        )
-                        raise CustomErrorMessage(
-                            f"⚠️ Error generating text: {response.status_code}"
-                        )
-                    else:
-                        logging.warning(
-                            f"Model {model} failed with status {response.status_code}, trying next model"
-                        )
+                        # Try with retry mechanism
+                        return await self._retry_with_backoff(make_post_request)
+
+                    except asyncio.TimeoutError:
+                        logging.warning(f"Request timed out for {model} model")
                         continue
-
-                except requests.exceptions.RequestException as e:
-                    logging.warning(f"Request failed for {model} model: {e}")
-                    continue
+                    except aiohttp.ClientError as e:
+                        logging.warning(f"HTTP error for {model} model: {e}")
+                        continue
+                    except CustomErrorMessage:
+                        # Re-raise custom errors (like content filter) without retrying
+                        raise
+                    except Exception as e:
+                        logging.warning(f"Request failed for {model} model: {e}")
+                        continue
 
             # If all models failed, try the GET endpoint as a last resort
             logging.warning("All POST models failed, falling back to GET endpoint")
-            return await self._generate_text_with_get(conversation)
+            # Convert messages back to simple text format for GET request
+            simple_conversation = ""
+            for msg in messages:
+                if msg["role"] == "system":
+                    simple_conversation += f"System: {msg['content']}\n\n"
+                elif msg["role"] == "user":
+                    simple_conversation += f"User: {msg['content']}\n\n"
+                elif msg["role"] == "assistant":
+                    simple_conversation += f"Assistant: {msg['content']}\n\n"
+            
+            return await self._generate_text_with_get(simple_conversation)
 
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             logging.error(f"Pollinations.AI text API request failed: {e}")
             raise CustomErrorMessage(
                 "⚠️ Failed to connect to Pollinations.AI text service"
@@ -451,47 +577,52 @@ class Completions(ModelParams):
     async def _generate_image(self, prompt: str) -> str:
         """Generate image using Pollinations.AI image API"""
         try:
-            # Prepare parameters
-            params = {
-                "model": self._model_name
-                if self._model_name != "pollinations"
-                else "flux",
-                "width": self._genai_params.get("width", 1024),
-                "height": self._genai_params.get("height", 1024),
-                "private": "true",  # Set private to true as requested
-            }
+            # Create aiohttp session with longer timeout for image generation
+            timeout = aiohttp.ClientTimeout(total=120)
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async def make_image_request():
+                    # Prepare parameters
+                    params = {
+                        "model": self._model_name
+                        if self._model_name != "pollinations"
+                        else "flux",
+                        "width": self._genai_params.get("width", 1024),
+                        "height": self._genai_params.get("height", 1024),
+                        "private": "true",  # Set private to true as requested
+                    }
 
-            # Add API key if available
-            if self._api_key:
-                params["token"] = self._api_key
-                # Remove logo for authenticated users
-                params["nologo"] = "true"
+                    # Add API key if available
+                    if self._api_key:
+                        params["token"] = self._api_key
+                        # Remove logo for authenticated users
+                        params["nologo"] = "true"
 
-            # Add image URL for image-to-image generation if available
-            if self._file_data:
-                params["image"] = self._file_data
+                    # Add image URL for image-to-image generation if available
+                    if self._file_data:
+                        params["image"] = self._file_data
 
-            # URL encode the prompt
-            encoded_prompt = urllib.parse.quote(prompt)
+                    # URL encode the prompt
+                    encoded_prompt = urllib.parse.quote(prompt)
 
-            # Make the request
-            url = f"{self._base_url}/prompt/{encoded_prompt}"
-            response = requests.get(
-                url, params=params, timeout=120
-            )  # Longer timeout for image generation
+                    # Make the request
+                    url = f"{self._base_url}/prompt/{encoded_prompt}"
+                    
+                    async with session.get(url, params=params) as response:
+                        if response.status == 200:
+                            # Return the image URL
+                            return url
+                        else:
+                            error_text = await response.text()
+                            logging.error(
+                                f"Pollinations.AI image API error: {response.status} - {error_text}"
+                            )
+                            # Raise exception to trigger retry
+                            raise aiohttp.ClientError(f"HTTP {response.status}")
 
-            if response.status_code == 200:
-                # Return the image URL
-                return url
-            else:
-                logging.error(
-                    f"Pollinations.AI image API error: {response.status_code} - {response.text}"
-                )
-                raise CustomErrorMessage(
-                    f"⚠️ Error generating image: {response.status_code}"
-                )
+                # Try with retry mechanism
+                return await self._retry_with_backoff(make_image_request, max_retries=2, base_delay=2.0)
 
-        except requests.exceptions.RequestException as e:
+        except Exception as e:
             logging.error(f"Pollinations.AI image API request failed: {e}")
             raise CustomErrorMessage(
                 "⚠️ Failed to connect to Pollinations.AI image service"

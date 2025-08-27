@@ -229,6 +229,7 @@ Different tools have optimized timeout durations:
 - **🧠 Memory** - Automatic memory recall and information storage (**Default**)
 - **💰 CryptoPrice** - Live Solana/Ethereum token prices
 - **💱 CurrencyConverter** - Live currency conversion (170+ currencies)
+- **🎨 ImageGen** - AI-powered image generation and editing
 - **🎵 AudioTools** - Audio creation & manipulation
 - **📺 YouTube** - Video analysis & summarization
 - **💻 CodeExecution** - Python code execution
