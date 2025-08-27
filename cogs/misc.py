@@ -247,100 +247,288 @@ class Misc(commands.Cog):
             )
 
     async def _auto_generate_image(self, message, prompt: str):
-        """Automatically generate an image for a user request."""
+        """Automatically generate an image for a user request using FAL ImageGen tool when available, fallback to Gemini."""
+        
+        # Check for image attachments or URLs in the message for editing
+        image_urls = []
+        if message.attachments:
+            for attachment in message.attachments:
+                if attachment.content_type and attachment.content_type.startswith("image/"):
+                    image_urls.append(attachment.url)
+        
+        # Also check for URLs in the message content
+        import re
+        url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+        found_urls = re.findall(url_pattern, message.content)
+        for url in found_urls:
+            if url.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
+                image_urls.append(url)
+        
+        # Check if FAL_KEY is configured and try to use ImageGen tool first
+        fal_key = environ.get("FAL_KEY")
+        if fal_key:
+            try:
+                # Try to use the new ImageGen tool with FAL
+                from tools.ImageGen.tool import Tool as ImageGenTool
+                
+                # Create a mock context for the tool
+                async def send_method(content=None, file=None):
+                    if file:
+                        sent_msg = await message.channel.send(
+                            f"🎨 **Auto-Generated Image**\nPrompt: *{prompt}*",
+                            file=file,
+                            reference=message,
+                        )
+                        return sent_msg
+                    elif content:
+                        sent_msg = await message.channel.send(content, reference=message)
+                        return sent_msg
+                
+                # Initialize the ImageGen tool
+                image_gen_tool = ImageGenTool(
+                    method_send=send_method,
+                    discord_ctx=message,
+                    discord_bot=self.bot
+                )
+                
+                # Generate image using FAL with URL context if available
+                if image_urls:
+                    status_msg = await message.channel.send(
+                        f"🎨 **Auto-Editing Image (FAL)**\n"
+                        f"Prompt: *{prompt}*\n"
+                        f"Images: {len(image_urls)} image(s) to edit\n"
+                        f"⌛ This may take a few minutes...",
+                        reference=message,
+                    )
+                    result = await image_gen_tool._tool_function(prompt=prompt, url_context=image_urls)
+                else:
+                    status_msg = await message.channel.send(
+                        f"🎨 **Auto-Generating Image (FAL)**\n"
+                        f"Prompt: *{prompt}*\n"
+                        f"⌛ This may take a few minutes...",
+                        reference=message,
+                    )
+                    result = await image_gen_tool._tool_function(prompt=prompt)
+                
+                await status_msg.edit(content="✅ Auto-generation completed successfully!")
+                return True
+                
+            except Exception as fal_error:
+                logging.warning(f"FAL ImageGen failed, falling back to Gemini: {fal_error}")
+                # Fall through to Gemini fallback
+        
+        # Fallback to existing Gemini-based image generation/editing
         if not self._gemini_api_configured:
             logging.warning("Gemini API not configured for auto-image generation")
             return False
 
         status_msg = None
         try:
-            # Send initial status message
-            status_msg = await message.channel.send(
-                f"🎨 **Auto-Generating Image**\n"
-                f"Prompt: *{prompt}*\n"
-                f"⌛ This may take a few minutes...",
-                reference=message,
-            )
+            # Handle image editing with Gemini if URLs are provided
+            if image_urls:
+                # Download the first image for editing
+                if message.attachments:
+                    image_attachment = message.attachments[0]
+                    if (image_attachment.content_type and 
+                        image_attachment.content_type.startswith("image/")):
+                        
+                        status_msg = await message.channel.send(
+                            f"🎨 **Auto-Editing Image (Gemini)**\n"
+                            f"Prompt: *{prompt}*\n"
+                            f"Image: {image_attachment.filename}\n"
+                            f"⌛ This may take a few minutes...",
+                            reference=message,
+                        )
+                        
+                        async with aiohttp.ClientSession() as session:
+                            async with session.get(image_attachment.url) as response:
+                                if response.status == 200:
+                                    image_data = await response.read()
+                                    
+                                    # Get the model for image generation
+                                    model_name = environ.get(
+                                        "DEFAULT_GEMINI_IMAGE_GENERATION_MODEL",
+                                        "gemini-2.0-flash-preview-image-generation",
+                                    )
+                                    if not model_name or model_name == "gemini-model-id":
+                                        model_name = "gemini-2.0-flash-preview-image-generation"
 
-            # Get the model for image generation - use a model that supports image generation
-            model_name = environ.get(
-                "DEFAULT_GEMINI_IMAGE_GENERATION_MODEL",
-                "gemini-2.0-flash-preview-image-generation",
-            )
-            if not model_name or model_name == "gemini-model-id":
-                model_name = "gemini-2.0-flash-preview-image-generation"  # Fallback to a model that supports image generation
+                                    logging.info(f"Using image editing model: {model_name}")
+                                    model = genai.GenerativeModel(model_name=model_name)
 
-            logging.info(f"Using auto-image generation model: {model_name}")
-            model = genai.GenerativeModel(model_name=model_name)
+                                    # Create the prompt with image
+                                    image_part = types.Part.from_bytes(
+                                        data=image_data, mime_type=image_attachment.content_type
+                                    )
 
-            # Generate the image with safety settings disabled
-            response = await model.generate_content_async(
-                contents=prompt,
-                generation_config={
-                    "temperature": 0.7,  # Default temperature for auto-generation
-                    "max_output_tokens": 8192,
-                    "response_modalities": ["IMAGE", "TEXT"],
-                },
-                safety_settings=[
-                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                    {
-                        "category": "HARM_CATEGORY_HATE_SPEECH",
-                        "threshold": "BLOCK_NONE",
-                    },
-                    {
-                        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                        "threshold": "BLOCK_NONE",
-                    },
-                    {
-                        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                        "threshold": "BLOCK_NONE",
-                    },
-                ],
-            )
+                                    # Generate the edited image with safety settings disabled
+                                    response = await model.generate_content_async(
+                                        contents=[prompt, image_part],
+                                        generation_config={
+                                            "temperature": 0.7,
+                                            "max_output_tokens": 8192,
+                                            "response_modalities": ["IMAGE", "TEXT"],
+                                        },
+                                        safety_settings=[
+                                            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                                            {
+                                                "category": "HARM_CATEGORY_HATE_SPEECH",
+                                                "threshold": "BLOCK_NONE",
+                                            },
+                                            {
+                                                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                                                "threshold": "BLOCK_NONE",
+                                            },
+                                            {
+                                                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                                                "threshold": "BLOCK_NONE",
+                                            },
+                                        ],
+                                    )
 
-            if not response.candidates or not response.candidates[0].content:
-                await status_msg.edit(
-                    content="❌ Auto-generation failed. Please try `/generate_image` manually."
-                )
-                return False
+                                    if not response.candidates or not response.candidates[0].content:
+                                        await status_msg.edit(
+                                            content="❌ Auto-editing failed. Please try `/edit_image` manually."
+                                        )
+                                        return False
 
-            # Check for safety issues
-            if response.candidates[0].finish_reason == "IMAGE_SAFETY":
-                await status_msg.edit(
-                    content="❌ Auto-generation blocked by safety filters. Please try a different prompt."
-                )
-                return False
+                                    # Check for safety issues
+                                    if response.candidates[0].finish_reason == "IMAGE_SAFETY":
+                                        await status_msg.edit(
+                                            content="❌ Auto-editing blocked by safety filters. Please try a different prompt."
+                                        )
+                                        return False
 
-            # Process and send generated images
-            images_sent = 0
-            for index, part in enumerate(response.candidates[0].content.parts):
-                if hasattr(part, "inline_data") and part.inline_data:
-                    # Create filename with timestamp
-                    timestamp = datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
-                    filename = f"auto_generated_{timestamp}_part{index}.png"
+                                    # Process and send edited images
+                                    images_sent = 0
+                                    for index, part in enumerate(response.candidates[0].content.parts):
+                                        if hasattr(part, "inline_data") and part.inline_data:
+                                            # Create filename with timestamp
+                                            timestamp = datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
+                                            filename = f"auto_edited_{timestamp}_part{index}.png"
 
-                    # Send the image
-                    file = discord.File(
-                        fp=io.BytesIO(part.inline_data.data), filename=filename
-                    )
+                                            # Send the edited image
+                                            file = discord.File(
+                                                fp=io.BytesIO(part.inline_data.data), filename=filename
+                                            )
 
+                                            await message.channel.send(
+                                                f"🎨 **Auto-Edited Image {index + 1}**\nPrompt: *{prompt}*",
+                                                file=file,
+                                                reference=message,
+                                            )
+                                            images_sent += 1
+
+                                    if images_sent > 0:
+                                        await status_msg.edit(
+                                            content="✅ Auto-editing completed successfully!"
+                                        )
+                                        return True
+                                    else:
+                                        await status_msg.edit(
+                                            content="❌ No edited images were generated. Please try `/edit_image` manually."
+                                        )
+                                        return False
+                                else:
+                                    await status_msg.edit(
+                                        content="❌ Failed to download image for editing."
+                                    )
+                                    return False
+                else:
+                    # No valid image attachment found
                     await message.channel.send(
-                        f"🎨 **Auto-Generated Image**\nPrompt: *{prompt}*",
-                        file=file,
+                        "❌ Please attach an image to edit.",
                         reference=message,
                     )
-                    images_sent += 1
-
-            if images_sent > 0:
-                await status_msg.edit(
-                    content="✅ Auto-generation completed successfully!"
-                )
-                return True
+                    return False
             else:
-                await status_msg.edit(
-                    content="❌ No images were generated. Please try `/generate_image` manually."
+                # Regular image generation with Gemini
+                status_msg = await message.channel.send(
+                    f"🎨 **Auto-Generating Image (Gemini)**\n"
+                    f"Prompt: *{prompt}*\n"
+                    f"⌛ This may take a few minutes...",
+                    reference=message,
                 )
-                return False
+
+                # Get the model for image generation - use a model that supports image generation
+                model_name = environ.get(
+                    "DEFAULT_GEMINI_IMAGE_GENERATION_MODEL",
+                    "gemini-2.0-flash-preview-image-generation",
+                )
+                if not model_name or model_name == "gemini-model-id":
+                    model_name = "gemini-2.0-flash-preview-image-generation"  # Fallback to a model that supports image generation
+
+                logging.info(f"Using auto-image generation model: {model_name}")
+                model = genai.GenerativeModel(model_name=model_name)
+
+                # Generate the image with safety settings disabled
+                response = await model.generate_content_async(
+                    contents=prompt,
+                    generation_config={
+                        "temperature": 0.7,  # Default temperature for auto-generation
+                        "max_output_tokens": 8192,
+                        "response_modalities": ["IMAGE", "TEXT"],
+                    },
+                    safety_settings=[
+                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                        {
+                            "category": "HARM_CATEGORY_HATE_SPEECH",
+                            "threshold": "BLOCK_NONE",
+                        },
+                        {
+                            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                            "threshold": "BLOCK_NONE",
+                        },
+                        {
+                            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                            "threshold": "BLOCK_NONE",
+                        },
+                    ],
+                )
+
+                if not response.candidates or not response.candidates[0].content:
+                    await status_msg.edit(
+                        content="❌ Auto-generation failed. Please try `/generate_image` manually."
+                    )
+                    return False
+
+                # Check for safety issues
+                if response.candidates[0].finish_reason == "IMAGE_SAFETY":
+                    await status_msg.edit(
+                        content="❌ Auto-generation blocked by safety filters. Please try a different prompt."
+                    )
+                    return False
+
+                # Process and send generated images
+                images_sent = 0
+                for index, part in enumerate(response.candidates[0].content.parts):
+                    if hasattr(part, "inline_data") and part.inline_data:
+                        # Create filename with timestamp
+                        timestamp = datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
+                        filename = f"auto_generated_{timestamp}_part{index}.png"
+
+                        # Send the image
+                        file = discord.File(
+                            fp=io.BytesIO(part.inline_data.data), filename=filename
+                        )
+
+                        await message.channel.send(
+                            f"🎨 **Auto-Generated Image**\nPrompt: *{prompt}*",
+                            file=file,
+                            reference=message,
+                        )
+                        images_sent += 1
+
+                if images_sent > 0:
+                    await status_msg.edit(
+                        content="✅ Auto-generation completed successfully!"
+                    )
+                    return True
+                else:
+                    await status_msg.edit(
+                        content="❌ No images were generated. Please try `/generate_image` manually."
+                    )
+                    return False
 
         except Exception as e:
             logging.error(f"Error in auto-image generation: {e}")
@@ -378,7 +566,7 @@ class Misc(commands.Cog):
         if not (bot_mentioned or starts_with_prefix):
             return
 
-        # Check if the message is asking for image generation
+        # Check if the message is asking for image generation or editing
         image_keywords = [
             "generate an image",
             "create an image",
@@ -407,6 +595,12 @@ class Misc(commands.Cog):
             "drawing of",
             "art of",
             "illustration of",
+            "edit this image",
+            "modify this image",
+            "change this image",
+            "update this image",
+            "improve this image",
+            "enhance this image",
         ]
 
         message_lower = message.content.lower()
@@ -440,20 +634,26 @@ class Misc(commands.Cog):
             )
 
             embed.add_field(
-                name="🖼️ Generate New Image",
-                value=f"Use `/generate_image {prompt}` to create a new image",
+                name="🖼️ Generate New Image (Gemini)",
+                value=f"Use `/generate_image {prompt}` to create a new image with Gemini",
                 inline=False,
             )
 
             embed.add_field(
-                name="🎨 Generate with Pollinations.AI",
+                name="🎨 Generate with FAL (Advanced)",
+                value=f"Use the new ImageGen tool for advanced image generation (auto-enabled when FAL_KEY is set)",
+                inline=False,
+            )
+
+            embed.add_field(
+                name="🎭 Generate with Pollinations.AI",
                 value=f"Use `/generate_pollinations {prompt}` for creative images",
                 inline=False,
             )
 
             embed.add_field(
                 name="✏️ Edit Existing Image",
-                value="Attach an image and use `/edit_image <prompt>` to modify it",
+                value="Attach an image and use `/edit_image <prompt>` to modify it with Gemini",
                 inline=False,
             )
 
