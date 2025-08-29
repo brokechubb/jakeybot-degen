@@ -14,7 +14,7 @@ Welcome to JakeyBot! This guide will help you get the most out of your interacti
 
 | Command | Description | Example |
 |---------|-------------|---------|
-| `/ask` | Ask JakeyBot a question | `/ask What's the weather like?` |
+| Mention Jakey | Ask JakeyBot a question | @JakeyBot What's the weather like? |
 | `/time` | Displays the current time and DST status | `/time` |
 | `/remind` | Set a reminder for yourself | `/remind time_in:1h message:Take a break` |
 | `/sweep` | Clear conversation history | `/sweep` |
@@ -191,7 +191,6 @@ View auto-return system overview:
 | **ExaSearch** | 3 minutes | Quick web searches |
 | **CodeExecution** | 10 minutes | Complex calculations |
 | **Image Generation** | 5 minutes | Image creation |
-| **AudioTools** | 8 minutes | Audio processing |
 
 ## ⏰ **Personal Reminder System**
 
@@ -424,20 +423,10 @@ JakeyBot: 🔄 **Auto-enabled ExaSearch** - Jakey needed this tool to help you!
          [Gets real-time weather data]
 ```
 
-### **YouTube Analysis**
-
-Get information about YouTube videos:
-
 **Examples:**
 
 ```
-You: "Summarize this video: [YouTube URL]"
-JakeyBot: 🔄 **Auto-enabled YouTube** - Jakey needed this tool to help you!
-         [Analyzes and summarizes the video content]
 
-You: "What are the main points of this tutorial?"
-JakeyBot: 🔄 **Auto-enabled YouTube** - Jakey needed this tool to help you!
-         [Extracts key information from the video]
 ```
 
 ## 💰 **Crypto & Financial Tools**
@@ -483,13 +472,7 @@ JakeyBot can help with audio manipulation:
 **Examples:**
 
 ```
-You: "Clone my voice saying 'Hello World'"
-JakeyBot: 🔄 **Auto-enabled AudioTools** - Jakey needed this tool to help you!
-         [Processes and returns audio file]
 
-You: "Edit this audio to remove background noise"
-JakeyBot: 🔄 **Auto-enabled AudioTools** - Jakey needed this tool to help you!
-         [Processes uploaded audio file]
 ```
 
 ## 💻 **Code Execution**
@@ -558,7 +541,7 @@ JakeyBot: 🔄 **Auto-enabled CodeExecution** - Jakey needed this tool to help y
 
 - Check if the bot is online
 - Verify bot has proper permissions
-- Try using `/ask` command
+- Try mentioning Jakey directly
 
 **Tool not working:**
 
@@ -689,7 +672,7 @@ Your server may have additional features enabled:
 
 ### **Essential Commands**
 
-- `/ask <question>` - Ask anything
+- Mention Jakey with your question
 - `/feature <tool>` - Enable tools
 - `/sweep` - Clear history
 - `/remember <fact>` - Store information
@@ -732,9 +715,7 @@ Your server may have additional features enabled:
 - **Engagement** - Active channel participation
 - **GamblingGames** - Betting pools and trivia
 - **Image Generation** - AI image creation and editing
-- **AudioTools** - Audio manipulation and generation
-- **GitHub** - Repository analysis
-- **YouTube** - Video summarization
+
 - **CodeExecution** - Python code execution
 
 ### **Pro Tips**

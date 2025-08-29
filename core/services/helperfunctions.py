@@ -13,7 +13,7 @@ import yaml
 
 
 class DefaultModelDict(TypedDict):
-    provider: Literal["gemini"]
+    provider: Literal["pollinations"]
     model_name: str
 
 
@@ -21,20 +21,20 @@ class DefaultModelDict(TypedDict):
 class HelperFunctions:
     # Default model getter
     # TODO: When adding multiple models, we may need to use YAML-based or environment-based configuration
-    # Right now Gemini is the solid choice for almost everything.
+    # Right now Pollinations is the solid choice for almost everything.
     # Also, prevent breaking changes... we keep the same structure
     @staticmethod
     def fetch_default_model(
         model_type: Literal["base", "reasoning"] = "base",
         output_modalities: Literal["text", "image"] = "text",
-        provider: Literal["gemini"] = "gemini",
+        provider: Literal["pollinations"] = "pollinations",
     ) -> DefaultModelDict:
         # Check if the model type is valid
         if not any(output_modalities == _types for _types in ["text", "image"]):
             raise ValueError("Invalid model type. Must be 'text' or 'image'")
         # Check if the provider is valid
-        if not any(provider == _provider for _provider in ["gemini"]):
-            raise ValueError("Invalid provider. Only supported ones is 'gemini'")
+        if not any(provider == _provider for _provider in ["pollinations"]):
+            raise ValueError("Invalid provider. Only supported ones is 'pollinations'")
 
         # Constructed dict
         _constructed_dict = {
@@ -42,23 +42,21 @@ class HelperFunctions:
         }
 
         # Return the default model based on the type and provider
-        if provider == "gemini":
+        if provider == "pollinations":
             if output_modalities == "text":
                 if model_type == "base":
-                    _constructed_dict["model_name"] = "gemini-2.5-flash-nonthinking"
+                    _constructed_dict["model_name"] = "pollinations::evil"
                 elif model_type == "reasoning":
-                    _constructed_dict["model_name"] = "gemini-2.5-flash"
+                    _constructed_dict["model_name"] = "pollinations::evil"
             elif output_modalities == "image":
                 if model_type == "base":
-                    _constructed_dict["model_name"] = (
-                        "gemini-2.0-flash-preview-image-generation"
-                    )
+                    _constructed_dict["model_name"] = "pollinations::flux"
                 elif model_type == "reasoning":
                     raise ValueError(
                         "Reasoning mode is not supported for image output modality"
                     )
         else:
-            raise ValueError("Unsupported provider. Only 'gemini' is supported")
+            raise ValueError("Unsupported provider. Only 'pollinations' is supported")
 
         # Log for debugging
         logging.info(

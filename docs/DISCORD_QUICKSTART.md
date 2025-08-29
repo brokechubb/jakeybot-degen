@@ -4,7 +4,7 @@
 
 - `/help` - Comprehensive help and quickstart guide
 - `/quickstart` - Step-by-step getting started guide
-- `/ask <question>` - Ask Jakey anything
+- Mention Jakey with your question
 - `/feature <tool>` - Enable specific tools (Memory, CryptoPrice, etc.)
 - `/model set <model>` - Switch AI models
 - `/sweep` - Clear conversation history
@@ -76,10 +76,7 @@ JakeyBot: 🔄 **Auto-enabled CurrencyConverter** - Jakey needed this tool to he
 ### **Popular Tools**
 
 - **ExaSearch**: Web search and research
-- **GitHub**: Repository analysis
 - **CodeExecution**: Run Python code
-- **AudioTools**: Audio manipulation and generation
-- **YouTube**: Video summarization
 - **Engagement**: Active channel participation
 - **GamblingGames**: Betting pools and trivia
 - **Image Generation**: AI image creation and editing

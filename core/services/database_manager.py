@@ -31,13 +31,17 @@ class DatabaseManager:
         if not self._initialized:
             self._initialized = True
             self._client = None
-            self._connection_string = environ.get("MONGO_DB_URL")
+            self._connection_string = None  # Will be set at runtime
 
-            # Don't raise error immediately - just log warning
+    def _get_connection_string(self):
+        """Get the connection string at runtime, allowing for delayed environment loading."""
+        if self._connection_string is None:
+            self._connection_string = environ.get("MONGO_DB_URL")
             if not self._connection_string:
                 logging.warning(
                     "MONGO_DB_URL environment variable not set - database features will be disabled"
                 )
+        return self._connection_string
 
     async def get_client(self) -> motor.motor_asyncio.AsyncIOMotorClient:
         """
@@ -49,16 +53,15 @@ class DatabaseManager:
         Raises:
             ValueError: If MONGO_DB_URL is not set or client creation fails
         """
-        if not self._connection_string:
+        connection_string = self._get_connection_string()
+        if not connection_string:
             raise ValueError(
                 "MONGO_DB_URL environment variable is required for database operations"
             )
 
         if self._client is None:
             try:
-                self._client = motor.motor_asyncio.AsyncIOMotorClient(
-                    self._connection_string
-                )
+                self._client = motor.motor_asyncio.AsyncIOMotorClient(connection_string)
                 logging.info("MongoDB client initialized successfully")
             except Exception as e:
                 logging.error(f"Failed to initialize MongoDB client: {e}")

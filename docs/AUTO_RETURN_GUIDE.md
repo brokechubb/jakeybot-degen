@@ -34,7 +34,6 @@ Different tools have optimized timeout durations:
 | **ExaSearch** | 3 minutes | Quick web searches |
 | **CodeExecution** | 10 minutes | Complex calculations |
 | **Image Generation** | 5 minutes | Image creation |
-| **AudioTools** | 8 minutes | Audio processing |
 
 ### **Intelligent Suggestions**
 
@@ -182,7 +181,7 @@ DEFAULT_TOOL=Memory
 AUTO_RETURN_TIMEOUT_EXASEARCH=180    # 3 minutes
 AUTO_RETURN_TIMEOUT_CODEEXECUTION=600 # 10 minutes
 AUTO_RETURN_TIMEOUT_IMAGEGEN=300     # 5 minutes
-AUTO_RETURN_TIMEOUT_AUDIOTOOLS=480   # 8 minutes
+
 ```
 
 ### **Database Settings**

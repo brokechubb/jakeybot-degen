@@ -96,5 +96,5 @@ class ToolManifest:
             {"type": "function", "function": _schema} for _schema in self.tool_schema
         ]
 
-        # Basic schema for Gemini models (without the OpenAI wrapper)
+        # Basic schema for models (without the OpenAI wrapper)
         self.tool_schema_basic = self.tool_schema

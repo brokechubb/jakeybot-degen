@@ -32,6 +32,7 @@ env/
 
 # Environment files and secrets
 dev.env
+dev.env.bak
 *.env
 .env.local
 .env.development

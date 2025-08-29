@@ -115,10 +115,10 @@ class Chat(commands.Cog):
             _model_provider = _model[0]
             _model_name = _model[-1]
 
-        # if _model_provider != "gemini" and _model_provider != "claude":
+        # Check if model has real-time capabilities
         if not any(
             provider in _model_provider
-            for provider in ["gemini", "claude", "openrouter", "openai", "kimi"]
+            for provider in ["gemini", "claude", "openai", "kimi", "pollinations"]
         ):
             await ctx.respond(
                 f"> This model lacks real time information and tools\n✅ Default model set to **{_model_name}** and chat history is set for provider **{_model_provider}**"
@@ -174,9 +174,7 @@ class Chat(commands.Cog):
                 You can set the default model for the conversation using `/model set` command or on demand through chat prompting
                 via `@{self.bot.user.name} /model:model-name` command.
                 
-                Each provider has its own chat history, skills, and capabilities. Choose what's best for you.
-                
-                **Note**: Due to Discord's 25-choice limit, `/model set` shows priority models first. Use this list to see all available models."""
+                Each provider has its own chat history, skills, and capabilities. Choose what's best for you."""
             ),
             color=discord.Color.random(),
         )
@@ -249,9 +247,9 @@ class Chat(commands.Cog):
                     if _model_provider in [
                         "gemini",
                         "claude",
-                        "openrouter",
                         "openai",
                         "kimi",
+                        "pollinations",
                     ]:
                         embed.add_field(
                             name="✅ Features",
@@ -261,7 +259,7 @@ class Chat(commands.Cog):
                     else:
                         embed.add_field(
                             name="⚠️ Features",
-                            value="• Basic chat capabilities\n• Limited real-time information\n• No tool support",
+                            value="• Basic chat capabilities\n• Limited real-time information\n• Limited tool support",
                             inline=False,
                         )
 
@@ -277,7 +275,7 @@ class Chat(commands.Cog):
                     description="**No model set** - Using system default\n\nUse `/model set` to choose a specific model",
                     color=discord.Color.blue(),
                 )
-                embed.set_footer(text="Default: Gemini 2.5 Flash")
+                embed.set_footer(text="Default: pollinations::evil")
                 await ctx.respond(embed=embed)
 
         except Exception as e:
@@ -289,68 +287,6 @@ class Chat(commands.Cog):
         await ctx.respond("❌ Something went wrong, please try again later.")
         logging.error(
             "An error has occurred while executing model current command, reason: ",
-            exc_info=True,
-        )
-
-    #######################################################
-    # Slash Command: openrouter
-    #######################################################
-    @commands.slash_command(
-        contexts={
-            discord.InteractionContextType.guild,
-            discord.InteractionContextType.bot_dm,
-        },
-        integration_types={
-            discord.IntegrationType.guild_install,
-            discord.IntegrationType.user_install,
-        },
-    )
-    @discord.option(
-        "model",
-        description="Choose models at https://openrouter.ai/models. Syntax: provider/model-name",
-        required=True,
-    )
-    async def openrouter(self, ctx, model: str):
-        """Set the default OpenRouter model"""
-        await ctx.response.defer(ephemeral=True)
-
-        # Determine guild/user based on SHARED_CHAT_HISTORY setting
-        if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
-            guild_id = ctx.guild.id if ctx.guild else ctx.author.id
-        else:
-            guild_id = ctx.author.id
-
-        # Check if inference is in progress
-        await self._check_awaiting_response_in_progress(guild_id)
-
-        # Set the default OpenRouter model and clear the OpenRouter chat thread
-        await self.DBConn.set_key(
-            guild_id=guild_id, key="default_openrouter_model", value=model
-        )
-        _setkeymodel = await self.DBConn.get_key(
-            guild_id=guild_id, key="default_openrouter_model"
-        )
-        await self.DBConn.set_key(
-            guild_id=guild_id, key="chat_thread_openrouter", value=None
-        )
-
-        await ctx.respond(
-            f"✅ Default OpenRouter model set to **{_setkeymodel}** and chat history for OpenRouter chats are cleared!\n"
-            "To use this model, please set the model to OpenRouter using `/model set` command"
-        )
-
-    @openrouter.error
-    async def openrouter_on_error(self, ctx: discord.ApplicationContext, error):
-        _error = getattr(error, "original", error)
-
-        if isinstance(_error, ConcurrentRequestError):
-            await ctx.respond(
-                "⚠️ Please wait until processing your previous request is completed before changing the OpenRouter model..."
-            )
-        else:
-            await ctx.respond("❌ Something went wrong, please try again later.")
-        logging.error(
-            "An error has occurred while setting openrouter models, reason: ",
             exc_info=True,
         )
 
@@ -395,9 +331,6 @@ class Chat(commands.Cog):
         # Save current settings before clearing history
         _feature = await self.DBConn.get_tool_config(guild_id=guild_id)
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
-        _openrouter_model = await self.DBConn.get_key(
-            guild_id=guild_id, key="default_openrouter_model"
-        )
 
         # Clear chat history
         await self.DBConn.clear_history(guild_id=guild_id)
@@ -406,11 +339,6 @@ class Chat(commands.Cog):
             # Restore settings if not resetting preferences
             await self.DBConn.set_tool_config(guild_id=guild_id, tool=_feature)
             await self.DBConn.set_default_model(guild_id=guild_id, model=_model)
-            await self.DBConn.set_key(
-                guild_id=guild_id,
-                key="default_openrouter_model",
-                value=_openrouter_model,
-            )
             await ctx.respond("✅ Chat history reset!")
         else:
             await ctx.respond(
@@ -483,9 +411,6 @@ class Chat(commands.Cog):
         # Retrieve current settings
         _cur_feature = await self.DBConn.get_tool_config(guild_id=guild_id)
         _model = await self.DBConn.get_default_model(guild_id=guild_id)
-        _openrouter_model = await self.DBConn.get_key(
-            guild_id=guild_id, key="default_openrouter_model"
-        )
 
         # Convert "disabled" to None
         if capability == "disabled":
@@ -501,11 +426,6 @@ class Chat(commands.Cog):
             # Set new capability and restore default model
             await self.DBConn.set_tool_config(guild_id=guild_id, tool=capability)
             await self.DBConn.set_default_model(guild_id=guild_id, model=_model)
-            await self.DBConn.set_key(
-                guild_id=guild_id,
-                key="default_openrouter_model",
-                value=_openrouter_model,
-            )
 
             # Use AutoReturnManager if available and capability is not None
             if (

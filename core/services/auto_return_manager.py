@@ -43,23 +43,15 @@ class AutoReturnManager:
         """Get tool-specific timeout configurations from environment variables."""
         timeouts = {
             "ExaSearch": int(environ.get("TOOL_TIMEOUT_EXASEARCH", "180")),  # 3 minutes
-            "GitHub": int(environ.get("TOOL_TIMEOUT_GITHUB", "240")),  # 4 minutes
             "CodeExecution": int(
                 environ.get("TOOL_TIMEOUT_CODEEXECUTION", "600")
             ),  # 10 minutes
-            "AudioTools": int(
-                environ.get("TOOL_TIMEOUT_AUDIOTOOLS", "300")
-            ),  # 5 minutes
             "CryptoPrice": int(
                 environ.get("TOOL_TIMEOUT_CRYPTOPRICE", "180")
             ),  # 3 minutes
             "CurrencyConverter": int(
                 environ.get("TOOL_TIMEOUT_CURRENCYCONVERTER", "180")
             ),  # 3 minutes
-            "YouTube": int(environ.get("TOOL_TIMEOUT_YOUTUBE", "240")),  # 4 minutes
-            "IdeationTools": int(
-                environ.get("TOOL_TIMEOUT_IDEATIONTOOLS", "300")
-            ),  # 5 minutes
             "default": int(
                 environ.get("TOOL_TIMEOUT_DEFAULT", "300")
             ),  # 5 minutes default
@@ -78,6 +70,18 @@ class AutoReturnManager:
             user_id: Optional user ID for user-specific tracking
         """
         try:
+            # Special handling for Memory tool - it should always be available
+            if new_tool == "Memory":
+                # If switching to Memory, cancel any existing timer and clear tool switches
+                await self.cancel_timer(guild_id)
+                if guild_id in self.user_tool_switches:
+                    del self.user_tool_switches[guild_id]
+                if guild_id in self.user_activity:
+                    del self.user_activity[guild_id]
+
+                logging.info(f"Switched guild {guild_id} to Memory (default tool)")
+                return
+
             # Cancel any existing timer for this guild/user
             await self.cancel_timer(guild_id)
 
@@ -107,6 +111,9 @@ class AutoReturnManager:
             logging.info(
                 f"Switched guild {guild_id} to {new_tool} with {timeout}s timeout"
             )
+
+            # Try to send a notification about the auto-enable
+            await self._notify_auto_enable(guild_id, new_tool, timeout)
 
         except Exception as e:
             logging.error(f"Error switching tool with timeout: {e}")
@@ -222,15 +229,26 @@ class AutoReturnManager:
                 if remaining_time and remaining_time < 60:
                     return f"🔍 **Web Search**: Quick searches with {remaining_time}s remaining. Use `/extend_timeout 2m` for more searches, or `/return_to_default` to go back to Memory."
 
-        # GitHub suggestions
-        elif current_tool == "GitHub":
-            if (
-                "repo" in content_lower
-                or "code" in content_lower
-                or "file" in content_lower
+            # Enhanced suggestions based on search patterns
+            if any(
+                word in content_lower
+                for word in ["tutorial", "how to", "guide", "learn"]
             ):
-                if remaining_time and remaining_time < 120:
-                    return f"📚 **GitHub Work**: Working with repositories takes time! You have {remaining_time // 60}m {remaining_time % 60}s remaining. Extend with `/extend_timeout 5m`."
+                return f"📚 **Learning Mode**: You're in tutorial search mode! Use `/extend_timeout 5m` for comprehensive learning sessions."
+            elif any(
+                word in content_lower
+                for word in ["compare", "vs", "versus", "difference"]
+            ):
+                return f"⚖️ **Comparison Mode**: Analyzing differences takes time! Use `/extend_timeout 3m` for thorough comparisons."
+            elif any(
+                word in content_lower
+                for word in ["news", "latest", "current", "recent"]
+            ):
+                return f"📰 **News Mode**: Staying current! Use `/extend_timeout 2m` for more news searches."
+            elif any(
+                word in content_lower for word in ["price", "cost", "worth", "market"]
+            ):
+                return f"💰 **Market Research**: Price checking mode! Use `/extend_timeout 2m` for market analysis."
 
         # CodeExecution suggestions
         elif current_tool == "CodeExecution":
@@ -241,26 +259,6 @@ class AutoReturnManager:
             ):
                 if remaining_time and remaining_time < 300:  # Less than 5 minutes
                     return f"💻 **Coding Session**: Coding takes time! You have {remaining_time // 60}m {remaining_time % 60}s remaining. Extend with `/extend_timeout 10m` for longer coding sessions."
-
-        # AudioTools suggestions
-        elif current_tool == "AudioTools":
-            if (
-                "audio" in content_lower
-                or "voice" in content_lower
-                or "sound" in content_lower
-            ):
-                if remaining_time and remaining_time < 120:
-                    return f"🎵 **Audio Work**: Audio processing takes time! You have {remaining_time // 60}m {remaining_time % 60}s remaining. Extend with `/extend_timeout 5m` for more audio work."
-
-        # YouTube suggestions
-        elif current_tool == "YouTube":
-            if (
-                "video" in content_lower
-                or "youtube" in content_lower
-                or "summarize" in content_lower
-            ):
-                if remaining_time and remaining_time < 120:
-                    return f"📺 **Video Analysis**: Video analysis takes time! You have {remaining_time // 60}m {remaining_time % 60}s remaining. Extend with `/extend_timeout 5m` for more video work."
 
         return None
 
@@ -490,6 +488,42 @@ class AutoReturnManager:
 
         except Exception as e:
             logging.error(f"Error performing auto-return for guild {guild_id}: {e}")
+
+    async def _notify_auto_enable(
+        self, guild_id: int, tool_name: str, timeout: int
+    ) -> None:
+        """
+        Try to notify the user about the auto-enable of a tool.
+
+        Args:
+            guild_id: The guild or user ID
+            tool_name: The name of the tool that was auto-enabled
+            timeout: The timeout duration in seconds
+        """
+        try:
+            # Calculate timeout display
+            timeout_minutes = timeout // 60
+            timeout_seconds = timeout % 60
+
+            if timeout_minutes > 0:
+                timeout_str = (
+                    f"{timeout_minutes}m {timeout_seconds}s"
+                    if timeout_seconds > 0
+                    else f"{timeout_minutes}m"
+                )
+            else:
+                timeout_str = f"{timeout_seconds}s"
+
+            # Log the auto-enable notification
+            logging.info(
+                f"Auto-enabled {tool_name} for guild {guild_id} with {timeout_str} timeout"
+            )
+
+            # Note: The actual Discord notification is handled by the tool execution
+            # This method is for logging and potential future enhancements
+
+        except Exception as e:
+            logging.error(f"Error sending auto-enable notification: {e}")
 
     async def _notify_auto_return(self, guild_id: int) -> None:
         """

@@ -141,7 +141,7 @@ class Completions(ModelParams):
 from aimodels.openai.infer import Completions
 
 # Initialize
-model = Completions("openai::gpt-4", ctx, bot, guild_id)
+model = Completions("pollinations::openai", ctx, bot, guild_id)
 
 # Generate completion
 response = await model.completion([
@@ -158,9 +158,8 @@ response = await model.completion(
 
 **Supported Models**:
 
-- `openai::gpt-5` - Latest GPT-5 model
-- `openai::gpt-5-mini` - Smaller GPT-5 variant
-- `openai::o4-mini` - Reasoning model
+- `pollinations::openai` - Text generation using OpenAI GPT-4.1 Nano via Pollinations.AI
+- `pollinations::openai-fast` - Fast text generation using OpenAI GPT-4.1 Nano
 
 ### Gemini Integration
 
@@ -170,7 +169,7 @@ response = await model.completion(
 from aimodels.gemini.infer import Completions
 
 # Initialize
-model = Completions("gemini::gemini-2.5-pro", ctx, bot, guild_id)
+model = Completions("pollinations::evil", ctx, bot, guild_id)
 
 # Generate completion
 response = await model.completion([
@@ -185,9 +184,15 @@ response = await model.completion([
 
 **Supported Models**:
 
-- `gemini::gemini-2.5-pro` - Reasoning model
-- `gemini::gemini-2.5-flash` - Fast model
-- `gemini::gemini-2.0-flash-001` - Image generation
+- `pollinations::evil` - Uncensored text model
+- `pollinations::unity` - Uncensored model with vision support
+- `pollinations::openai` - Text generation using OpenAI GPT-4.1 Nano
+- `pollinations::openai-fast` - Fast text generation using OpenAI GPT-4.1 Nano
+- `pollinations::mistral` - Text generation using Mistral Small 3.1 24B
+- `pollinations::gemini` - Text generation using Gemini 2.5 Flash Lite
+- `pollinations::flux` - Image generation using Flux model
+- `pollinations::kontext` - Image-to-image generation using Kontext model
+- `pollinations::sdxl` - Image generation using Stable Diffusion XL
 
 ### Pollinations.AI Integration
 
@@ -296,29 +301,6 @@ prices = await crypto.get_multiple_prices(["SOL", "ETH", "BONK"])
 - `get_multiple_prices(symbols)` - Get multiple token prices
 - `get_token_info(symbol)` - Get detailed token information
 
-### YouTube Tool
-
-**Location**: `tools/YouTube/tool.py`
-
-```python
-from tools.YouTube.tool import YouTube
-
-# Initialize
-youtube = YouTube(method_send, ctx, bot)
-
-# Analyze video
-analysis = await youtube.analyze_video("https://youtube.com/watch?v=VIDEO_ID")
-print(f"Title: {analysis['title']}")
-print(f"Duration: {analysis['duration']}")
-print(f"Summary: {analysis['summary']}")
-```
-
-**Functions**:
-
-- `analyze_video(url)` - Analyze YouTube video
-- `extract_transcript(url)` - Extract video transcript
-- `summarize_video(url)` - Generate video summary
-
 ## 🗄️ Database
 
 ### Collections
@@ -361,7 +343,7 @@ print(f"Summary: {analysis['summary']}")
 {
   "_id": ObjectId,
   "guild_id": "123456789",
-  "default_model": "openai::gpt-4",
+  "default_model": "pollinations::evil",
   "default_tool": "Memory",
   "auto_image_enabled": true,
   "engagement_enabled": false,
@@ -552,14 +534,16 @@ async def safe_command(self, ctx, parameter: str):
 DISCORD_TOKEN=your_discord_token
 MONGODB_URI=mongodb://localhost:27017/jakeybot
 
-# AI Provider API Keys
+# AI Provider API Keys (only POLLINATIONS_API_KEY is required for current models)
+POLLINATIONS_API_KEY=your_pollinations_key
+
+# Optional API Keys for additional models
 GEMINI_API_KEY=your_gemini_key
 OPENAI_API_KEY=your_openai_key
 ANTHROPIC_API_KEY=your_claude_key
 AZURE_AI_API_KEY=your_azure_key
 XAI_API_KEY=your_grok_key
 OPENROUTER_API_KEY=your_openrouter_key
-POLLINATIONS_API_KEY=your_pollinations_key
 
 # Optional
 BOT_PREFIX=!

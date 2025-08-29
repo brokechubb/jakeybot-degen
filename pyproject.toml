@@ -3,11 +3,11 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "jakeybot"
-version = "2.0.0"
-description = "Advanced Discord bot with AI integration, performance monitoring, and comprehensive tooling"
+name = "jakeybot-degen"
+version = "DEGEN.2.1.0"
+description = "Advanced Discord DEGENERATE bot with AI integration, performance monitoring, and comprehensive tooling"
 authors = [
-    {name = "JakeyBot Team", email = "admin@jakeybot.com"}
+    {name = "CHUBB", email = "thechubb16@gmail.com"}
 ]
 readme = "README.md"
 requires-python = ">=3.8"

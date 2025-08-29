@@ -1,6 +1,7 @@
 from tools.Memory.manifest import ToolManifest
 from core.ai.history import History
 from datetime import datetime, timedelta, timezone
+from os import environ
 import logging
 import re
 
@@ -56,12 +57,16 @@ class Tool(ToolManifest):
             return "❌ Memory system is not available at the moment"
 
         try:
-            # Determine guild/user ID
-            guild_id = (
-                self.discord_ctx.guild.id
-                if self.discord_ctx.guild
-                else self.discord_ctx.author.id
-            )
+            # Determine guild/user ID using the same logic as the chat system
+            if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+                guild_id = (
+                    self.discord_ctx.guild.id
+                    if self.discord_ctx.guild
+                    else self.discord_ctx.author.id
+                )  # Always fallback to ctx.author.id for DMs since ctx.guild is None
+            else:
+                guild_id = self.discord_ctx.author.id
+
             user_id = self.discord_ctx.author.id
 
             # Get username for prepending to fact
@@ -125,12 +130,16 @@ class Tool(ToolManifest):
             return "❌ Memory system is not available at the moment"
 
         try:
-            # Determine guild/user ID
-            guild_id = (
-                self.discord_ctx.guild.id
-                if self.discord_ctx.guild
-                else self.discord_ctx.author.id
-            )
+            # Determine guild/user ID using the same logic as the chat system
+            if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+                guild_id = (
+                    self.discord_ctx.guild.id
+                    if self.discord_ctx.guild
+                    else self.discord_ctx.author.id
+                )  # Always fallback to ctx.author.id for DMs since ctx.guild is None
+            else:
+                guild_id = self.discord_ctx.author.id
+
             current_user_id = self.discord_ctx.author.id
 
             # Limit the search results
@@ -144,7 +153,9 @@ class Tool(ToolManifest):
             # SECOND PRIORITY: If no user-specific facts found, search all facts
             all_facts = []
             if not user_facts:
-                all_facts = await self.history_db.search_facts(guild_id, query, limit=limit)
+                all_facts = await self.history_db.search_facts(
+                    guild_id, query, limit=limit
+                )
 
             # THIRD PRIORITY: If still no facts, get recent facts by the current user
             recent_user_facts = []
@@ -156,7 +167,9 @@ class Tool(ToolManifest):
             # FOURTH PRIORITY: If still nothing, get recent facts from anyone
             recent_all_facts = []
             if not user_facts and not all_facts and not recent_user_facts:
-                recent_all_facts = await self.history_db.get_recent_facts(guild_id, limit=limit)
+                recent_all_facts = await self.history_db.get_recent_facts(
+                    guild_id, limit=limit
+                )
 
             # Determine which facts to return and format the response
             if user_facts:
@@ -203,12 +216,16 @@ class Tool(ToolManifest):
             return "❌ Memory system is not available at the moment"
 
         try:
-            # Determine guild/user ID
-            guild_id = (
-                self.discord_ctx.guild.id
-                if self.discord_ctx.guild
-                else self.discord_ctx.author.id
-            )
+            # Determine guild/user ID using the same logic as the chat system
+            if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+                guild_id = (
+                    self.discord_ctx.guild.id
+                    if self.discord_ctx.guild
+                    else self.discord_ctx.author.id
+                )  # Always fallback to ctx.author.id for DMs since ctx.guild is None
+            else:
+                guild_id = self.discord_ctx.author.id
+
             current_user_id = self.discord_ctx.author.id
 
             # Limit the results
@@ -227,24 +244,26 @@ class Tool(ToolManifest):
 
             # Get facts - prioritize current user
             facts = []
-            
+
             # First get facts by current user
             user_query = query.copy()
             user_query["user_id"] = current_user_id
-            
+
             async for fact in knowledge_collection.find(user_query).limit(limit):
                 if fact and (
                     fact.get("expires_at") is None
                     or fact["expires_at"] > datetime.now(timezone.utc)
                 ):
                     facts.append(fact["fact_text"])
-            
+
             # If we need more facts and category is specified, get other users' facts in that category
             if len(facts) < limit and category:
                 other_query = query.copy()
                 other_query["user_id"] = {"$ne": current_user_id}
-                
-                async for fact in knowledge_collection.find(other_query).limit(limit - len(facts)):
+
+                async for fact in knowledge_collection.find(other_query).limit(
+                    limit - len(facts)
+                ):
                     if fact and (
                         fact.get("expires_at") is None
                         or fact["expires_at"] > datetime.now(timezone.utc)
@@ -261,7 +280,9 @@ class Tool(ToolManifest):
 
             # Format the response
             if category:
-                response = f"📋 Facts in category '{category}' (prioritizing your facts):\n"
+                response = (
+                    f"📋 Facts in category '{category}' (prioritizing your facts):\n"
+                )
             else:
                 response = f"📋 All facts in my memory (prioritizing your facts):\n"
 
@@ -288,12 +309,16 @@ class Tool(ToolManifest):
             return "❌ Memory system is not available at the moment"
 
         try:
-            # Determine guild/user ID
-            guild_id = (
-                self.discord_ctx.guild.id
-                if self.discord_ctx.guild
-                else self.discord_ctx.author.id
-            )
+            # Determine guild/user ID using the same logic as the chat system
+            if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+                guild_id = (
+                    self.discord_ctx.guild.id
+                    if self.discord_ctx.guild
+                    else self.discord_ctx.author.id
+                )  # Always fallback to ctx.author.id for DMs since ctx.guild is None
+            else:
+                guild_id = self.discord_ctx.author.id
+
             current_user_id = self.discord_ctx.author.id
 
             # Limit the results
@@ -332,12 +357,16 @@ class Tool(ToolManifest):
             return "❌ Memory system is not available at the moment"
 
         try:
-            # Determine guild/user ID
-            guild_id = (
-                self.discord_ctx.guild.id
-                if self.discord_ctx.guild
-                else self.discord_ctx.author.id
-            )
+            # Determine guild/user ID using the same logic as the chat system
+            if environ.get("SHARED_CHAT_HISTORY", "false").lower() == "true":
+                guild_id = (
+                    self.discord_ctx.guild.id
+                    if self.discord_ctx.guild
+                    else self.discord_ctx.author.id
+                )  # Always fallback to ctx.author.id for DMs since ctx.guild is None
+            else:
+                guild_id = self.discord_ctx.author.id
+
             current_user_id = self.discord_ctx.author.id
 
             # Search for facts by current user that match the query
@@ -346,17 +375,20 @@ class Tool(ToolManifest):
             )
 
             if not user_facts:
-                return f"🤔 I couldn't find any facts matching '{query}' that you created."
+                return (
+                    f"🤔 I couldn't find any facts matching '{query}' that you created."
+                )
 
             # For now, just return the facts found (actual deletion would need to be implemented)
             if len(user_facts) == 1:
-                return f"📝 I found this fact you created: **{user_facts[0]}**\n\n*Note: Fact deletion is not yet implemented, but I can see what you want me to forget.*"
+                response = f"📝 I found this fact you created: **{user_facts[0]}**\n\n*Note: Fact deletion is not yet implemented, but I can see what you want me to forget.*"
             else:
                 response = f"📝 I found these facts you created matching '{query}':\n"
                 for i, fact in enumerate(user_facts, 1):
                     response += f"{i}. **{fact}**\n"
                 response += "\n*Note: Fact deletion is not yet implemented, but I can see what you want me to forget.*"
-                return response
+
+            return response
 
         except Exception as e:
             logging.error(f"Error searching for facts to forget: {e}")

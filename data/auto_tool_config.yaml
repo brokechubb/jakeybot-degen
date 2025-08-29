@@ -1,0 +1,274 @@
+# Auto-Tool Detection Configuration
+# This file controls the sensitivity and behavior of automatic tool detection
+
+# Global Settings
+global:
+  # Master switch for auto-tool detection (true/false)
+  enabled: true
+  
+  # Minimum confidence threshold for tool detection (0.0 to 1.0)
+  # Higher values make detection less sensitive
+  confidence_threshold: 0.85
+  
+  # Minimum word count in message to trigger detection
+  min_message_length: 4
+  
+  # Maximum word count in message to trigger detection (0 = no limit)
+  max_message_length: 0
+  
+  # Require explicit tool keywords (true = more conservative)
+  require_explicit_keywords: true
+  
+  # Enable fuzzy matching for keywords (true = more sensitive)
+  fuzzy_matching: false
+
+# Tool-Specific Settings
+tools:
+  ExaSearch:
+    # Web search detection sensitivity
+    enabled: true
+    confidence_threshold: 0.75  # Lower threshold = more sensitive for web search
+    
+    # Keywords that strongly indicate web search need
+    strong_keywords:
+      - "search for"
+      - "find information about"
+      - "look up"
+      - "research"
+      - "what's the latest"
+      - "latest news"
+      - "current events"
+      - "breaking news"
+      - "live updates"
+      - "what is"
+      - "who is"
+      - "when is"
+      - "where is"
+      - "how to"
+      - "tutorial"
+      - "guide"
+      - "compare"
+      - "vs"
+      - "versus"
+      - "difference between"
+      - "price of"
+      - "worth"
+      - "value"
+      - "cost"
+      - "schedule"
+      - "results"
+      - "scores"
+      - "game"
+      - "match"
+      - "tournament"
+    
+    # Keywords that weakly indicate web search need (require multiple matches)
+    weak_keywords:
+      - "latest"
+      - "news"
+      - "current"
+      - "recent"
+      - "what's happening"
+      - "trending"
+      - "update"
+      - "information"
+      - "details"
+      - "about"
+      - "tell me"
+      - "show me"
+      - "find"
+      - "get"
+      - "check"
+      - "see"
+      - "know"
+      - "understand"
+      - "learn"
+      - "explain"
+    
+    # Minimum number of weak keywords required to trigger
+    min_weak_keywords: 1  # Reduced from 2 to be more sensitive
+    
+    # Sports-specific keywords (require additional context)
+    sports_keywords:
+      - "sports"
+      - "football"
+      - "basketball"
+      - "baseball"
+      - "soccer"
+      - "tennis"
+      - "game"
+      - "match"
+      - "tournament"
+      - "schedule"
+      - "live"
+      - "score"
+      - "result"
+      - "team"
+      - "player"
+      - "league"
+      - "championship"
+      - "playoff"
+    
+    # Require sports keywords to be combined with other indicators
+    require_sports_context: false  # Changed to false for better sports search detection
+    
+    # Technical/Programming keywords
+    tech_keywords:
+      - "code"
+      - "programming"
+      - "api"
+      - "framework"
+      - "library"
+      - "function"
+      - "method"
+      - "class"
+      - "variable"
+      - "syntax"
+      - "error"
+      - "bug"
+      - "debug"
+      - "compile"
+      - "deploy"
+      - "server"
+      - "database"
+      - "algorithm"
+      - "data structure"
+    
+    # Financial/Crypto keywords
+    financial_keywords:
+      - "price"
+      - "stock"
+      - "market"
+      - "crypto"
+      - "bitcoin"
+      - "ethereum"
+      - "investment"
+      - "trading"
+      - "portfolio"
+      - "wallet"
+      - "exchange"
+      - "token"
+      - "coin"
+      - "blockchain"
+      - "defi"
+      - "nft"
+    
+    # Query patterns that indicate web search
+    query_patterns:
+      - "what is {topic}"
+      - "who is {person}"
+      - "when is {event}"
+      - "where is {location}"
+      - "how to {action}"
+      - "latest {topic}"
+      - "current {topic}"
+      - "compare {a} vs {b}"
+      - "difference between {a} and {b}"
+      - "price of {item}"
+      - "schedule for {event}"
+      - "results of {event}"
+      - "news about {topic}"
+      - "information on {topic}"
+      - "tutorial for {topic}"
+      - "guide to {topic}"
+
+  CryptoPrice:
+    # Cryptocurrency price detection sensitivity
+    enabled: true
+    confidence_threshold: 0.9  # Very high threshold = very conservative
+    
+    # Keywords that indicate price inquiry
+    price_keywords:
+      - "price"
+      - "worth"
+      - "value"
+      - "cost"
+      - "how much"
+      - "current"
+      - "live"
+    
+    # Cryptocurrency tokens/symbols
+    crypto_tokens:
+      - "bitcoin"
+      - "btc"
+      - "ethereum"
+      - "eth"
+      - "solana"
+      - "sol"
+      - "bonk"
+      - "dogecoin"
+      - "doge"
+    
+    # Require both price keyword AND crypto token
+    require_both_keywords: true
+
+  CurrencyConverter:
+    # Currency conversion detection sensitivity
+    enabled: true
+    confidence_threshold: 0.85  # High threshold = conservative
+    
+    # Keywords that indicate currency conversion
+    conversion_keywords:
+      - "convert"
+      - "exchange rate"
+      - "usd to"
+      - "eur to"
+      - "jpy to"
+      - "currency"
+    
+    # Require explicit conversion format
+    require_conversion_format: true
+
+  CodeExecution:
+    # Code execution detection sensitivity
+    enabled: true
+    confidence_threshold: 0.95  # Very high threshold = very conservative
+    
+    # Keywords that indicate calculation need
+    calc_keywords:
+      - "calculate"
+      - "math"
+      - "percentage"
+      - "formula"
+      - "equation"
+      - "solve"
+      - "compute"
+    
+    # Require explicit calculation request
+    require_explicit_calc: true
+
+  Memory:
+    # Memory tool detection sensitivity
+    enabled: true
+    confidence_threshold: 0.8  # Lower threshold = more sensitive for memory
+    
+    # Keywords that indicate memory storage
+    memory_keywords:
+      - "remember this"
+      - "remember that"
+      - "save this"
+      - "store this"
+      - "keep this in mind"
+    
+    # Require explicit memory request
+    require_explicit_memory: true
+
+# Advanced Settings
+advanced:
+  # Enable context-aware detection (considers conversation history)
+  context_aware: true
+  
+  # Maximum context messages to consider
+  max_context_messages: 3
+  
+  # Penalty for repeated tool usage (reduces sensitivity over time)
+  repetition_penalty: 0.2
+  
+  # Cooldown period between auto-tool activations (in seconds)
+  cooldown_period: 45
+  
+  # Enable user preference learning (adjusts sensitivity based on user behavior)
+  learn_user_preferences: true
+  
+  # Minimum interactions before applying user preferences
+  min_interactions_for_learning: 5

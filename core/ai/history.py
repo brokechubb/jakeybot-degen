@@ -10,10 +10,13 @@ from datetime import datetime, timezone
 import time
 import re
 
-_fetchdict = HelperFunctions.fetch_default_model(
-    model_type="reasoning", output_modalities="text", provider="gemini"
-)
-DEFAULT_MODEL = f"{_fetchdict['provider']}::{_fetchdict['model_name']}"
+# Get default model from environment variable, fallback to pollinations::evil if not set
+DEFAULT_CHAT_MODEL = environ.get("DEFAULT_CHAT_MODEL")
+if DEFAULT_CHAT_MODEL and "::" in DEFAULT_CHAT_MODEL:
+    DEFAULT_MODEL = DEFAULT_CHAT_MODEL
+else:
+    # Fallback to pollinations::evil if environment variable is not set or invalid
+    DEFAULT_MODEL = "pollinations::evil"
 
 
 # A class that is responsible for managing and manipulating the chat history
@@ -74,13 +77,9 @@ class History:
         if _existing:
             tool_use = _existing.get("tool_use", tool_use)
             default_model = _existing.get("default_model", model)
-            default_openrouter_model = _existing.get(
-                "default_openrouter_model", "openai/gpt-4.1-mini"
-            )
         else:
             tool_use = tool_use
             default_model = model
-            default_openrouter_model = "openai/gpt-4.1-mini"
 
         # Use find_one_and_update with upsert to return the document after update.
         _document = await self._collection.find_one_and_update(
@@ -90,7 +89,6 @@ class History:
                     "guild_id": guild_id,
                     "tool_use": tool_use,
                     "default_model": default_model,
-                    "default_openrouter_model": default_openrouter_model,
                 }
             },
             upsert=True,
@@ -565,7 +563,9 @@ class History:
             leaderboard.append(entry)
         return leaderboard
 
-    async def search_facts_by_user(self, guild_id: int, user_id: int, query: str, limit: int = 5):
+    async def search_facts_by_user(
+        self, guild_id: int, user_id: int, query: str, limit: int = 5
+    ):
         """Search for relevant facts created by a specific user"""
         guild_id = self._normalize_guild_id(guild_id)
         collection_name = f"knowledge_{guild_id}"
@@ -598,7 +598,9 @@ class History:
                     ):
                         results.append(fact["fact_text"])
             except Exception as e:
-                logging.warning(f"Text search failed for user {user_id} in guild {guild_id}: {e}")
+                logging.warning(
+                    f"Text search failed for user {user_id} in guild {guild_id}: {e}"
+                )
 
             # If text search didn't return enough results, try regex search
             if len(results) < limit:
@@ -617,7 +619,9 @@ class History:
                             if fact_text not in results:  # Avoid duplicates
                                 results.append(fact_text)
                 except Exception as e:
-                    logging.warning(f"Regex search failed for user {user_id} in guild {guild_id}: {e}")
+                    logging.warning(
+                        f"Regex search failed for user {user_id} in guild {guild_id}: {e}"
+                    )
 
             # If still not enough results, try partial word matching
             if len(results) < limit:
@@ -630,7 +634,10 @@ class History:
                             word_pattern = re.compile(re.escape(word), re.IGNORECASE)
 
                             async for fact in knowledge_collection.find(
-                                {"fact_text": {"$regex": word_pattern}, "user_id": user_id}
+                                {
+                                    "fact_text": {"$regex": word_pattern},
+                                    "user_id": user_id,
+                                }
                             ).limit(limit - len(results)):
                                 if fact and (
                                     fact.get("expires_at") is None
@@ -649,6 +656,8 @@ class History:
                     )
 
         except Exception as e:
-            logging.error(f"User-specific search failed for guild {guild_id}, user {user_id}: {e}")
+            logging.error(
+                f"User-specific search failed for guild {guild_id}, user {user_id}: {e}"
+            )
 
         return results[:limit]

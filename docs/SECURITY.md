@@ -19,8 +19,7 @@ Keep these secure and never share them:
 - **Discord Bot Token**: Your bot's authentication token
 - **OpenAI API Key**: For GPT models (starts with `sk-`)
 - **Google API Keys**: For Gemini models (starts with `AIza`)
-- **GitHub Token**: For GitHub integration (starts with `ghp_`)
-- **YouTube API Key**: For YouTube search (starts with `AIza`)
+
 - **MongoDB Connection String**: Database connection with credentials
 
 ### 3. Database Security
@@ -99,7 +98,7 @@ api_key = os.environ.get("OPENAI_API_KEY")
 # Check for API keys in your code
 grep -r "sk-[a-zA-Z0-9]" . --exclude-dir=venv --exclude-dir=.git
 
-# Check for GitHub tokens
+
 grep -r "ghp_[a-zA-Z0-9]" . --exclude-dir=venv --exclude-dir=.git
 
 # Check for Google API keys
@@ -156,8 +155,6 @@ If you discover a security vulnerability:
 3. **Include minimal reproduction steps** without exposing credentials
 
 ## ✅ Security Checklist
-
-Before pushing to GitHub:
 
 - [ ] No API keys in code
 - [ ] No `dev.env` file committed

@@ -1,19 +1,11 @@
 import logging
 import discord
 from discord.ext import commands
-from discord import Member, DiscordException
-import yaml
-import os
+from discord import Member
 from datetime import datetime, timedelta, timezone
-from core.services.helperfunctions import HelperFunctions
-from core.ai.history import History
-import motor.motor_asyncio
 from os import environ
-import google.generativeai as genai
-from google.generativeai import types
 import aiohttp
 import io
-import requests
 import time
 import asyncio
 import re
@@ -37,21 +29,8 @@ class Misc(commands.Cog):
         else:
             logging.warning("Reminder checker not started - no database connection")
 
-        # Check if Gemini API is configured
-        self._gemini_api_configured = False
-        if hasattr(bot, "_gemini_api_configured") and bot._gemini_api_configured:
-            self._gemini_api_configured = True
-            logging.info("Misc cog detected globally configured Gemini API.")
-        else:
-            # Try to configure locally
-            api_key = environ.get("GEMINI_API_KEY")
-            if api_key:
-                try:
-                    genai.configure(api_key=api_key)
-                    self._gemini_api_configured = True
-                    logging.info("Misc cog configured Gemini API locally.")
-                except Exception as e:
-                    logging.warning(f"Failed to configure Gemini API locally: {e}")
+        # Pollinations.AI is the primary AI provider
+        pass
 
         # Initialize auto-image settings and load from database
         if self.DBConn:
@@ -132,7 +111,7 @@ class Misc(commands.Cog):
             else:
                 guild_id = ctx.author.id
 
-            reminder_id = await self.DBConn.add_reminder(
+            await self.DBConn.add_reminder(
                 guild_id=guild_id,
                 user_id=ctx.author.id,
                 channel_id=ctx.channel.id,
@@ -247,295 +226,95 @@ class Misc(commands.Cog):
             )
 
     async def _auto_generate_image(self, message, prompt: str):
-        """Automatically generate an image for a user request using FAL ImageGen tool when available, fallback to Gemini."""
-        
+        """Automatically generate an image for a user request using Pollinations.AI ImageGen tool when available."""
+
         # Check for image attachments or URLs in the message for editing
         image_urls = []
         if message.attachments:
             for attachment in message.attachments:
-                if attachment.content_type and attachment.content_type.startswith("image/"):
+                if attachment.content_type and attachment.content_type.startswith(
+                    "image/"
+                ):
                     image_urls.append(attachment.url)
-        
+
         # Also check for URLs in the message content
         import re
-        url_pattern = r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+
+        url_pattern = r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
         found_urls = re.findall(url_pattern, message.content)
         for url in found_urls:
-            if url.lower().endswith(('.png', '.jpg', '.jpeg', '.gif', '.webp')):
+            if url.lower().endswith((".png", ".jpg", ".jpeg", ".gif", ".webp")):
                 image_urls.append(url)
-        
-        # Check if FAL_KEY is configured and try to use ImageGen tool first
-        fal_key = environ.get("FAL_KEY")
-        if fal_key:
-            try:
-                # Try to use the new ImageGen tool with FAL
-                from tools.ImageGen.tool import Tool as ImageGenTool
-                
-                # Create a mock context for the tool
-                async def send_method(content=None, file=None):
-                    if file:
-                        sent_msg = await message.channel.send(
-                            f"🎨 **Auto-Generated Image**\nPrompt: *{prompt}*",
-                            file=file,
-                            reference=message,
-                        )
-                        return sent_msg
-                    elif content:
-                        sent_msg = await message.channel.send(content, reference=message)
-                        return sent_msg
-                
-                # Initialize the ImageGen tool
-                image_gen_tool = ImageGenTool(
-                    method_send=send_method,
-                    discord_ctx=message,
-                    discord_bot=self.bot
-                )
-                
-                # Generate image using FAL with URL context if available
-                if image_urls:
-                    status_msg = await message.channel.send(
-                        f"🎨 **Auto-Editing Image (FAL)**\n"
-                        f"Prompt: *{prompt}*\n"
-                        f"Images: {len(image_urls)} image(s) to edit\n"
-                        f"⌛ This may take a few minutes...",
-                        reference=message,
-                    )
-                    result = await image_gen_tool._tool_function(prompt=prompt, url_context=image_urls)
-                else:
-                    status_msg = await message.channel.send(
-                        f"🎨 **Auto-Generating Image (FAL)**\n"
-                        f"Prompt: *{prompt}*\n"
-                        f"⌛ This may take a few minutes...",
-                        reference=message,
-                    )
-                    result = await image_gen_tool._tool_function(prompt=prompt)
-                
-                await status_msg.edit(content="✅ Auto-generation completed successfully!")
-                return True
-                
-            except Exception as fal_error:
-                logging.warning(f"FAL ImageGen failed, falling back to Gemini: {fal_error}")
-                # Fall through to Gemini fallback
-        
-        # Fallback to existing Gemini-based image generation/editing
-        if not self._gemini_api_configured:
-            logging.warning("Gemini API not configured for auto-image generation")
-            return False
 
-        status_msg = None
+        # Check if Pollinations.AI is available and try to use ImageGen tool
         try:
-            # Handle image editing with Gemini if URLs are provided
-            if image_urls:
-                # Download the first image for editing
-                if message.attachments:
-                    image_attachment = message.attachments[0]
-                    if (image_attachment.content_type and 
-                        image_attachment.content_type.startswith("image/")):
-                        
-                        status_msg = await message.channel.send(
-                            f"🎨 **Auto-Editing Image (Gemini)**\n"
-                            f"Prompt: *{prompt}*\n"
-                            f"Image: {image_attachment.filename}\n"
-                            f"⌛ This may take a few minutes...",
-                            reference=message,
-                        )
-                        
-                        async with aiohttp.ClientSession() as session:
-                            async with session.get(image_attachment.url) as response:
-                                if response.status == 200:
-                                    image_data = await response.read()
-                                    
-                                    # Get the model for image generation
-                                    model_name = environ.get(
-                                        "DEFAULT_GEMINI_IMAGE_GENERATION_MODEL",
-                                        "gemini-2.0-flash-preview-image-generation",
-                                    )
-                                    if not model_name or model_name == "gemini-model-id":
-                                        model_name = "gemini-2.0-flash-preview-image-generation"
+            # Try to use the new ImageGen tool with Pollinations.AI
+            from tools.ImageGen.tool import Tool as ImageGenTool
 
-                                    logging.info(f"Using image editing model: {model_name}")
-                                    model = genai.GenerativeModel(model_name=model_name)
-
-                                    # Create the prompt with image
-                                    image_part = types.Part.from_bytes(
-                                        data=image_data, mime_type=image_attachment.content_type
-                                    )
-
-                                    # Generate the edited image with safety settings disabled
-                                    response = await model.generate_content_async(
-                                        contents=[prompt, image_part],
-                                        generation_config={
-                                            "temperature": 0.7,
-                                            "max_output_tokens": 8192,
-                                            "response_modalities": ["IMAGE", "TEXT"],
-                                        },
-                                        safety_settings=[
-                                            {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                                            {
-                                                "category": "HARM_CATEGORY_HATE_SPEECH",
-                                                "threshold": "BLOCK_NONE",
-                                            },
-                                            {
-                                                "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                                                "threshold": "BLOCK_NONE",
-                                            },
-                                            {
-                                                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                                                "threshold": "BLOCK_NONE",
-                                            },
-                                        ],
-                                    )
-
-                                    if not response.candidates or not response.candidates[0].content:
-                                        await status_msg.edit(
-                                            content="❌ Auto-editing failed. Please try `/edit_image` manually."
-                                        )
-                                        return False
-
-                                    # Check for safety issues
-                                    if response.candidates[0].finish_reason == "IMAGE_SAFETY":
-                                        await status_msg.edit(
-                                            content="❌ Auto-editing blocked by safety filters. Please try a different prompt."
-                                        )
-                                        return False
-
-                                    # Process and send edited images
-                                    images_sent = 0
-                                    for index, part in enumerate(response.candidates[0].content.parts):
-                                        if hasattr(part, "inline_data") and part.inline_data:
-                                            # Create filename with timestamp
-                                            timestamp = datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
-                                            filename = f"auto_edited_{timestamp}_part{index}.png"
-
-                                            # Send the edited image
-                                            file = discord.File(
-                                                fp=io.BytesIO(part.inline_data.data), filename=filename
-                                            )
-
-                                            await message.channel.send(
-                                                f"🎨 **Auto-Edited Image {index + 1}**\nPrompt: *{prompt}*",
-                                                file=file,
-                                                reference=message,
-                                            )
-                                            images_sent += 1
-
-                                    if images_sent > 0:
-                                        await status_msg.edit(
-                                            content="✅ Auto-editing completed successfully!"
-                                        )
-                                        return True
-                                    else:
-                                        await status_msg.edit(
-                                            content="❌ No edited images were generated. Please try `/edit_image` manually."
-                                        )
-                                        return False
-                                else:
-                                    await status_msg.edit(
-                                        content="❌ Failed to download image for editing."
-                                    )
-                                    return False
-                else:
-                    # No valid image attachment found
-                    await message.channel.send(
-                        "❌ Please attach an image to edit.",
+            # Create a mock context for the tool
+            async def send_method(content=None, file=None, embed=None):
+                if file:
+                    sent_msg = await message.channel.send(
+                        f"🎨 **Auto-Generated Image**\nPrompt: *{prompt}*",
+                        file=file,
                         reference=message,
                     )
-                    return False
-            else:
-                # Regular image generation with Gemini
+                    return sent_msg
+                elif embed:
+                    # Handle embed messages
+                    sent_msg = await message.channel.send(
+                        embed=embed,
+                        reference=message,
+                    )
+                    return sent_msg
+                elif content:
+                    # Remove or modify links to prevent previews
+                    import re
+
+                    # Replace http/https links with a format that won't generate previews
+                    modified_content = re.sub(
+                        r"https?://[^\s]+",
+                        lambda m: f"[{m.group(0)}]({m.group(0)})",
+                        content,
+                    )
+                    sent_msg = await message.channel.send(
+                        modified_content,
+                        reference=message,
+                    )
+                    return sent_msg
+
+            # Initialize the ImageGen tool
+            image_gen_tool = ImageGenTool(
+                method_send=send_method, discord_ctx=message, discord_bot=self.bot
+            )
+
+            # Generate image using Pollinations.AI with URL context if available
+            if image_urls:
                 status_msg = await message.channel.send(
-                    f"🎨 **Auto-Generating Image (Gemini)**\n"
+                    f"🎨 **Auto-Editing Image (Pollinations.AI)**\n"
+                    f"Prompt: *{prompt}*\n"
+                    f"Images: {len(image_urls)} image(s) to edit\n"
+                    f"⌛ This may take a few minutes...",
+                    reference=message,
+                )
+                await image_gen_tool._tool_function(
+                    prompt=prompt, url_context=image_urls
+                )
+            else:
+                status_msg = await message.channel.send(
+                    f"🎨 **Auto-Generating Image (Pollinations.AI)**\n"
                     f"Prompt: *{prompt}*\n"
                     f"⌛ This may take a few minutes...",
                     reference=message,
                 )
+                await image_gen_tool._tool_function(prompt=prompt)
 
-                # Get the model for image generation - use a model that supports image generation
-                model_name = environ.get(
-                    "DEFAULT_GEMINI_IMAGE_GENERATION_MODEL",
-                    "gemini-2.0-flash-preview-image-generation",
-                )
-                if not model_name or model_name == "gemini-model-id":
-                    model_name = "gemini-2.0-flash-preview-image-generation"  # Fallback to a model that supports image generation
+            await status_msg.edit(content="✅ Auto-generation completed successfully!")
 
-                logging.info(f"Using auto-image generation model: {model_name}")
-                model = genai.GenerativeModel(model_name=model_name)
+            return True
 
-                # Generate the image with safety settings disabled
-                response = await model.generate_content_async(
-                    contents=prompt,
-                    generation_config={
-                        "temperature": 0.7,  # Default temperature for auto-generation
-                        "max_output_tokens": 8192,
-                        "response_modalities": ["IMAGE", "TEXT"],
-                    },
-                    safety_settings=[
-                        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                        {
-                            "category": "HARM_CATEGORY_HATE_SPEECH",
-                            "threshold": "BLOCK_NONE",
-                        },
-                        {
-                            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                            "threshold": "BLOCK_NONE",
-                        },
-                        {
-                            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                            "threshold": "BLOCK_NONE",
-                        },
-                    ],
-                )
-
-                if not response.candidates or not response.candidates[0].content:
-                    await status_msg.edit(
-                        content="❌ Auto-generation failed. Please try `/generate_image` manually."
-                    )
-                    return False
-
-                # Check for safety issues
-                if response.candidates[0].finish_reason == "IMAGE_SAFETY":
-                    await status_msg.edit(
-                        content="❌ Auto-generation blocked by safety filters. Please try a different prompt."
-                    )
-                    return False
-
-                # Process and send generated images
-                images_sent = 0
-                for index, part in enumerate(response.candidates[0].content.parts):
-                    if hasattr(part, "inline_data") and part.inline_data:
-                        # Create filename with timestamp
-                        timestamp = datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
-                        filename = f"auto_generated_{timestamp}_part{index}.png"
-
-                        # Send the image
-                        file = discord.File(
-                            fp=io.BytesIO(part.inline_data.data), filename=filename
-                        )
-
-                        await message.channel.send(
-                            f"🎨 **Auto-Generated Image**\nPrompt: *{prompt}*",
-                            file=file,
-                            reference=message,
-                        )
-                        images_sent += 1
-
-                if images_sent > 0:
-                    await status_msg.edit(
-                        content="✅ Auto-generation completed successfully!"
-                    )
-                    return True
-                else:
-                    await status_msg.edit(
-                        content="❌ No images were generated. Please try `/generate_image` manually."
-                    )
-                    return False
-
-        except Exception as e:
-            logging.error(f"Error in auto-image generation: {e}")
-            if status_msg:
-                await status_msg.edit(
-                    content=f"❌ Auto-generation error: {str(e)[:100]}"
-                )
+        except Exception as pollinations_error:
+            logging.warning(f"Pollinations.AI ImageGen failed: {pollinations_error}")
             return False
 
     @commands.Cog.listener()
@@ -629,31 +408,31 @@ class Misc(commands.Cog):
             # Create a helpful response with image generation options
             embed = discord.Embed(
                 title="🎨 Image Generation Detected!",
-                description=f"I detected you're asking for an image! Here are your options:",
+                description="I detected you're asking for an image! Here are your options:",
                 color=0x00FF00,
             )
 
             embed.add_field(
-                name="🖼️ Generate New Image (Gemini)",
-                value=f"Use `/generate_image {prompt}` to create a new image with Gemini",
+                name="🖼️ Generate New Image (Pollinations.AI)",
+                value=f"Use `/generate_image {prompt}` to create a new image with Pollinations.AI",
                 inline=False,
             )
 
             embed.add_field(
-                name="🎨 Generate with FAL (Advanced)",
-                value=f"Use the new ImageGen tool for advanced image generation (auto-enabled when FAL_KEY is set)",
+                name="🎨 Generate with Pollinations.AI (Advanced)",
+                value="Use the new ImageGen tool for advanced image generation with Pollinations.AI (auto-enabled)",
                 inline=False,
             )
 
             embed.add_field(
                 name="🎭 Generate with Pollinations.AI",
-                value=f"Use `/generate_pollinations {prompt}` for creative images",
+                value=f"Use `/generate_image {prompt}` for creative images",
                 inline=False,
             )
 
             embed.add_field(
                 name="✏️ Edit Existing Image",
-                value="Attach an image and use `/edit_image <prompt>` to modify it with Gemini",
+                value="Attach an image and use the ImageGen tool with URL context to modify it with Pollinations.AI",
                 inline=False,
             )
 
@@ -664,7 +443,7 @@ class Misc(commands.Cog):
             )
 
             embed.set_footer(
-                text="💡 Tip: You can also adjust creativity with the temperature parameter"
+                text="💡 Tip: Use different models (flux, kontext, sdxl) for different styles"
             )
 
             # Send the helpful response
@@ -884,7 +663,7 @@ class Misc(commands.Cog):
             user_name = f"{_xuser_display_name.display_name}"
 
         webhook = await ctx.channel.create_webhook(
-            name=f"Mimic command by {self.author}"
+            name=f"Mimic command by {ctx.author}"
         )
 
         if not message_body:
@@ -1227,364 +1006,231 @@ class Misc(commands.Cog):
         )
 
     @commands.slash_command(
-        name="generate_image",
-        description="Generate an image using AI",
+        name="auto_tool_sensitivity",
+        description="Adjust auto-tool detection sensitivity settings.",
         guild_ids=None,  # Global command
     )
-    async def generate_image(self, ctx, prompt: str, temperature: float = 0.7):
-        """Generate an image using Gemini AI without needing the AI to use tools."""
-        if not self._gemini_api_configured:
+    @discord.option(
+        "action",
+        description="What action to perform",
+        choices=["view", "set_global", "set_tool", "reset_user", "reset_all"],
+        required=True,
+    )
+    @discord.option(
+        "setting",
+        description="Setting to adjust (for set_global and set_tool actions)",
+        required=False,
+    )
+    @discord.option(
+        "value",
+        description="New value for the setting (for set_global and set_tool actions)",
+        required=False,
+    )
+    @discord.option(
+        "tool_name",
+        description="Tool name (for set_tool action)",
+        choices=[
+            "ExaSearch",
+            "CryptoPrice",
+            "CurrencyConverter",
+            "CodeExecution",
+            "Memory",
+        ],
+        required=False,
+    )
+    async def auto_tool_sensitivity(
+        self,
+        ctx,
+        action: str,
+        setting: str = None,
+        value: str = None,
+        tool_name: str = None,
+    ):
+        """Adjust auto-tool detection sensitivity settings."""
+        await ctx.response.defer(ephemeral=True)
+
+        # Check if user has admin permissions
+        if not ctx.author.guild_permissions.administrator:
             await ctx.respond(
-                "❌ Image generation is not available. Please check the bot configuration.",
-                ephemeral=True,
+                "❌ You need administrator permissions to adjust auto-tool sensitivity settings."
             )
             return
-
-        # Check temperature limits
-        if temperature < 0.0 or temperature > 1.2:
-            await ctx.respond(
-                "❌ Temperature must be between 0.0 and 1.2", ephemeral=True
-            )
-            return
-
-        # Send initial status message
-        status_msg = await ctx.respond(
-            f"⌛ Generating image with prompt: **{prompt}**... This may take a few minutes."
-        )
 
         try:
-            # Get the model for image generation - use a model that supports image generation
-            model_name = environ.get(
-                "DEFAULT_GEMINI_IMAGE_GENERATION_MODEL",
-                "gemini-2.0-flash-preview-image-generation",
-            )
-            if not model_name or model_name == "gemini-model-id":
-                model_name = "gemini-2.0-flash-preview-image-generation"  # Fallback to a model that supports image generation
+            # Import the auto-tool detector
+            from core.services.auto_tool_detector import AutoToolDetector
 
-            logging.info(f"Using image generation model: {model_name}")
-            model = genai.GenerativeModel(model_name=model_name)
+            # Get or create detector instance
+            if not hasattr(self.bot, "auto_tool_detector"):
+                self.bot.auto_tool_detector = AutoToolDetector()
 
-            # Generate the image with safety settings disabled
-            response = await model.generate_content_async(
-                contents=prompt,
-                generation_config={
-                    "temperature": temperature,
-                    "max_output_tokens": 8192,
-                    "response_modalities": ["IMAGE", "TEXT"],
-                },
-                safety_settings=[
-                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                    {
-                        "category": "HARM_CATEGORY_HATE_SPEECH",
-                        "threshold": "BLOCK_NONE",
-                    },
-                    {
-                        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                        "threshold": "BLOCK_NONE",
-                    },
-                    {
-                        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                        "threshold": "BLOCK_NONE",
-                    },
-                ],
-            )
+            detector = self.bot.auto_tool_detector
 
-            if not response.candidates or not response.candidates[0].content:
-                logging.warning(
-                    f"No candidates or content in response for prompt: {prompt}"
+            if action == "view":
+                # View current settings
+                config = detector.get_config()
+
+                # Format global settings
+                global_settings = config.get("global", {})
+                global_text = f"**Global Settings:**\n"
+                global_text += (
+                    f"• **Enabled**: {global_settings.get('enabled', True)}\n"
                 )
-                await status_msg.edit(
-                    content="❌ Failed to generate image. Please try again."
-                )
-                return
+                global_text += f"• **Confidence Threshold**: {global_settings.get('confidence_threshold', 0.8):.2f}\n"
+                global_text += f"• **Min Message Length**: {global_settings.get('min_message_length', 3)}\n"
+                global_text += f"• **Require Explicit Keywords**: {global_settings.get('require_explicit_keywords', True)}\n"
 
-            # Log response structure for debugging
-            logging.info(
-                f"Response structure: candidates={len(response.candidates)}, content_parts={len(response.candidates[0].content.parts)}"
-            )
-            logging.info(
-                f"First candidate finish_reason: {response.candidates[0].finish_reason}"
-            )
+                # Format tool settings
+                tools_text = "**Tool-Specific Settings:**\n"
+                for tool, settings in config.get("tools", {}).items():
+                    threshold = settings.get("confidence_threshold", 0.8)
+                    enabled = settings.get("enabled", True)
+                    tools_text += f"• **{tool}**: {threshold:.2f} threshold, {'enabled' if enabled else 'disabled'}\n"
 
-            # Check if finish_reason indicates an error
-            if response.candidates[0].finish_reason != "STOP":
-                logging.warning(
-                    f"Generation may not have completed successfully. Finish reason: {response.candidates[0].finish_reason}"
+                # Format advanced settings
+                advanced_settings = config.get("advanced", {})
+                advanced_text = f"**Advanced Settings:**\n"
+                advanced_text += f"• **Cooldown Period**: {advanced_settings.get('cooldown_period', 60)}s\n"
+                advanced_text += f"• **Repetition Penalty**: {advanced_settings.get('repetition_penalty', 0.15):.2f}\n"
+                advanced_text += f"• **Learn User Preferences**: {advanced_settings.get('learn_user_preferences', True)}\n"
+
+                await ctx.respond(
+                    f"🔧 **Auto-Tool Detection Settings**\n\n{global_text}\n{tools_text}\n{advanced_text}"
                 )
-                if response.candidates[0].finish_reason == 1:
-                    logging.warning(
-                        "Finish reason 1 typically indicates an error or incomplete generation"
+
+            elif action == "set_global":
+                if not setting or not value:
+                    await ctx.respond(
+                        "❌ Please provide both setting and value for set_global action."
                     )
+                    return
 
-            # Log the actual response content for debugging
-            for i, part in enumerate(response.candidates[0].content.parts):
-                logging.info(f"Response part {i}: {part}")
-                if hasattr(part, "text") and part.text:
-                    logging.info(f"Part {i} text length: {len(part.text)}")
-                    logging.info(f"Part {i} text preview: {part.text[:200]}...")
-
-            # Check for safety issues
-            if response.candidates[0].finish_reason == "IMAGE_SAFETY":
-                await status_msg.edit(
-                    content="❌ Image generation blocked by safety filters. Please try a different prompt."
-                )
-                return
-
-            # Process and send generated images
-            logging.info(
-                f"Processing response with {len(response.candidates[0].content.parts)} parts"
-            )
-            images_sent = 0
-            for index, part in enumerate(response.candidates[0].content.parts):
-                logging.info(
-                    f"Part {index}: type={type(part)}, has_inline_data={hasattr(part, 'inline_data')}"
-                )
-                logging.info(f"Part {index} attributes: {dir(part)}")
-                if (
-                    hasattr(part, "inline_data")
-                    and part.inline_data
-                    and hasattr(part.inline_data, "data")
-                    and part.inline_data.data
-                ):
-                    logging.info(f"Part {index} inline_data: {part.inline_data}")
-                    logging.info(
-                        f"Part {index} mime_type: {part.inline_data.mime_type}"
-                    )
-                    logging.info(
-                        f"Part {index} data length: {len(part.inline_data.data)}"
-                    )
-
-                    # Create filename with timestamp
-                    timestamp = datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
-                    filename = f"generated_image_{timestamp}_part{index}.png"
-
-                    # Send the image
+                # Parse value based on setting type
+                if setting in [
+                    "enabled",
+                    "require_explicit_keywords",
+                    "fuzzy_matching",
+                ]:
+                    parsed_value = value.lower() in ["true", "1", "yes", "on"]
+                elif setting in ["confidence_threshold"]:
                     try:
-                        file = discord.File(
-                            fp=io.BytesIO(part.inline_data.data), filename=filename
-                        )
-                        logging.info(f"Created Discord file: {filename}")
-
-                        await ctx.send(
-                            f"🎨 **Generated Image {index + 1}**\nPrompt: *{prompt}*",
-                            file=file,
-                        )
-                        logging.info(f"Successfully sent image {index + 1}")
-                        images_sent += 1
-                    except Exception as e:
-                        logging.error(f"Error sending image {index + 1}: {e}")
-                        # Try to send without file as fallback
-                        await ctx.send(
-                            f"❌ Error sending image {index + 1}: {str(e)[:100]}"
-                        )
-                elif hasattr(part, "text") and part.text:
-                    logging.info(
-                        f"Part {index} contains text response: {part.text[:200]}..."
-                    )
-                    # Truncate long text responses to fit Discord's 2000 character limit
-                    text_content = part.text
-                    if len(text_content) > 1900:  # Leave room for formatting
-                        text_content = text_content[:1900] + "... [truncated]"
-
-                    # Check if it's an error message
-                    if (
-                        "violates the policy" in part.text.lower()
-                        or "unable to create" in part.text.lower()
-                    ):
-                        await ctx.send(
-                            f"❌ **Content Policy Violation**\n{text_content}"
-                        )
-                    else:
-                        await ctx.send(f"ℹ️ **API Response**\n{text_content}")
-                else:
-                    logging.warning(
-                        f"Part {index} has no inline_data or inline_data is False/None"
-                    )
-                    logging.info(f"Part {index} content: {part}")
-
-            if images_sent > 0:
-                await status_msg.edit(
-                    content=f"✅ Successfully generated {images_sent} image(s)!"
-                )
-            else:
-                await status_msg.edit(
-                    content="❌ No images were generated. Please try again."
-                )
-
-        except Exception as e:
-            logging.error(f"Error generating image: {e}")
-            error_msg = str(e)
-
-            # Handle Discord API errors specifically
-            if "400 Bad Request" in error_msg and "2000 or fewer" in error_msg:
-                await status_msg.edit(
-                    content="❌ **Discord Error**: Response too long. Please try a shorter prompt."
-                )
-            elif "400 Bad Request" in error_msg:
-                await status_msg.edit(
-                    content="❌ **Discord Error**: Bad request. Please try again."
-                )
-            else:
-                # Truncate error message if it's too long
-                if len(error_msg) > 100:
-                    error_msg = error_msg[:100] + "..."
-                await status_msg.edit(content=f"❌ Error generating image: {error_msg}")
-
-    @commands.slash_command(
-        name="edit_image",
-        description="Edit an existing image using AI",
-        guild_ids=None,  # Global command
-    )
-    async def edit_image(self, ctx, prompt: str, temperature: float = 0.7):
-        """Edit an image using Gemini AI. Attach an image to your message first."""
-        if not self._gemini_api_configured:
-            await ctx.respond(
-                "❌ Image editing is not available. Please check the bot configuration.",
-                ephemeral=True,
-            )
-            return
-
-        # Check if there's an image attachment
-        if not ctx.message.attachments:
-            await ctx.respond(
-                "❌ Please attach an image to edit. Reply to this message with an image attachment.",
-                ephemeral=True,
-            )
-            return
-
-        image_attachment = ctx.message.attachments[0]
-
-        # Validate image
-        if (
-            not image_attachment.content_type
-            or not image_attachment.content_type.startswith("image/")
-        ):
-            await ctx.respond("❌ Please attach a valid image file.", ephemeral=True)
-            return
-
-        if image_attachment.size > 10 * 1024 * 1024:  # 10MB limit
-            await ctx.respond(
-                "❌ Image file is too large. Please use an image smaller than 10MB.",
-                ephemeral=True,
-            )
-            return
-
-        # Check temperature limits
-        if temperature < 0.0 or temperature > 1.2:
-            await ctx.respond(
-                "❌ Temperature must be between 0.0 and 1.2", ephemeral=True
-            )
-            return
-
-        # Send initial status message
-        status_msg = await ctx.respond(
-            f"⌛ Editing image with prompt: **{prompt}**... This may take a few minutes."
-        )
-
-        try:
-            # Download the image
-            async with aiohttp.ClientSession() as session:
-                async with session.get(image_attachment.url) as response:
-                    if response.status != 200:
-                        await status_msg.edit(
-                            content="❌ Failed to download the image. Please try again."
-                        )
+                        parsed_value = float(value)
+                        if not 0.0 <= parsed_value <= 1.0:
+                            await ctx.respond(
+                                "❌ Confidence threshold must be between 0.0 and 1.0"
+                            )
+                            return
+                    except ValueError:
+                        await ctx.respond("❌ Invalid confidence threshold value")
                         return
+                elif setting in ["min_message_length", "max_message_length"]:
+                    try:
+                        parsed_value = int(value)
+                        if parsed_value < 0:
+                            await ctx.respond("❌ Message length must be 0 or positive")
+                            return
+                    except ValueError:
+                        await ctx.respond("❌ Invalid message length value")
+                        return
+                else:
+                    await ctx.respond(f"❌ Unknown global setting: {setting}")
+                    return
 
-                    image_data = await response.read()
+                # Update configuration
+                config = detector.get_config()
+                if "global" not in config:
+                    config["global"] = {}
+                config["global"][setting] = parsed_value
+                detector.update_config(config)
 
-            # Get the model for image generation - use a model that supports image generation
-            model_name = environ.get(
-                "DEFAULT_GEMINI_IMAGE_GENERATION_MODEL",
-                "gemini-2.0-flash-preview-image-generation",
-            )
-            if not model_name or model_name == "gemini-model-id":
-                model_name = "gemini-2.0-flash-preview-image-generation"  # Fallback to a model that supports image generation
-
-            logging.info(f"Using image editing model: {model_name}")
-            model = genai.GenerativeModel(model_name=model_name)
-
-            # Create the prompt with image
-            image_part = types.Part.from_bytes(
-                data=image_data, mime_type=image_attachment.content_type
-            )
-
-            # Generate the edited image with safety settings disabled
-            response = await model.generate_content_async(
-                contents=[prompt, image_part],
-                generation_config={
-                    "temperature": temperature,
-                    "max_output_tokens": 8192,
-                    "response_modalities": ["IMAGE", "TEXT"],
-                },
-                safety_settings=[
-                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                    {
-                        "category": "HARM_CATEGORY_HATE_SPEECH",
-                        "threshold": "BLOCK_NONE",
-                    },
-                    {
-                        "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                        "threshold": "BLOCK_NONE",
-                    },
-                    {
-                        "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                        "threshold": "BLOCK_NONE",
-                    },
-                ],
-            )
-
-            if not response.candidates or not response.candidates[0].content:
-                await status_msg.edit(
-                    content="❌ Failed to edit image. Please try again."
+                await ctx.respond(
+                    f"✅ Updated global setting **{setting}** to **{parsed_value}**"
                 )
-                return
 
-            # Check for safety issues
-            if response.candidates[0].finish_reason == "IMAGE_SAFETY":
-                await status_msg.edit(
-                    content="❌ Image editing blocked by safety filters. Please try a different prompt."
-                )
-                return
-
-            # Process and send edited images
-            images_sent = 0
-            for index, part in enumerate(response.candidates[0].content.parts):
-                if hasattr(part, "inline_data") and part.inline_data:
-                    # Create filename with timestamp
-                    timestamp = datetime.now().strftime("%H_%M_%S_%m%d%Y_%s")
-                    filename = f"edited_image_{timestamp}_part{index}.png"
-
-                    # Send the edited image
-                    file = discord.File(
-                        fp=io.BytesIO(part.inline_data.data), filename=filename
+            elif action == "set_tool":
+                if not tool_name or not setting or not value:
+                    await ctx.respond(
+                        "❌ Please provide tool_name, setting, and value for set_tool action."
                     )
+                    return
 
-                    await ctx.send(
-                        f"🎨 **Edited Image {index + 1}**\nPrompt: *{prompt}*",
-                        file=file,
-                    )
-                    images_sent += 1
+                # Parse value based on setting type
+                if setting in [
+                    "enabled",
+                    "require_both_keywords",
+                    "require_conversion_format",
+                    "require_explicit_calc",
+                    "require_explicit_memory",
+                    "require_sports_context",
+                ]:
+                    parsed_value = value.lower() in ["true", "1", "yes", "on"]
+                elif setting in ["confidence_threshold"]:
+                    try:
+                        parsed_value = float(value)
+                        if not 0.0 <= parsed_value <= 1.0:
+                            await ctx.respond(
+                                "❌ Confidence threshold must be between 0.0 and 1.0"
+                            )
+                            return
+                    except ValueError:
+                        await ctx.respond("❌ Invalid confidence threshold value")
+                        return
+                elif setting in ["min_weak_keywords"]:
+                    try:
+                        parsed_value = int(value)
+                        if parsed_value < 1:
+                            await ctx.respond(
+                                "❌ Min weak keywords must be 1 or greater"
+                            )
+                            return
+                    except ValueError:
+                        await ctx.respond("❌ Invalid min weak keywords value")
+                        return
+                else:
+                    await ctx.respond(f"❌ Unknown tool setting: {setting}")
+                    return
 
-            if images_sent > 0:
-                await status_msg.edit(
-                    content=f"✅ Successfully edited {images_sent} image(s)!"
+                # Update configuration
+                config = detector.get_config()
+                if "tools" not in config:
+                    config["tools"] = {}
+                if tool_name not in config["tools"]:
+                    config["tools"][tool_name] = {}
+                config["tools"][tool_name][setting] = parsed_value
+                detector.update_config(config)
+
+                await ctx.respond(
+                    f"✅ Updated **{tool_name}** setting **{setting}** to **{parsed_value}**"
                 )
+
+            elif action == "reset_user":
+                # Reset user preferences
+                user_id = ctx.author.id
+                detector.reset_user_preferences(user_id)
+                await ctx.respond(
+                    f"✅ Reset auto-tool preferences for user <@{user_id}>"
+                )
+
+            elif action == "reset_all":
+                # Reset all user preferences
+                detector.user_preferences.clear()
+                detector.last_activations.clear()
+                detector.activation_counts.clear()
+                await ctx.respond("✅ Reset all user auto-tool preferences")
+
             else:
-                await status_msg.edit(
-                    content="❌ No edited images were generated. Please try again."
-                )
+                await ctx.respond(f"❌ Unknown action: {action}")
 
         except Exception as e:
-            logging.error(f"Error editing image: {e}")
-            await status_msg.edit(content=f"❌ Error editing image: {str(e)[:100]}")
+            logging.error(f"Error in auto_tool_sensitivity command: {e}")
+            await ctx.respond(f"❌ Error adjusting sensitivity settings: {str(e)}")
 
     @commands.slash_command(
-        name="generate_pollinations",
+        name="generate_image",
         description="Generate an image using Pollinations.AI",
         guild_ids=None,  # Global command
     )
-    async def generate_pollinations(
+    async def generate_image(
         self,
         ctx,
         prompt: str,
@@ -1646,19 +1292,13 @@ class Misc(commands.Cog):
 
         embed.add_field(
             name="/generate_image",
-            value="Generate a new image from a text prompt\n**Usage:** `/generate_image <prompt> [temperature]`\n**Example:** `/generate_image a cute robot playing guitar`",
+            value="Generate an image using Pollinations.AI\n**Usage:** `/generate_image <prompt> [model] [width] [height]`\n**Example:** `/generate_image a beautiful sunset`",
             inline=False,
         )
 
         embed.add_field(
-            name="/generate_pollinations",
-            value="Generate an image using Pollinations.AI\n**Usage:** `/generate_pollinations <prompt> [model] [width] [height]`\n**Example:** `/generate_pollinations a beautiful sunset`",
-            inline=False,
-        )
-
-        embed.add_field(
-            name="/edit_image",
-            value="Edit an existing image. Attach an image first!\n**Usage:** `/edit_image <prompt> [temperature]`\n**Example:** `/edit_image add a hat` (with image attached)",
+            name="🎨 Image-to-Image Generation",
+            value="Use the ImageGen tool with URL context for image editing\n**Usage:** Provide image URL in the tool context\n**Example:** Use the ImageGen tool with an image URL to edit/remix it",
             inline=False,
         )
 
@@ -1675,14 +1315,20 @@ class Misc(commands.Cog):
         )
 
         embed.add_field(
+            name="/reload_auto_image_settings",
+            value="Force reload auto-image settings from database (Admin only)\n**Usage:** `/reload_auto_image_settings`\n**Effect:** Refreshes settings without restarting the bot",
+            inline=False,
+        )
+
+        embed.add_field(
             name="🤖 Auto-Generation Mode",
             value="When enabled, Jakey will automatically detect image requests and generate images instantly!\n**Important:** Only works when you mention Jakey or use prefix commands.\n**Example:** '@Jakey draw me a cat' or '!draw me a cat' will trigger auto-generation.\n**Persistence:** Settings are saved to database and survive bot restarts.",
             inline=False,
         )
 
         embed.add_field(
-            name="Temperature",
-            value="Controls creativity (0.0 = focused, 1.2 = very creative)\n**Default:** 0.7",
+            name="Models",
+            value="**Flux**: High-quality text-to-image\n**Kontext**: Image-to-image editing\n**SDXL**: Alternative generation style\n**Default:** flux",
             inline=False,
         )
 
@@ -1692,8 +1338,46 @@ class Misc(commands.Cog):
             inline=False,
         )
 
-        embed.set_footer(text="Powered by Gemini AI")
+        embed.set_footer(text="Powered by Pollinations.AI")
         await ctx.respond(embed=embed, ephemeral=True)
+
+    @commands.slash_command(
+        name="reload_auto_image_settings",
+        description="Force reload auto-image settings from database (Admin only)",
+        guild_ids=None,  # Global command
+    )
+    @commands.has_permissions(manage_channels=True)
+    async def reload_auto_image_settings(self, ctx):
+        """Force reload auto-image settings from database."""
+        await ctx.response.defer(ephemeral=True)
+
+        try:
+            # Clear current settings and reload from database
+            self._auto_image_enabled.clear()
+            self._auto_image_loaded = False
+
+            # Reload settings
+            await self._load_auto_image_settings()
+
+            guild_id = str(ctx.guild.id)
+            current_setting = self._auto_image_enabled.get(guild_id, False)
+
+            await ctx.followup.send(
+                f"🔄 **Auto-Image Settings Reloaded!**\n"
+                f"Current status for this server: {'✅ Enabled' if current_setting else '❌ Disabled'}\n"
+                f"Total guilds loaded: {len(self._auto_image_enabled)}\n"
+                f"✅ Settings refreshed from database successfully!",
+                ephemeral=True,
+            )
+
+        except Exception as e:
+            logging.error(f"Error reloading auto-image settings: {e}")
+            await ctx.followup.send(
+                f"❌ **Failed to reload settings!**\n"
+                f"Error: {str(e)}\n"
+                f"Please try again or contact an administrator.",
+                ephemeral=True,
+            )
 
     async def _load_auto_image_settings(self):
         """Load auto-image generation settings from the database."""
@@ -1811,7 +1495,7 @@ class Misc(commands.Cog):
         # System status
         embed.add_field(
             name="System Status",
-            value=f"• Settings Loaded: {'✅' if self._auto_image_loaded else '❌'}\n• Gemini API: {'✅' if self._gemini_api_configured else '❌'}\n• Database: {'✅' if self.DBConn else '❌'}",
+            value=f"• Settings Loaded: {'✅' if self._auto_image_loaded else '❌'}\n• Pollinations.AI: ✅\n• Database: {'✅' if self.DBConn else '❌'}",
             inline=False,
         )
 
@@ -1824,18 +1508,11 @@ class Misc(commands.Cog):
         )
 
         # Test auto-generation
-        if self._gemini_api_configured:
-            embed.add_field(
-                name="Test Auto-Generation",
-                value="✅ Ready to test\nUse: `@Jakey draw me a test image`",
-                inline=False,
-            )
-        else:
-            embed.add_field(
-                name="Test Auto-Generation",
-                value="❌ Gemini API not configured\nSet `GEMINI_API_KEY` in dev.env",
-                inline=False,
-            )
+        embed.add_field(
+            name="Test Auto-Generation",
+            value="✅ Ready to test\nUse: `@Jakey draw me a test image`",
+            inline=False,
+        )
 
         embed.set_footer(text=f"Server: {ctx.guild.name}")
         await ctx.respond(embed=embed, ephemeral=True)
@@ -1882,7 +1559,7 @@ class Misc(commands.Cog):
 
         embed.add_field(
             name="System Status",
-            value=f"• Settings Loaded: {'✅' if self._auto_image_loaded else '❌'}\n• Gemini API: {'✅' if self._gemini_api_configured else '❌'}\n• Database: {'✅' if self.DBConn else '❌'}",
+            value=f"• Settings Loaded: {'✅' if self._auto_image_loaded else '❌'}\n• Pollinations.AI: ✅\n• Database: {'✅' if self.DBConn else '❌'}",
             inline=False,
         )
 
@@ -1930,14 +1607,17 @@ class Misc(commands.Cog):
     )
     async def help_command(self, ctx):
         """Show comprehensive help and quickstart guide"""
-        embed = discord.Embed(
-            title="🤖 Jakey The Degenerate Bot - Complete Help Guide",
+        # Create multiple embeds to stay within Discord's character limits
+
+        # Main Help Embed
+        main_embed = discord.Embed(
+            title="🤖 Jakey The Degenerate Bot - Help Guide",
             description="Your AI-powered Discord companion with multi-model support, tools, and degenerate gambling expertise!",
             color=discord.Color.blue(),
         )
 
-        # Auto Tool Switch System - NEW FEATURE
-        embed.add_field(
+        # Auto Tool Switch System
+        main_embed.add_field(
             name="🔄 **Auto Tool Switch System** ⭐ **NEW FEATURE**",
             value="**Just ask naturally** - JakeyBot automatically detects what tool you need!\n\n"
             "**Examples:**\n"
@@ -1953,103 +1633,106 @@ class Misc(commands.Cog):
         )
 
         # Quickstart section
-        embed.add_field(
-            name="🚀 **Quick Start (3 Steps)**",
-            value="1️⃣ **Ask Questions**: `/ask <question>` or mention Jakey\n2️⃣ **Let Tools Auto-Enable**: Most tools activate automatically when needed\n3️⃣ **Explore More**: `/model set <model>` and `/feature <tool>`",
+        main_embed.add_field(
+            name="🚀 **Quick Start**",
+            value="1️⃣ **Ask Questions**: Mention Jakey with your question\n2️⃣ **Let Tools Auto-Enable**: Most tools activate automatically when needed\n3️⃣ **Explore More**: Use `/help commands` for all commands and `/help models` for AI models",
             inline=False,
         )
 
         # Core commands
-        embed.add_field(
+        main_embed.add_field(
             name="📋 **Essential Commands**",
-            value="• `/ask <question>` - Ask Jakey anything\n• `/model set <model>` - Switch AI models (Admin only)\n• `/model current` - Show current model\n• `/model list` - List all available models\n• `/feature <tool>` - Enable tools (Memory, CryptoPrice, etc.)\n• `/sweep` - Clear conversation and reset\n• `/quickstart` - Get step-by-step guide",
+            value="• Mention Jakey with your question\n• `/model set <model>` - Switch AI models (Admin only)\n• `/model current` - Show current model\n• `/model list` - List all available models\n• `/feature <tool>` - Enable tools\n• `/sweep` - Clear conversation and reset\n• `/quickstart` - Get step-by-step guide\n• Use `/help commands` for complete command list",
             inline=False,
+        )
+
+        main_embed.set_footer(
+            text="Jakey Bot v2.1.0 - DEGEN Edition | Page 1 of 3"
+        )
+
+        # Commands Help Embed
+        commands_embed = discord.Embed(
+            title="🤖 Jakey Bot - Commands Guide",
+            description="Complete list of available commands",
+            color=discord.Color.green(),
         )
 
         # Auto-Return System Commands
-        embed.add_field(
-            name="🔄 **Auto-Return System Commands**",
-            value="• `/smart_suggestions` - Get optimization tips\n• `/extend_timeout <time>` - Extend tool session time\n• `/timeout_status` - Check remaining time\n• `/return_to_default` - Return to Memory immediately\n• `/auto_return_status` - View system status",
-            inline=False,
-        )
-
-        # AI Models
-        embed.add_field(
-            name="🤖 **AI Models Available**",
-            value="• **Gemini**: gemini-2.5-pro, gemini-2.5-flash (API Key Required)\n• **OpenAI**: gpt-4, gpt-3.5-turbo, gpt-5 (API Key Required)\n• **Claude**: claude-3-opus, claude-3-sonnet (API Key Required)\n• **DeepSeek**: deepseek-v3, deepseek-r1 (API Key Required)\n• **Grok 3**: xAI creative model (API Key Required)\n• **LearnLM 2.0**: Google learning model (API Key Required)\n• **OpenRouter**: 100+ models (API Key Required)\n• **Pollinations.AI**: Text & Image generation (API Key Optional)\n• **More**: Use `/model list` to see all options\n• **Note**: `/model set` requires Administrator permissions",
+        commands_embed.add_field(
+            name="🔄 **Auto-Return System**",
+            value="• `/smart_suggestions` - Get optimization tips\n• `/extend_timeout <time>` - Extend tool session time\n• `/timeout_status` - Check remaining time\n• `/return_to_default` - Return to Memory immediately\n• `/auto_return_status` - View system status\n• `/auto_tool_sensitivity` - Adjust auto-tool detection sensitivity",
             inline=False,
         )
 
         # Tools
-        embed.add_field(
+        commands_embed.add_field(
             name="🛠️ **Available Tools**",
-            value="• **Memory** - Remember and recall information across conversations\n• **CryptoPrice** - Live Solana/Ethereum token prices\n• **CurrencyConverter** - 170+ currency conversion\n• **YouTube** - Video analysis and summarization\n• **GitHub** - Code repository access and search\n• **AudioTools** - Audio creation and manipulation\n• **ImageGen** - AI image generation and editing\n• **CodeExecution** - Python code execution\n• **Engagement** - Active channel participation\n• **GamblingGames** - Betting pools and trivia games",
+            value="• **Memory** - Remember and recall information\n• **ExaSearch** - Enhanced web search with smart caching\n• **CryptoPrice** - Live token prices\n• **CurrencyConverter** - 170+ currency conversion\n\n• **ImageGen** - AI image generation\n• **CodeExecution** - Python code execution\n• **Engagement** - Channel participation\n• **GamblingGames** - Betting pools and trivia",
             inline=False,
         )
 
         # Advanced features
-        embed.add_field(
+        commands_embed.add_field(
             name="⚡ **Advanced Features**",
-            value="• **Image Generation**: `/generate_image <prompt>` (no tool switching needed)\n• **Image Editing**: `/edit_image <prompt>` (no tool switching needed)\n• **Auto-Image**: Automatic detection when you mention Jakey\n• **Reminders**: `/remind <time> <message>`\n• **Trivia Games**: `/trivia` for fun challenges\n• **Gambling Games**: `/create_bet` for betting pools\n• **Keno Numbers**: `/keno` for random number generation\n• **Engagement**: `/jakey_engage` for active participation\n• **Music**: `/play <query>` for voice channel music (LavaLink v4)",
+            value="• **Enhanced Web Search**: Smart query enhancement, quality scoring, caching\n• **Search Statistics**: `/search_stats` for performance metrics\n• **Image Generation**: `/generate_image <prompt>`\n• **Image Editing**: Use ImageGen tool with URL context\n• **Auto-Image**: Automatic detection\n• **Reminders**: `/remind <time> <message>`\n• **Trivia Games**: `/trivia` for challenges\n• **Gambling Games**: `/create_bet` for pools\n• **Keno Numbers**: `/keno` for random numbers\n• **Engagement**: `/jakey_engage` for participation\n• **Music**: `/play <query>` for music",
             inline=False,
         )
 
         # Music commands
-        embed.add_field(
+        commands_embed.add_field(
             name="🎵 **Music Commands**",
-            value="• `/play <query>` - Play from YouTube/Spotify/etc.\n"
+            value="• `/play <query>` - Play from YouTube/Spotify\n"
             "• `/pause` - Pause playback\n"
             "• `/resume` - Resume playback\n"
-            "• `/stop` - Stop and clear the queue\n"
-            "• `/skip` - Vote to skip the current track\n"
-            "• `/queue` - Show the current queue\n"
-            "• `/nowplaying` - Show the current track\n"
-            "• `/volume <0-100>` - Set the volume level\n"
-            "• `/disconnect` - Leave the voice channel",
+            "• `/stop` - Stop and clear queue\n"
+            "• `/skip` - Vote to skip track\n"
+            "• `/queue` - Show current queue\n"
+            "• `/nowplaying` - Show current track\n"
+            "• `/volume <0-100>` - Set volume level\n"
+            "• `/disconnect` - Leave voice channel",
             inline=False,
         )
 
-        # Tips
-        embed.add_field(
-            name="💡 **Pro Tips & Best Practices**",
-            value="• **Let Tools Auto-Enable**: Most tools activate automatically when needed\n• **Natural Language**: Jakey understands context and conversation\n• **Image Support**: Attach images for visual analysis\n• **Model Switching**: Use `/model set` to match your needs\n• **Smart Suggestions**: Use `/smart_suggestions` for optimization tips\n• **Auto-Return**: Tools automatically return to default after timeout\n• **Auto-Image**: Only triggers when you mention Jakey or use prefix commands\n• **Interactive Features**: Try `/jakey_engage`, `/create_bet`, and `/trivia`",
+        commands_embed.set_footer(
+            text="Jakey Bot v2.1.0 - DEGEN Edition | Page 2 of 3"
+        )
+
+        # Models Help Embed
+        models_embed = discord.Embed(
+            title="🤖 Jakey Bot - AI Models Guide",
+            description="Available AI models for different tasks",
+            color=discord.Color.purple(),
+        )
+
+        # AI Models
+        models_embed.add_field(
+            name="🤖 **AI Models Available**",
+            value="• **Pollinations.AI Models** (Default - No API Key Required):\n - `pollinations::evil` - Uncensored responses\n - `pollinations::unity` - Uncensored with vision\n - `pollinations::openai` - Text generation\n  - `pollinations::openai-fast` - Fast text generation\n  - `pollinations::mistral` - Text generation",
             inline=False,
         )
 
-        # Troubleshooting
-        embed.add_field(
-            name="🔧 **Troubleshooting**",
-            value="• **Memory Issues**: Use `/memory_debug` and `/memory_reindex`\n• **Tool Problems**: Tools auto-enable when needed\n• **Model Issues**: Try `/model set` to switch models\n• **Performance**: Use `/performance` for system metrics\n• **Cache Status**: Use `/cache` for cache information\n• **Auto-Return Issues**: Use `/auto_return_status` for system overview",
+        # AI Image Models
+        models_embed.add_field(
+            name="🎨 **Image Models Available**",
+            value="• **Pollinations.AI Image Models**\n- `pollinations::flux` - Image generation\n- `pollinations::kontext` - Image-to-image\n- `pollinations::sdxl` - Image generation",
             inline=False,
         )
 
         # API Key Setup
-        embed.add_field(
-            name="🔑 **API Key Setup Required**",
-            value="• **Gemini**: Set `GEMINI_API_KEY` in dev.env\n• **OpenAI**: Set `OPENAI_API_KEY` in dev.env\n• **Claude**: Set `ANTHROPIC_API_KEY` in dev.env\n• **DeepSeek**: Set `AZURE_AI_API_KEY` and `AZURE_AI_API_BASE`\n• **Grok**: Set `XAI_API_KEY` in dev.env\n• **OpenRouter**: Set `OPENROUTER_API_KEY` in dev.env\n• **Pollinations.AI**: Set `POLLINATIONS_API_KEY` for premium features (optional)\n• **Copy dev.env.template** to dev.env and add your keys",
+        models_embed.add_field(
+            name="🔑 **API Key Setup**",
+            value="• **Pollinations.AI**: Some premium features may require API key\n• **Copy dev.env.template` to dev.env and add your keys",
             inline=False,
         )
 
-        # Support
-        embed.add_field(
-            name="🆘 **Need More Help?**",
-            value=(
-                "• **Quickstart**: `/quickstart` for step-by-step guide\n"
-                "• **Model List**: `/model list` to see all available models\n"
-                "• **Feature Status**: Check current tool with `/feature`\n"
-                "• **Documentation**: Visit our docs for advanced features\n"
-                "• **GitHub**: [https://github.com/brokechubb/JakeyBot](https://github.com/brokechubb/JakeyBot)\n"
-                "• **Admin Prefix Commands**: `!performance`, `!cache`, `!logs` for admins\n"
-                f"• **Prefix Note**: The current command prefix is `{getattr(self.bot, 'command_prefix', '!')}`"
-            ),
-            inline=False,
+        models_embed.set_footer(
+            text="Jakey Bot v2.1.0 - DEGEN Edition | Page 3 of 3"
         )
 
-        embed.set_footer(
-            text="Jakey Bot v2.1.0 - Enhanced Security Fork | Degen Edition | Unfiltered & Proud"
+        # Send all embeds
+        await ctx.respond(
+            embeds=[main_embed, commands_embed, models_embed], ephemeral=True
         )
-
-        await ctx.respond(embed=embed, ephemeral=True)
 
     @commands.slash_command(
         name="quickstart",
@@ -2082,20 +1765,27 @@ class Misc(commands.Cog):
         # Step 1
         embed.add_field(
             name="1️⃣ Ask Your First Question",
-            value="`/ask What can you help me with?`\nor just mention Jakey in a message!\n\n**Tools will auto-enable when needed!**",
+            value="Just mention Jakey with your question!\n\n**Tools will auto-enable when needed!**",
             inline=False,
         )
 
         # Step 2
         embed.add_field(
-            name="2️⃣ Explore More Features",
-            value="• `/remind 1h take a break` - Set personal reminders \n• `/keno` - Generate keno numbers \n• `/generate_image` - Generate images (no tool switching needed) \n• `/edit_image` - Edit images (no tool switching needed) \n• `/jakey_engage` - Make Jakey actively engage \n• `/create_bet` - Create betting pools \n• `/trivia` - Start trivia games \n• `/play <song>` - Play music in voice channels \n• `/sweep` - Clear conversation and reset",
+            name="2️⃣ Explore AI Models",
+            value="• Use `/model list` to see all available models\n• **Default Models** (No API Key Required):\n - `pollinations::evil` - Uncensored responses\n  - `pollinations::openai` - Text generation\n  - `pollinations::flux` - Image generation\n• Use `/model set <model>` to switch models (Admin only)",
             inline=False,
         )
 
         # Step 3
         embed.add_field(
-            name="3️⃣ Use Smart Features",
+            name="3️⃣ Use Advanced Features",
+            value="• `/remind 1h take a break` - Set personal reminders\n• `/keno` - Generate keno numbers\n• `/generate_image <prompt>` - Generate images with Pollinations.AI\n• **Image Editing**: Use ImageGen tool with URL context\n• `/jakey_engage` - Make Jakey actively engage\n• `/create_bet` - Create betting pools\n• `/trivia` - Start trivia games\n• `/play <song>` - Play music in voice channels\n• `/sweep` - Clear conversation and reset",
+            inline=False,
+        )
+
+        # Step 4
+        embed.add_field(
+            name="4️⃣ Use Smart Features",
             value="• `/smart_suggestions` - Get optimization tips\n• `/extend_timeout 5m` - Extend tool session time\n• `/timeout_status` - Check remaining time\n• `/auto_return_status` - View system overview",
             inline=False,
         )

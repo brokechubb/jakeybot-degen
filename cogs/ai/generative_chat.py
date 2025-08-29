@@ -84,7 +84,24 @@ class BaseChat:
             raise CustomErrorMessage(
                 "⚠️ The model you've chosen is not available at the moment, please choose another model"
             )
-        _infer._discord_method_send = prompt.channel.send
+
+            # Create a wrapper method that disables link previews by modifying content
+
+        async def send_without_previews(content=None, **kwargs):
+            if content:
+                # Remove or modify links to prevent previews
+                import re
+
+                # Replace http/https links with a format that won't generate previews
+                modified_content = re.sub(
+                    r"https?://[^\s]+",
+                    lambda m: f"[{m.group(0)}]({m.group(0)})",
+                    content,
+                )
+                return await prompt.channel.send(modified_content, **kwargs)
+            return await prompt.channel.send(**kwargs)
+
+        _infer._discord_method_send = send_without_previews
 
         ###############################################
         # File attachment processing
@@ -94,16 +111,54 @@ class BaseChat:
             return
 
         if prompt.attachments:
-            if not hasattr(_infer, "input_files"):
-                raise CustomErrorMessage(
-                    f"🚫 The model **{_model_name}** cannot process file attachments, please try another model"
-                )
+            # Check if the model actually supports file processing
+            supports_files = False
+            if hasattr(_infer, "input_files"):
+                # For Pollinations models, check if it's an image model
+                if hasattr(_infer, "_model_type"):
+                    supports_files = _infer._model_type == "image"
+                else:
+                    # For other models, assume they support files if they have the method
+                    supports_files = True
 
-            _processFileInterstitial = await prompt.channel.send(
-                f"📄 Processing the file: **{prompt.attachments[0].filename}**"
-            )
-            await _infer.input_files(attachment=prompt.attachments[0])
-            # Removed the "✅ Used:" message for cleaner file processing
+            if not supports_files:
+                # Silently ignore file attachments for models that don't support them
+                logging.info(
+                    f"File attachment ignored for model {_model_name} - model doesn't support file processing"
+                )
+            else:
+                try:
+                    # Only show processing message for models that actually support file processing
+                    _processFileInterstitial = await prompt.channel.send(
+                        f"📄 Processing the file: **{prompt.attachments[0].filename}**"
+                    )
+                    await _infer.input_files(attachment=prompt.attachments[0])
+                    # Removed the "✅ Used:" message for cleaner file processing
+                except CustomErrorMessage as e:
+                    # If the model explicitly says it doesn't support file attachments, silently ignore
+                    if (
+                        "file attachments" in str(e).lower()
+                        or "not supported" in str(e).lower()
+                    ):
+                        logging.info(
+                            f"File attachment ignored for model {_model_name} - not supported by this model"
+                        )
+                    else:
+                        # Re-raise other custom error messages
+                        raise e
+                except Exception as e:
+                    # Handle any other errors during file processing
+                    error_msg = str(e)
+                    if (
+                        "file attachments" in error_msg.lower()
+                        or "not supported" in error_msg.lower()
+                    ):
+                        logging.info(
+                            f"File attachment ignored for model {_model_name} - not supported by this model"
+                        )
+                    else:
+                        # Re-raise other unexpected errors
+                        raise e
 
         ###############################################
         # Answer generation
@@ -193,6 +248,47 @@ Reminder functionality:
         if message.author.id == self.bot.user.id:
             return
 
+        # Check if this message looks like an image request that should be skipped
+        # This prevents the AI from responding to image generation requests
+        image_keywords = [
+            "draw me",
+            "generate an image",
+            "create an image",
+            "make an image",
+            "show me a picture",
+            "generate a picture",
+            "create a picture",
+            "make a picture",
+            "draw a",
+            "show a",
+            "can you draw",
+            "can you create",
+            "can you make",
+            "can you generate",
+            "i want an image",
+            "i need an image",
+            "i'd like an image",
+            "i would like an image",
+            "generate image of",
+            "create image of",
+            "make image of",
+            "draw image of",
+            "picture of",
+            "image of",
+            "drawing of",
+            "art of",
+            "illustration of",
+        ]
+
+        message_lower = message.content.lower()
+        is_image_request = any(keyword in message_lower for keyword in image_keywords)
+
+        if is_image_request:
+            logging.debug(
+                f"Message {message.id} appears to be an image request, skipping AI chat to avoid duplicate responses"
+            )
+            return
+
         # Must be mentioned and check if it's not starts with prefix or slash command
         if (
             message.guild is None
@@ -276,12 +372,22 @@ Reminder functionality:
                 # Add the user to the pending list
                 self.pending_ids.append(message.author.id)
 
-                # Add reaction to the message to acknowledge the message
-                await message.add_reaction("⌛")
+                # Add reaction to the message to acknowledge the message (with error handling)
+                try:
+                    await message.add_reaction("⌛")
+                except discord.errors.Forbidden:
+                    # Bot doesn't have permission to add reactions
+                    logging.warning(
+                        f"Could not add reaction to message {message.id} - missing 'Add Reactions' permission"
+                    )
+                except Exception as e:
+                    # Other unexpected errors
+                    logging.error(f"Error adding reaction to message {message.id}: {e}")
+
                 await self._ask(message)
             except Exception as _error:
-                # if isinstance(_error, genai_errors.ClientError) or isinstance(_error, genai_errors.ServerError):
-                #    await message.reply(f"😨 Uh oh, something happened to our end while processing request to Gemini API, reason: **{_error.message}**")
+                # Legacy error handling for reference
+                #    await message.reply(f"😨 Uh oh, something happened to our end while processing request to the AI API, reason: **{_error.message}**")
                 if isinstance(_error, HistoryDatabaseError):
                     await message.reply(
                         f"🤚 An error has occurred while running this command, there was problems accessing with database, reason: **{_error.message}**"
@@ -299,6 +405,14 @@ Reminder functionality:
                     )
                 elif isinstance(_error, CustomErrorMessage):
                     await message.reply(f"{_error.message}")
+                # Handle AI API ServerError (500 Internal Server Error)
+                elif (
+                    hasattr(_error, "__class__")
+                    and "ServerError" in _error.__class__.__name__
+                ):
+                    await message.reply(
+                        "⚠️ AI API is experiencing temporary issues. Please try again in a few minutes."
+                    )
                 else:
                     # Check if the error has message attribute
                     # if hasattr(_error, "message"):
@@ -314,8 +428,24 @@ Reminder functionality:
                     exc_info=True,
                 )
             finally:
-                # Remove the reaction
-                await message.remove_reaction("⌛", self.bot.user)
+                # Remove the reaction (with error handling for permission issues)
+                try:
+                    await message.remove_reaction("⌛", self.bot.user)
+                except discord.errors.Forbidden:
+                    # Bot doesn't have permission to manage messages
+                    logging.warning(
+                        f"Could not remove reaction from message {message.id} - missing 'Manage Messages' permission"
+                    )
+                except discord.errors.NotFound:
+                    # Reaction was already removed or message was deleted
+                    logging.debug(
+                        f"Reaction not found on message {message.id} - may have been removed already"
+                    )
+                except Exception as e:
+                    # Other unexpected errors
+                    logging.error(
+                        f"Error removing reaction from message {message.id}: {e}"
+                    )
 
                 # Remove the user from the pending list
                 self.pending_ids.remove(message.author.id)

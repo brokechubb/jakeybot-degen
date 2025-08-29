@@ -1,0 +1,110 @@
+# AI Model Configuration
+# This file controls which AI models are used for different types of requests
+
+# Web Search Requests (require tool calling capabilities)
+web_search_models:
+  # OpenAI models (GPT-4, GPT-3.5-turbo)
+  openai:
+    enabled: true
+    priority: 1  # Highest priority
+    models:
+      - "gpt-4"
+      - "gpt-4-turbo"
+      - "gpt-3.5-turbo"
+    capabilities:
+      - "tool_calling"
+      - "web_search"
+      - "reasoning"
+      - "synthesis"
+    api_key_env: "OPENAI_API_KEY"
+    base_url_env: "OPENAI_API_ENDPOINT"
+    
+  # Anthropic models (Claude)
+  anthropic:
+    enabled: true
+    priority: 2
+    models:
+      - "claude-3-opus"
+      - "claude-3-sonnet"
+      - "claude-3-haiku"
+    capabilities:
+      - "tool_calling"
+      - "web_search"
+      - "reasoning"
+      - "synthesis"
+    api_key_env: "ANTHROPIC_API_KEY"
+    base_url_env: "ANTHROPIC_API_BASE_URL"
+    
+  # Google models (Gemini)
+  google:
+    enabled: true
+    priority: 3
+    models:
+      - "gemini-2.5-flash"
+      - "gemini-2.5-flash-lite"
+    capabilities:
+      - "tool_calling"
+      - "web_search"
+      - "reasoning"
+      - "synthesis"
+    api_key_env: "GOOGLE_API_KEY"
+    base_url_env: "GOOGLE_API_BASE_URL"
+
+# General Chat Requests (can use Pollinations.AI)
+general_chat_models:
+  pollinations:
+    enabled: true
+    priority: 1
+    models:
+      - "evil"
+      - "unity"
+      - "mistral"
+      - "gemini"
+    capabilities:
+      - "text_generation"
+      - "conversation"
+      - "creative_writing"
+    api_key_env: "POLLINATIONS_API_KEY"
+    base_url: "https://text.pollinations.ai"
+
+# Model Selection Logic
+model_selection:
+  # For web search requests, try capable models first
+  web_search:
+    primary: ["openai", "anthropic", "google"]
+    fallback: "pollinations"
+    
+  # For general chat, use Pollinations.AI
+  general_chat:
+    primary: ["pollinations"]
+    fallback: "pollinations"
+    
+  # For image generation, use Pollinations.AI
+  image_generation:
+    primary: ["pollinations"]
+    fallback: "pollinations"
+
+# Performance Settings
+performance:
+  # Timeout for AI model calls (seconds)
+  timeout: 30
+  
+  # Maximum retries for failed calls
+  max_retries: 3
+  
+  # Cache duration for model responses (seconds)
+  cache_duration: 300
+  
+  # Rate limiting (requests per minute)
+  rate_limit: 60
+
+# Fallback Behavior
+fallback:
+  # If no capable models available, use basic processing
+  use_basic_processing: true
+  
+  # Log when falling back to basic processing
+  log_fallback: true
+  
+  # Notify user when using fallback
+  notify_user: false

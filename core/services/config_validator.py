@@ -27,7 +27,6 @@ class ConfigValidator:
 
     # Optional but recommended environment variables
     RECOMMENDED_VARS = {
-        "GEMINI_API_KEY": "Google Gemini API key for AI models",
         "OPENAI_API_KEY": "OpenAI API key for GPT models",
         "ANTHROPIC_API_KEY": "Anthropic API key for Claude models",
         "MISTRAL_API_KEY": "Mistral API key for Mistral models",
@@ -37,7 +36,6 @@ class ConfigValidator:
 
     # AI model providers that require API keys
     AI_PROVIDERS = [
-        "GEMINI_API_KEY",
         "OPENAI_API_KEY",
         "ANTHROPIC_API_KEY",
         "MISTRAL_API_KEY",
@@ -92,13 +90,9 @@ class ConfigValidator:
         # Validate timeout configurations
         timeout_vars = [
             "TOOL_TIMEOUT_EXASEARCH",
-            "TOOL_TIMEOUT_GITHUB",
             "TOOL_TIMEOUT_CODEEXECUTION",
-            "TOOL_TIMEOUT_AUDIOTOOLS",
             "TOOL_TIMEOUT_CRYPTOPRICE",
             "TOOL_TIMEOUT_CURRENCYCONVERTER",
-            "TOOL_TIMEOUT_YOUTUBE",
-            "TOOL_TIMEOUT_IDEATIONTOOLS",
             "TOOL_TIMEOUT_DEFAULT",
         ]
 

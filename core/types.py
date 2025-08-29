@@ -55,15 +55,14 @@ DatabaseName = NewType("DatabaseName", str)
 
 # AI Model types
 ModelProvider = Literal[
-    "gemini",
     "openai",
     "anthropic",
     "mistral",
     "azure",
     "xai",
     "kimi",
-    "openrouter",
     "groq",
+    "pollinations",
 ]
 ModelType = Literal["text", "image", "audio", "multimodal"]
 ModelCapability = Literal["chat", "completion", "generation", "analysis"]

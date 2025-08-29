@@ -72,7 +72,7 @@ class ModelsList:
             _internal_model_data = yaml.safe_load(models)
 
         # Priority models that should always be included
-        priority_providers = ["openai", "gemini", "claude", "pollinations"]
+        priority_providers = ["openai", "claude", "pollinations"]
 
         # Separate priority and other models
         priority_models = []

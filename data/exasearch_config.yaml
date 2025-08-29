@@ -1,0 +1,215 @@
+# ExaSearch Configuration
+# Fine-tuned settings for web search functionality
+
+# Search Behavior Settings
+search_behavior:
+  # Default search type (auto, neural, keyword)
+  default_search_type: "auto"
+  
+  # Default number of results
+  default_num_results: 5
+  
+  # Enable highlights by default
+  enable_highlights: true
+  
+  # Enable summaries by default
+  enable_summaries: true
+  
+  # Cache TTL in seconds (1 hour default)
+  cache_ttl: 3600
+  
+  # Maximum cache size (number of entries)
+  max_cache_size: 1000
+
+# Query Enhancement Settings
+query_enhancement:
+  # Enable automatic query enhancement
+  enabled: true
+  
+  # Add current year to news/financial queries
+  add_temporal_context: true
+  
+  # Add tutorial/guide context to technical queries
+  add_technical_context: true
+  
+  # Expand short queries (<= 2 words)
+  expand_short_queries: true
+  
+  # Maximum query length after enhancement
+  max_enhanced_length: 200
+
+# Result Scoring Weights
+scoring_weights:
+  # Title relevance (0-4 points)
+  title_relevance: 4.0
+  
+  # Summary quality (0-3 points)
+  summary_quality: 3.0
+  
+  # Date freshness (0-3 points)
+  date_freshness: 3.0
+  
+  # Domain authority (0-3 points)
+  domain_authority: 3.0
+  
+  # Content type bonus
+  content_bonus: 0.5
+
+# Domain Authority Weights
+domain_weights:
+  ".edu": 3.0
+  ".gov": 3.0
+  "wikipedia.org": 2.5
+  ".org": 2.0
+  ".com": 1.0
+  ".net": 1.0
+  ".io": 1.5
+  "github.com": 2.0
+  "stackoverflow.com": 2.5
+  "reddit.com": 1.5
+  "twitter.com": 1.0
+  "youtube.com": 1.5
+  "medium.com": 1.5
+  "dev.to": 1.5
+  "hashnode.dev": 1.5
+
+# Query Type Detection
+query_types:
+  news:
+    keywords: ["news", "latest", "breaking", "update", "announcement", "recent"]
+    search_type: "neural"
+    num_results: 7
+    enhancements: ["2025", "current events"]
+    confidence_threshold: 0.3
+    
+  technical:
+    keywords: ["how to", "tutorial", "guide", "code", "programming", "api", "framework"]
+    search_type: "keyword"
+    num_results: 5
+    enhancements: ["tutorial", "guide", "documentation"]
+    confidence_threshold: 0.3
+    
+  comparison:
+    keywords: ["vs", "versus", "compare", "difference", "better", "which"]
+    search_type: "neural"
+    num_results: 6
+    enhancements: ["comparison", "analysis"]
+    confidence_threshold: 0.3
+    
+  factual:
+    keywords: ["what is", "who is", "when", "where", "why", "how"]
+    search_type: "auto"
+    num_results: 4
+    enhancements: ["definition", "information"]
+    confidence_threshold: 0.3
+    
+  sports:
+    keywords: ["sports", "football", "basketball", "baseball", "soccer", "game", "match"]
+    search_type: "neural"
+    num_results: 5
+    enhancements: ["live", "scores", "results"]
+    confidence_threshold: 0.3
+    
+  financial:
+    keywords: ["price", "stock", "market", "crypto", "bitcoin", "ethereum", "investment"]
+    search_type: "neural"
+    num_results: 6
+    enhancements: ["current", "live", "market data"]
+    confidence_threshold: 0.3
+
+# Fallback Strategies
+fallback_strategies:
+  # Enable fallback search when primary search fails
+  enabled: true
+  
+  # Strategies to try in order
+  strategies:
+    - name: "simplified_query"
+      action: "first_three_words"
+      params:
+        numResults: 3
+        searchType: "auto"
+        
+    - name: "keyword_search"
+      action: "same_query"
+      params:
+        numResults: 3
+        searchType: "keyword"
+        
+    - name: "neural_search"
+      action: "same_query"
+      params:
+        numResults: 3
+        searchType: "neural"
+        
+    - name: "broader_search"
+      action: "first_two_words"
+      params:
+        numResults: 5
+        searchType: "auto"
+
+# Performance Monitoring
+performance:
+  # Enable performance tracking
+  enabled: true
+  
+  # Log slow searches (seconds)
+  slow_search_threshold: 5.0
+  
+  # Track query types
+  track_query_types: true
+  
+  # Track success rates
+  track_success_rates: true
+  
+  # Track cache performance
+  track_cache_performance: true
+
+# Content Quality Filters
+content_filters:
+  # Minimum title length
+  min_title_length: 10
+  
+  # Maximum title length
+  max_title_length: 200
+  
+  # Minimum summary length
+  min_summary_length: 50
+  
+  # Maximum summary length
+  max_summary_length: 500
+  
+  # Penalize very short titles
+  penalize_short_titles: true
+  
+  # Penalize very long titles
+  penalize_long_titles: true
+
+# Enhanced AI Processing
+enhanced_ai:
+  # Enable enhanced AI processing
+  enabled: true
+  
+  # Fallback to basic results if enhanced AI fails
+  fallback_to_basic: true
+  
+  # Maximum response length for enhanced AI
+  max_response_length: 1000
+  
+  # Temperature for AI responses
+  temperature: 0.7
+
+# Error Handling
+error_handling:
+  # Retry failed requests
+  retry_failed_requests: true
+  
+  # Maximum retry attempts
+  max_retries: 3
+  
+  # Retry delay in seconds
+  retry_delay: 1.0
+  
+  # Log detailed error information
+  log_detailed_errors: true
+

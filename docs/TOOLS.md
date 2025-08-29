@@ -111,119 +111,6 @@ EXA_API_KEY=your_api_key_here
 
 ---
 
-### 📚 **GitHub Integration**
-
-**Purpose**: Access and analyze GitHub repositories
-
-**Features**:
-
-- Search repository files
-- Analyze code and documentation
-- Summarize README files and code
-- Public repository access only
-- **Auto-enabled** when needed
-
-**Use Cases**:
-
-- Understanding open-source projects
-- Analyzing code structure
-- Getting project summaries
-
-**Setup**:
-
-```bash
-# Configure GitHub token in dev.env
-GITHUB_TOKEN=your_github_token_here
-
-# Auto-enabled when needed
-```
-
----
-
-### 🎥 **YouTube Search & Analysis**
-
-**Purpose**: Search YouTube and analyze video content
-
-**Features**:
-
-- Search for videos based on queries
-- Extract video metadata from URLs
-- Get video information and statistics
-- Real-time search results
-- **Auto-enabled** when needed
-
-**Use Cases**:
-
-- Finding relevant videos
-- Getting video information
-- Research and content discovery
-
-**Setup**:
-
-```bash
-# Configure YouTube API key in dev.env
-YOUTUBE_DATA_v3_API_KEY=your_api_key_here
-
-# Auto-enabled when needed
-```
-
----
-
-### 🎵 **Audio Tools**
-
-**Purpose**: Manipulate and process audio files
-
-**Features**:
-
-- Voice cloning capabilities
-- Audio file editing
-- Format conversion
-- Audio enhancement
-- **Auto-enabled** when needed
-
-**Use Cases**:
-
-- Creating voice clones
-- Editing audio content
-- Audio file processing
-
-**Setup**:
-
-```bash
-# Install dependencies
-pip install gradio_client
-
-# Auto-enabled when needed
-```
-
----
-
-### 💡 **Ideation Tools**
-
-**Purpose**: Brainstorming and creative thinking
-
-**Features**:
-
-- **Canvas**: Create focused discussion threads
-- **Artifacts**: Generate and share files (code, markdown, etc.)
-- Thread-based organization
-- File generation capabilities
-- **Auto-enabled** when needed
-
-**Use Cases**:
-
-- Project planning and brainstorming
-- Creating structured discussions
-- Generating documentation and code
-
-**Setup**:
-
-```bash
-# Auto-enabled when needed
-```
-
----
-
 ### 💰 **Cryptocurrency Price Tool**
 
 **Purpose**: Get real-time cryptocurrency prices
@@ -410,8 +297,7 @@ Some tools require API keys configured in your `dev.env` file:
 ```bash
 # Required for various tools
 EXA_API_KEY=your_exa_api_key
-GITHUB_TOKEN=your_github_token
-YOUTUBE_DATA_v3_API_KEY=your_youtube_api_key
+
 OPENAI_API_KEY=your_openai_api_key
 GEMINI_API_KEY=your_gemini_api_key
 POLLINATIONS_API_KEY=your_pollinations_api_key  # Optional

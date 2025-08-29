@@ -27,6 +27,41 @@ class Tool(ToolManifest):
         self.discord_ctx = discord_ctx
         self.discord_bot = discord_bot
 
+        # Priority mapping for common symbols to avoid confusion with meme tokens
+        self.symbol_priority = {
+            "SOL": ["Solana", "SOL"],  # Prioritize actual Solana over meme tokens
+            "BTC": ["Bitcoin", "BTC"],  # Prioritize actual Bitcoin
+            "ETH": ["Ethereum", "ETH"],  # Prioritize actual Ethereum
+            "DOGE": ["Dogecoin", "DOGE"],  # Prioritize actual Dogecoin
+        }
+
+    def _prioritize_crypto_matches(self, crypto_list: list, symbol: str) -> dict:
+        """
+        Prioritize well-known cryptocurrencies over meme tokens when multiple matches exist.
+        This prevents returning obscure tokens when users ask for major cryptocurrencies.
+        """
+        if not crypto_list:
+            return crypto_list[0] if len(crypto_list) > 0 else None
+
+        # If we have priority names for this symbol, try to find them first
+        if symbol in self.symbol_priority:
+            priority_names = self.symbol_priority[symbol]
+
+            # First, try to find exact name matches
+            for priority_name in priority_names:
+                for crypto in crypto_list:
+                    if crypto.get("name", "").lower() == priority_name.lower():
+                        return crypto
+
+            # If no exact match, try partial name matches
+            for priority_name in priority_names:
+                for crypto in crypto_list:
+                    if priority_name.lower() in crypto.get("name", "").lower():
+                        return crypto
+
+        # If no priority match found, return the first one (original behavior)
+        return crypto_list[0]
+
     async def _tool_function_get_token_price(self, token: str):
         """Fetch the current price of a cryptocurrency token."""
         token = token.strip()
@@ -94,7 +129,10 @@ class Tool(ToolManifest):
                     # Handle case where multiple coins might have the same symbol
                     crypto_list = data["data"][token_upper]
                     if isinstance(crypto_list, list) and len(crypto_list) > 0:
-                        crypto_data = crypto_list[0]  # Get first match
+                        # Prioritize well-known cryptocurrencies to avoid meme token confusion
+                        crypto_data = self._prioritize_crypto_matches(
+                            crypto_list, token_upper
+                        )
                     elif isinstance(crypto_list, dict):
                         crypto_data = crypto_list
                     else:

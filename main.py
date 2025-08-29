@@ -42,14 +42,12 @@ from pathlib import Path
 import aiofiles.os
 import discord
 import dotenv
-import logging
 import re
 import socket
 import yaml
 import motor.motor_asyncio
 from core.ai.history import History
 from core.services.auto_return_manager import AutoReturnManager
-import google.generativeai as genai  # Import Gemini API client
 
 # Go to project root directory
 chdir(Path(__file__).parent.resolve())
@@ -115,14 +113,16 @@ class InitBot(ServicesInitBot):
 
         # Prepare temporary directory
         if environ.get("TEMP_DIR") is not None:
-            if Path(environ.get("TEMP_DIR")).exists():
-                for file in Path(environ.get("TEMP_DIR", "temp")).iterdir():
+            temp_dir = Path(environ.get("TEMP_DIR"))
+            if temp_dir.exists():
+                for file in temp_dir.iterdir():
                     file.unlink()
             else:
-                mkdir(environ.get("TEMP_DIR"))
+                temp_dir.mkdir(parents=True, exist_ok=True)
         else:
             environ["TEMP_DIR"] = "temp"
-            mkdir(environ.get("TEMP_DIR"))
+            temp_dir = Path(environ.get("TEMP_DIR"))
+            temp_dir.mkdir(parents=True, exist_ok=True)
 
         # Initialize non-async services
         try:
@@ -140,27 +140,6 @@ class InitBot(ServicesInitBot):
         except Exception as e:
             logging.error(f"Failed to initialize input validator: {e}")
             self.input_validator = None
-
-        # Configure Gemini API client globally
-        try:
-            gemini_api_key = environ.get("GEMINI_API_KEY")
-            gemini_api_key_status = "set" if gemini_api_key else "not set"
-            logging.info(
-                f"GEMINI_API_KEY status during initialization: {gemini_api_key_status}"
-            )
-
-            if gemini_api_key:
-                genai.configure(api_key=gemini_api_key)
-                self._gemini_api_configured = True
-                logging.info("Gemini API configured successfully")
-            else:
-                self._gemini_api_configured = False
-                logging.warning(
-                    "GEMINI_API_KEY not set; Gemini API will not be available for dynamic question generation."
-                )
-        except Exception as e:
-            logging.error(f"Failed to configure Gemini API: {e}")
-            self._gemini_api_configured = False
 
         # Initialize async services after bot is ready
         self.loop.create_task(self._initialize_async_services())
@@ -314,7 +293,7 @@ async def on_ready():
     )
     # https://stackoverflow.com/a/65780398 - for multiple statuses
     await bot.change_presence(
-        activity=discord.Game(f"/ask me anything or {bot.command_prefix}help")
+        activity=discord.Game(f"Don't talk to me I am gambling...")
     )
 
     # Sync slash commands
@@ -356,15 +335,15 @@ async def on_message(message: discord.Message):
 
                     You pinged me, so what’s good?
                     
-                    • Wanna pick my brain? Just **/ask** or @ me with your question – I spit answers faster than a memecoin rug-pull.
+                    • Wanna pick my brain? Just @ me with your question – I spit answers faster than a memecoin rug-pull.
                     • Commands? Smash **/** and scroll, or `{bot.command_prefix}help` if you’re feeling 2016.
 
                     Examples:
-                    • “@{bot.user.name} how many R’s in strawberry?”
-                    • **/ask** prompt: “tell me a joke (make it dark)”
-                    • “yo @{bot.user.name} hit me with today’s motivation.”
+                    • “@{bot.user.name} how many keno numbers?”
+                    • **/ask** prompt: “Wen monthly?”
+                    • “yo @{bot.user.name} hit me with today’s sport picks.”
 
-                    Now quit reading and gamble your questions on me 🔥""")
+                    Now quit reading and make some money 🔥""")
         )
 
 
@@ -408,22 +387,32 @@ class CustomHelp(commands.MinimalHelpCommand):
                 🚀 **Quick Start**: Use `/help` or `/quickstart` for the full guide!
                 
                 📋 **Core Commands**:
-                • `/ask <question>` - Ask Jakey anything
-                • `/model set <model>` - Switch AI models  
+                • Mention Jakey DEGEN with your question
+                • `/model set <model>` - Switch AI models (Admin only)
+                • `/model current` - Show current model
+                • `/model list` - List all available models
                 • `/feature <tool>` - Enable tools (Memory, CryptoPrice, etc.)
                 • `/sweep` - Clear conversation history
+                
+                🤖 **AI Models Available**:
+                • **Pollinations.AI Models** (Default - No API Key Required):
+                  - `pollinations::evil` - Uncensored model perfect for unfiltered responses
+
                 
                 🛠️ **Available Tools**:
                 • **Memory** - Remember and recall information
                 • **CryptoPrice** - Live token prices
                 • **CurrencyConverter** - Currency conversion
-                • **YouTube** - Video analysis
-                • **GitHub** - Code repository access
+
+                • **ImageGen** - AI image generation and editing
+                • **CodeExecution** - Python code execution
                 
                 💡 **Pro Tips**:
                 • Start with `/feature Memory` for best experience
                 • Use natural language - Jakey understands context
                 • Set reminders with `/remind <time> <message>`
+                • Generate images directly with `/generate_image <prompt>`
+                • Edit images using the ImageGen tool with URL context
                 
                 📚 **More Help**:
                 Use `{self.context.clean_prefix}{command_name} [command]` for detailed command info""")
@@ -443,7 +432,7 @@ class CustomHelp(commands.MinimalHelpCommand):
         if not filtered_pages:
             embed = discord.Embed(
                 title=f"**{self.context.bot.user.name}** Help & Commands",
-                description="🚀 **Quick Start**: Use `/help` or `/quickstart` for the full guide!\n\n📋 **Core Commands**:\n• `/ask <question>` - Ask Jakey anything\n• `/model set <model>` - Switch AI models\n• `/feature <tool>` - Enable tools (Memory, CryptoPrice, etc.)\n• `/sweep` - Clear conversation history\n\n💡 **Pro Tip**: Use `/help` for comprehensive help with all features!",
+                description="🚀 **Quick Start**: Use `/help` or `/quickstart` for the full guide!\n\n📋 **Core Commands**:\n• Mention Jakey DEGEN with your question\n• `/model set <model>` - Switch AI models\n• `/feature <tool>` - Enable tools (Memory, CryptoPrice, etc.)\n• `/sweep` - Clear conversation history\n\n💡 **Pro Tip**: Use `/help` for comprehensive help with all features!",
                 color=discord.Color.blue(),
             )
             await destination.send(embed=embed)

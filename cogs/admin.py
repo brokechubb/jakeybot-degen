@@ -1,11 +1,6 @@
-import aiofiles
-import aiofiles.os
 import logging
 import discord
-import random
-import subprocess
 from discord.ext import commands
-from os import environ
 from datetime import datetime
 
 
@@ -14,11 +9,15 @@ class Admin(commands.Cog):
         self.bot: discord.Bot = bot
 
     # Shutdown command
-    @commands.command(aliases=["exit", "stop", "quit", "shutdown"])
+    @commands.slash_command(
+        name="shutdown",
+        description="Shut down the bot (Owner only)",
+        guild_ids=None,  # Global command
+    )
     @commands.is_owner()
     async def admin_shutdown(self, ctx):
         """Shuts down the bot"""
-        await ctx.send("Shutting down...")
+        await ctx.respond("Shutting down...", ephemeral=True)
         await self.bot.close()
 
     @commands.slash_command(
@@ -61,9 +60,8 @@ class Admin(commands.Cog):
         try:
             await ctx.response.defer(ephemeral=True)
 
-            # Simple sync approach for py-cord
+            # Sync commands using py-cord
             try:
-                # Try to sync commands
                 await self.bot.sync_commands()
                 await ctx.respond(
                     "✅ Commands synced successfully! They should appear in 1-2 minutes.",
@@ -71,24 +69,11 @@ class Admin(commands.Cog):
                 )
             except Exception as sync_error:
                 logging.error(f"Sync error: {sync_error}")
-
-                # Try alternative sync method
-                try:
-                    if hasattr(self.bot, "sync_all_application_commands"):
-                        await self.bot.sync_all_application_commands()
-                        await ctx.respond(
-                            "✅ Commands synced using alternative method!",
-                            ephemeral=True,
-                        )
-                    else:
-                        raise sync_error
-                except Exception as alt_error:
-                    logging.error(f"Alternative sync failed: {alt_error}")
-                    await ctx.respond(
-                        f"❌ Sync failed: {str(sync_error)[:100]}...\n\n"
-                        "Try restarting the bot instead.",
-                        ephemeral=True,
-                    )
+                await ctx.respond(
+                    f"❌ Sync failed: {str(sync_error)[:100]}...\n\n"
+                    "Try restarting the bot instead.",
+                    ephemeral=True,
+                )
 
         except Exception as e:
             logging.error(f"Sync command error: {e}")
@@ -273,6 +258,9 @@ class Admin(commands.Cog):
             await ctx.respond(
                 f"❌ You are missing the required permissions to use this command. Needed permissions:\n```{error}```"
             )
+        elif isinstance(error, commands.CommandOnCooldown):
+            retry_after = int(error.retry_after)
+            await ctx.respond(f"⏰ **Cooldown**: Try again in {retry_after} seconds.")
         else:
             raise error
 
