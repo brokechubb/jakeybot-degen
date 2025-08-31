@@ -2,7 +2,7 @@
 
 > **Advanced Discord Bot with AI Integration, Performance Monitoring, and Comprehensive Tooling**
 
-[![Version](https://img.shields.io/badge/version-DEGEN.2.1.0-blue.svg)](https://github.com/your-repo/jakeybot-degen)
+[![Version](https://img.shields.io/badge/version-DEGEN.2.1.0-blue.svg)](https://github.com/brokechubb/jakeybot-degen)
 [![Python](https://img.shields.io/badge/python-3.8+-green.svg)](https://python.org)
 [![License](https://img.shields.io/badge/license-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Maintainer](https://img.shields.io/badge/maintainer-CHUBB-red.svg)](mailto:thechubb16@gmail.com)
@@ -146,7 +146,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-repo/jakeybot-degen.git
+git clone https://github.com/brokechubb/jakeybot-degen.git
 cd jakeybot-degen
 
 # Create virtual environment
