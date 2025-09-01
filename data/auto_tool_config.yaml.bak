@@ -27,11 +27,10 @@ tools:
   ExaSearch:
     # Web search detection sensitivity
     enabled: true
-    confidence_threshold: 0.90  # Lower threshold = more sensitive for web search
+    confidence_threshold: 0.75  # Lower threshold = more sensitive for web search
     
     # Keywords that strongly indicate web search need
     strong_keywords:
-      - "google"
       - "search for"
       - "find information about"
       - "look up"
@@ -41,10 +40,21 @@ tools:
       - "current events"
       - "breaking news"
       - "live updates"
+      - "what is"
+      - "who is"
+      - "when is"
+      - "where is"
+      - "how to"
       - "tutorial"
       - "guide"
       - "compare"
+      - "vs"
+      - "versus"
       - "difference between"
+      - "price of"
+      - "worth"
+      - "value"
+      - "cost"
       - "schedule"
       - "results"
       - "scores"
@@ -76,7 +86,7 @@ tools:
       - "explain"
     
     # Minimum number of weak keywords required to trigger
-    min_weak_keywords: 3  # Reduced from 2 to be more sensitive
+    min_weak_keywords: 1  # Reduced from 2 to be more sensitive
     
     # Sports-specific keywords (require additional context)
     sports_keywords:
@@ -100,7 +110,7 @@ tools:
       - "playoff"
     
     # Require sports keywords to be combined with other indicators
-    require_sports_context: true  # Changed to false for better sports search detection
+    require_sports_context: false  # Changed to false for better sports search detection
     
     # Technical/Programming keywords
     tech_keywords:
@@ -163,7 +173,7 @@ tools:
   CryptoPrice:
     # Cryptocurrency price detection sensitivity
     enabled: true
-    confidence_threshold: 0.9  # Very high threshold = very conservative
+    confidence_threshold: 0.8  # Very high threshold = very conservative
     
     # Keywords that indicate price inquiry
     price_keywords:
@@ -172,7 +182,9 @@ tools:
       - "value"
       - "cost"
       - "how much"
-      - "trading at"
+      - "current"
+      - "live"
+      - "where is"
     
     # Cryptocurrency tokens/symbols
     crypto_tokens:
@@ -182,22 +194,12 @@ tools:
       - "eth"
       - "solana"
       - "sol"
-      - "nano"
-      - "xno"
+      - "bonk"
       - "dogecoin"
       - "doge"
       - "xrp"
-      - "ripple"
-      - "pol"
-      - "matic"
-      - "polygon"
       - "ltc"
-      - "litecoin"
-      - "trump"
       - "coin"
-      - "shitcoin"
-      - "altcoin"
-      - "token"
     
     # Require both price keyword AND crypto token
     require_both_keywords: true
@@ -240,7 +242,7 @@ tools:
   Memory:
     # Memory tool detection sensitivity
     enabled: true
-    confidence_threshold: 0.85  # Lower threshold = more sensitive for memory
+    confidence_threshold: 0.65  # Lower threshold = more sensitive for memory
     
     # Keywords that indicate memory storage
     memory_keywords:
@@ -256,16 +258,16 @@ tools:
 # Advanced Settings
 advanced:
   # Enable context-aware detection (considers conversation history)
-  context_aware: false
+  context_aware: true
   
   # Maximum context messages to consider
   max_context_messages: 3
   
   # Penalty for repeated tool usage (reduces sensitivity over time)
-  repetition_penalty: 0.15
+  repetition_penalty: 0.1
   
   # Cooldown period between auto-tool activations (in seconds)
-  cooldown_period: 260
+  cooldown_period: 45
   
   # Enable user preference learning (adjusts sensitivity based on user behavior)
   learn_user_preferences: true

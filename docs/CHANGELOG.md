@@ -4,11 +4,17 @@
 
 ### Added
 
+- **Enhanced Pollinations.AI Integration**: Complete overhaul with full API feature support
+- **Vision Capabilities**: Image analysis with openai-large and claude-hybridspace models
+- **Speech-to-Text**: Audio transcription with openai-audio model support
+- **Text-to-Speech**: Voice generation with multiple voice options (alloy, echo, fable, onyx, nova, shimmer)
+- **Function Calling**: Full OpenAI-compatible tool calling support
+- **Real-time Feeds**: SSE stream integration for live content monitoring
+- **Advanced Authentication**: Enhanced API key handling with bearer token support
 - **Auto-Return System**: Intelligent tool management with automatic activation and timeout management
 - **Enhanced Engagement System**: Persistent engagement settings with MongoDB storage and configurable behavior
 - **Gambling Games**: Interactive betting pools, trivia games, and keno number generation
 - **Direct Image Generation**: No tool switching required for image creation and editing
-- **Pollinations.AI Integration**: New AI provider with uncensored models and premium features
 - **Smart Suggestions**: Context-aware optimization tips for tool usage and workflow efficiency
 - **LavaLink v4 Music System**: Complete voice channel music functionality with queue management
 - **Music Commands**: `/play`, `/pause`, `/resume`, `/stop`, `/skip`, `/queue`, `/volume`, `/nowplaying`, `/disconnect`
@@ -63,7 +69,7 @@
   - **Error Handling**: Added comprehensive error handling and logging
   - **Backward Compatibility**: Works with existing chat history structures
 - **Pollinations.AI System Prompt**: Fixed system prompt not being applied in chat conversations
-  - **Proper System Prompt**: Now correctly applies Jakey's personality and identity
+ - **Proper System Prompt**: Now correctly applies Jakey's personality and identity
   - **Chat History Support**: System prompt is maintained across conversation history
   - **Fallback Prompt**: Includes proper Jakey system prompt when none is provided
 - **Pollinations.AI 431 Error**: Fixed "Request Header Fields Too Large" error for long conversations
@@ -88,12 +94,38 @@
   - **Evil Model First**: Always tries "evil" uncensored model before others
   - **Smart Fallback**: Current model moved to position 3 if not uncensored
   - **No Content Filtering**: Eliminates unnecessary content filter errors
+- **Pollinations.AI Enhanced Features**: Complete API integration overhaul
+  - **OpenAI-Compatible Endpoint**: Full message history and parameter support
+  - **Vision Capabilities**: Image analysis with multiple model support
+  - **Audio Processing**: Speech-to-text and text-to-speech capabilities
+  - **Function Calling**: Tool integration with automatic calling
+  - **Real-time Feeds**: SSE stream support for live monitoring
+  - **Advanced Authentication**: Bearer token and query parameter support
+- **ExaSearch Sensitivity**: Reduced false positive web search triggers
+  - **Increased Confidence Thresholds**: Raised from 0.3 to 0.6 for all query types
+  - **Reduced Keyword Lists**: More selective keyword matching for search detection
+  - **Smarter Query Analysis**: Better distinction between casual conversation and search intent
+  - **Fewer False Triggers**: Common conversational phrases less likely to activate search
 - **Documentation Updates**: Comprehensive documentation refresh
-  - **Auto-Return Guide**: Complete guide for the new auto-return system
+ - **Auto-Return Guide**: Complete guide for the new auto-return system
   - **Updated User Guides**: All user documentation updated with latest features
   - **Configuration Guide**: Enhanced configuration options for new features
   - **FAQ Updates**: Added sections for auto-return, engagement, and gambling features
   - **Tools Documentation**: Updated with auto-enablement and new tools
+
+### 🐛 Fixed
+
+- **Reminder Time Parsing**: Fixed invalid literal error when parsing times like "8:30a"
+  - **Enhanced Regex Pattern**: Now properly handles times with minutes (e.g., "8:30am", "10:15pm")
+  - **Decimal Time Support**: Added support for decimal times (e.g., "2.4h", "30.5m", "1.5d")
+  - **Flexible Format Parsing**: Handles various time formats including single-letter am/pm
+  - **Improved Error Handling**: Better error messages for invalid time formats
+- **Logs Command**: Fixed `/logs` command to actually display bot logs instead of just testing logging
+  - **Real Log Display**: Now reads and shows actual PM2 log files (`/home/chubb/.pm2/logs/jakey-out.log` and `/home/chubb/.pm2/logs/jakey-error.log`)
+  - **Configurable Output**: Supports both output logs and error logs with `/logs type: out` or `/logs type: error`
+  - **Line Count Control**: Adjustable number of lines with `/logs lines: 50`
+  - **Proper Formatting**: Syntax-highlighted log output with truncation for Discord limits
+  - **Error Handling**: Graceful handling of missing log files and read errors
 
 ## [v2.1.0] - 2025-01-24
 

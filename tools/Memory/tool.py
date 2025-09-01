@@ -145,6 +145,25 @@ class Tool(ToolManifest):
             # Limit the search results
             limit = min(max(1, limit), 10)
 
+            # NEW: Search global facts first (guild_id = 0)
+            global_facts = []
+            try:
+                global_collection = self.history_db._db["knowledge_0"]
+                # Search for global facts that match the query
+                async for fact in global_collection.find(
+                    {"$text": {"$search": query}}
+                ).limit(limit):
+                    if fact and (
+                        fact.get("expires_at") is None
+                        or fact["expires_at"] > datetime.now(timezone.utc)
+                    ):
+                        # Check if this is a public global fact
+                        fact_text = fact.get("fact_text", "")
+                        if "[SYSTEM_GLOBAL]" in fact_text:
+                            global_facts.append(fact_text)
+            except Exception as e:
+                logging.debug(f"Global fact search failed: {e}")
+
             # FIRST PRIORITY: Search for facts created by the current user
             user_facts = await self.history_db.search_facts_by_user(
                 guild_id, current_user_id, query, limit=limit
@@ -171,40 +190,42 @@ class Tool(ToolManifest):
                     guild_id, limit=limit
                 )
 
-            # Determine which facts to return and format the response
-            if user_facts:
-                # User-specific facts found - this is the best case
-                facts = user_facts
-                source_info = "your personal memory"
-            elif all_facts:
-                # General facts found
-                facts = all_facts
-                source_info = "general memory"
-            elif recent_user_facts:
-                # Recent user facts as fallback
-                facts = recent_user_facts
-                source_info = "your recent conversations"
-            elif recent_all_facts:
-                # Recent general facts as last resort
-                facts = recent_all_facts
-                source_info = "recent conversations"
-            else:
+            # Combine all facts with priority: global facts first, then user facts, then others
+            all_relevant_facts = []
+            
+            # Add global facts first
+            for fact in global_facts:
+                # Clean up the fact text for display
+                clean_fact = fact.replace("[SYSTEM_GLOBAL]", "").replace("[SYSTEM_PRIVATE]", "")
+                if clean_fact not in [f[0] for f in all_relevant_facts]:
+                    all_relevant_facts.append((clean_fact, "global knowledge base"))
+
+            # Add user facts
+            for fact in user_facts:
+                if fact not in [f[0] for f in all_relevant_facts]:
+                    all_relevant_facts.append((fact, "your personal memory"))
+
+            # Add general facts
+            for fact in all_facts:
+                if fact not in [f[0] for f in all_relevant_facts]:
+                    all_relevant_facts.append((fact, "general memory"))
+
+            # Limit to requested number
+            all_relevant_facts = all_relevant_facts[:limit]
+
+            if not all_relevant_facts:
                 return f"🤔 I couldn't find any facts matching '{query}' in my memory"
 
-            # Format the response
-            if len(facts) == 1:
-                response = f"📝 Here's what I remember about '{query}' from {source_info}:\n**{facts[0]}**"
+            # Format the response with source information
+            if len(all_relevant_facts) == 1:
+                fact_text, source_info = all_relevant_facts[0]
+                return f"I found this information in my memory from {source_info}: {fact_text}"
             else:
-                response = f"📝 Here are the facts I found about '{query}' from {source_info}:\n"
-                for i, fact in enumerate(facts, 1):
-                    response += f"{i}. **{fact}**\n"
-
-            # Return the facts in a natural format for the AI to use
-            if len(facts) == 1:
-                return f"I found this information in my memory from {source_info}: {facts[0]}"
-            else:
-                facts_text = "; ".join(facts)
-                return f"I found these details in my memory from {source_info}: {facts_text}"
+                facts_with_sources = []
+                for fact_text, source_info in all_relevant_facts:
+                    facts_with_sources.append(f"{fact_text} (from {source_info})")
+                facts_text = "; ".join(facts_with_sources)
+                return f"I found these details in my memory: {facts_text}"
 
         except Exception as e:
             logging.error(f"Error recalling facts: {e}")

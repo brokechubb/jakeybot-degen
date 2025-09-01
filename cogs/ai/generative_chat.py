@@ -11,6 +11,7 @@ import importlib
 import inspect
 import logging
 import re
+from datetime import datetime, timezone
 
 
 class BaseChat:
@@ -173,11 +174,35 @@ class BaseChat:
             "jakey_system_prompt", type=0
         )
 
-        # Retrieve relevant facts from knowledge base
+        # Retrieve relevant facts from knowledge base (including global facts)
         facts = await self.DBConn.search_facts(guild_id, _final_prompt, limit=3)
-        if facts:
+        
+        # Also search global facts
+        global_facts = []
+        try:
+            global_collection = self.DBConn._db["knowledge_0"]
+            async for fact in global_collection.find(
+                {"$text": {"$search": _final_prompt}}
+            ).limit(2):
+                if fact and (
+                    fact.get("expires_at") is None
+                    or fact["expires_at"] > datetime.now(timezone.utc)
+                ):
+                    # Check if this is a public global fact
+                    fact_text = fact.get("fact_text", "")
+                    if "[SYSTEM_GLOBAL]" in fact_text:
+                        # Clean up the fact text for display
+                        clean_fact = fact_text.replace("[SYSTEM_GLOBAL]", "").replace("[SYSTEM_PRIVATE]", "")
+                        global_facts.append(clean_fact)
+        except Exception as e:
+            logging.debug(f"Global fact search failed: {e}")
+
+        # Combine local and global facts
+        all_facts = global_facts + facts
+        
+        if all_facts:
             knowledge_section = "Relevant knowledge:\n" + "\n".join(
-                f"- {fact}" for fact in facts
+                f"- {fact}" for fact in all_facts
             )
             _system_prompt += "\n\n" + knowledge_section
 

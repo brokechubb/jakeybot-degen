@@ -130,13 +130,13 @@ class Misc(commands.Cog):
         time_input = time_input.lower()
 
         if time_input.endswith("m"):
-            minutes = int(time_input[:-1])
+            minutes = float(time_input[:-1])
             return now + timedelta(minutes=minutes)
         elif time_input.endswith("h"):
-            hours = int(time_input[:-1])
+            hours = float(time_input[:-1])
             return now + timedelta(hours=hours)
         elif time_input.endswith("d"):
-            days = int(time_input[:-1])
+            days = float(time_input[:-1])
             return now + timedelta(days=days)
         elif "tomorrow" in time_input:
             tomorrow = now + timedelta(days=1)
@@ -157,18 +157,26 @@ class Misc(commands.Cog):
                 hour=9, minute=0, second=0, microsecond=0
             )  # Default to 9am tomorrow
 
-        # Basic parsing for specific time (e.g., "10am", "2pm")
-        match = re.match(r"(\d+)(am|pm)", time_input)
+        # Basic parsing for specific time (e.g., "10am", "2pm", "8:30am", "10:15pm")
+        match = re.match(r"(\d+)(?::(\d+))?([ap]m?)", time_input)
         if match:
             hour = int(match.group(1))
-            ampm = match.group(2)
+            minute = int(match.group(2)) if match.group(2) else 0
+            ampm = match.group(3).lower()
+            
+            # Handle single letter am/pm (like 'a' or 'p')
+            if ampm == "a":
+                ampm = "am"
+            elif ampm == "p":
+                ampm = "pm"
+            
             if ampm == "pm" and hour < 12:
                 hour += 12
             elif ampm == "am" and hour == 12:  # 12am is midnight
                 hour = 0
 
             # If the target time is already past today, set for tomorrow
-            target_time = now.replace(hour=hour, minute=0, second=0, microsecond=0)
+            target_time = now.replace(hour=hour, minute=minute, second=0, microsecond=0)
             if target_time <= now:
                 target_time += timedelta(days=1)
             return target_time
@@ -1675,6 +1683,13 @@ class Misc(commands.Cog):
         commands_embed.add_field(
             name="⚡ **Advanced Features**",
             value="• **Enhanced Web Search**: Smart query enhancement, quality scoring, caching\n• **Search Statistics**: `/search_stats` for performance metrics\n• **Image Generation**: `/generate_image <prompt>`\n• **Image Editing**: Use ImageGen tool with URL context\n• **Auto-Image**: Automatic detection\n• **Reminders**: `/remind <time> <message>`\n• **Trivia Games**: `/trivia` for challenges\n• **Gambling Games**: `/create_bet` for pools\n• **Keno Numbers**: `/keno` for random numbers\n• **Engagement**: `/jakey_engage` for participation\n• **Music**: `/play <query>` for music",
+            inline=False,
+        )
+
+        # Admin commands
+        commands_embed.add_field(
+            name="🛡️ **Admin Commands**",
+            value="• `/logs` - View recent bot logs (out/error)\n• `/performance` - View bot performance metrics\n• `/cache` - View cache statistics\n• `/sync` - Sync slash commands with Discord\n• `/list_commands` - List all registered commands\n• `/shutdown` - Shut down the bot (Owner only)",
             inline=False,
         )
 

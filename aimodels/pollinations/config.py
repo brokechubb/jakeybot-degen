@@ -3,6 +3,7 @@ import importlib
 import logging
 import requests
 import urllib.parse
+from typing import Dict, List, Any
 
 
 class ModelParams:
@@ -12,8 +13,9 @@ class ModelParams:
 
         # Default parameters for Pollinations.AI
         self._genai_params = {
-            "temperature": 0.7,
-            "model": "openai",  # Default text model - will be overridden by actual model name
+            "temperature": 0.90,
+            "top_p": 0.85,
+            "model": "evil",  # Default text model - will be overridden by actual model name
             "width": 1024,  # Default image width
             "height": 1024,  # Default image height
         }
@@ -87,8 +89,8 @@ class ModelParams:
         }
 
     @staticmethod
-    def get_available_models():
-        """Get available Pollinations.AI models"""
+    def get_available_models() -> Dict[str, Any]:
+        """Get available Pollinations.AI models with enhanced information"""
         try:
             # Text models
             text_response = requests.get(
@@ -106,10 +108,52 @@ class ModelParams:
                 image_response.json() if image_response.status_code == 200 else []
             )
 
-            return {"text_models": text_models, "image_models": image_models}
+            # Enhanced model categorization based on API documentation
+            categorized_models = {
+                "text_models": [],
+                "image_models": [],
+                "vision_models": [],
+                "audio_models": [],
+                "tts_voices": []
+            }
+
+            # Process text models
+            if isinstance(text_models, list):
+                categorized_models["text_models"] = [
+                    model for model in text_models 
+                    if model not in ["openai-audio", "openai-large", "claude-hybridspace"]
+                ]
+                # Add specialized models
+                if "openai-audio" in text_models:
+                    categorized_models["audio_models"].append("openai-audio")
+                if "openai-large" in text_models:
+                    categorized_models["vision_models"].append("openai-large")
+                if "claude-hybridspace" in text_models:
+                    categorized_models["vision_models"].append("claude-hybridspace")
+            elif isinstance(text_models, dict):
+                # Handle structured response
+                categorized_models["text_models"] = list(text_models.keys())
+                # Extract voices if available
+                if "openai-audio" in text_models and "voices" in text_models["openai-audio"]:
+                    categorized_models["tts_voices"] = text_models["openai-audio"]["voices"]
+
+            # Process image models
+            if isinstance(image_models, list):
+                categorized_models["image_models"] = image_models
+            elif isinstance(image_models, dict):
+                categorized_models["image_models"] = list(image_models.keys())
+
+            return categorized_models
         except Exception as e:
             logging.error(f"Error fetching Pollinations.AI models: {e}")
+            # Return comprehensive fallback with all supported models
             return {
-                "text_models": ["openai", "mistral", "claude", "gemini"],
+                "text_models": [
+                    "evil", "unity", "mistral", "gemini", "openai", 
+                    "openai-fast", "openai-roblox"
+                ],
                 "image_models": ["flux", "kontext", "sdxl"],
+                "vision_models": ["openai-large", "claude-hybridspace", "openai"],
+                "audio_models": ["openai-audio"],
+                "tts_voices": ["alloy", "echo", "fable", "onyx", "nova", "shimmer"]
             }

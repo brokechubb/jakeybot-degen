@@ -76,46 +76,46 @@ domain_weights:
 # Query Type Detection
 query_types:
   news:
-    keywords: ["news", "latest", "breaking", "update", "announcement", "recent"]
+    keywords: ["news", "latest", "breaking", "update", "announcement"]
     search_type: "neural"
-    num_results: 7
-    enhancements: ["2025", "current events"]
-    confidence_threshold: 0.3
+    num_results: 5
+    enhancements: ["2025"]
+    confidence_threshold: 0.6
     
   technical:
-    keywords: ["how to", "tutorial", "guide", "code", "programming", "api", "framework"]
+    keywords: ["how to", "tutorial", "guide", "code", "programming"]
     search_type: "keyword"
-    num_results: 5
-    enhancements: ["tutorial", "guide", "documentation"]
-    confidence_threshold: 0.3
+    num_results: 3
+    enhancements: ["tutorial", "guide"]
+    confidence_threshold: 0.6
     
   comparison:
-    keywords: ["vs", "versus", "compare", "difference", "better", "which"]
+    keywords: ["vs", "versus", "compare", "difference"]
     search_type: "neural"
-    num_results: 6
-    enhancements: ["comparison", "analysis"]
-    confidence_threshold: 0.3
+    num_results: 4
+    enhancements: ["comparison"]
+    confidence_threshold: 0.6
     
   factual:
     keywords: ["what is", "who is", "when", "where", "why", "how"]
     search_type: "auto"
-    num_results: 4
-    enhancements: ["definition", "information"]
-    confidence_threshold: 0.3
+    num_results: 3
+    enhancements: ["definition"]
+    confidence_threshold: 0.6
     
   sports:
-    keywords: ["sports", "football", "basketball", "baseball", "soccer", "game", "match"]
+    keywords: ["sports", "football", "basketball", "baseball", "soccer"]
     search_type: "neural"
-    num_results: 5
-    enhancements: ["live", "scores", "results"]
-    confidence_threshold: 0.3
+    num_results: 4
+    enhancements: ["live"]
+    confidence_threshold: 0.6
     
   financial:
-    keywords: ["price", "stock", "market", "crypto", "bitcoin", "ethereum", "investment"]
+    keywords: ["price", "stock", "market", "crypto", "bitcoin", "ethereum"]
     search_type: "neural"
-    num_results: 6
-    enhancements: ["current", "live", "market data"]
-    confidence_threshold: 0.3
+    num_results: 4
+    enhancements: ["current"]
+    confidence_threshold: 0.6
 
 # Fallback Strategies
 fallback_strategies:
@@ -212,4 +212,3 @@ error_handling:
   
   # Log detailed error information
   log_detailed_errors: true
-

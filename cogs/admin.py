@@ -1,7 +1,8 @@
 import logging
 import discord
 from discord.ext import commands
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+from core.ai.history import History
 
 
 class Admin(commands.Cog):
@@ -195,59 +196,262 @@ class Admin(commands.Cog):
     )
     @commands.cooldown(1, 10, commands.BucketType.user)
     @commands.has_permissions(administrator=True)
-    async def logs(self, ctx, action: str = "status"):
-        """Manage colored logging (Admin only). Actions: status, test"""
+    async def logs(self, ctx, log_type: str = "out", lines: int = 20):
+        """View recent bot logs (Admin only). Types: out, error"""
         try:
-            if action.lower() == "test":
-                # Test all log levels
-                from core.services.colored_logging import (
-                    log_success,
-                    log_info,
-                    log_warning,
-                    log_error,
-                    log_debug,
-                )
-
-                log_debug("Debug test message")
-                log_info("Info test message")
-                log_success("Success test message")
-                log_warning("Warning test message")
-                log_error("Error test message")
-
+            await ctx.response.defer(ephemeral=True)
+            
+            # Validate log type
+            if log_type.lower() not in ["out", "error"]:
                 await ctx.respond(
-                    "🎨 **Log Test Complete!** Check the console for colored output.",
-                    ephemeral=True,
+                    "❌ **Invalid log type!** Use: `out` or `error`", ephemeral=True
                 )
+                return
 
-            elif action.lower() == "status":
-                import sys
+            # Determine log file path
+            if log_type.lower() == "out":
+                log_file = "/home/chubb/.pm2/logs/jakey-out.log"
+                title = "📝 Bot Output Logs"
+                color = discord.Color.blue()
+            else:
+                log_file = "/home/chubb/.pm2/logs/jakey-error.log"
+                title = "🚨 Bot Error Logs"
+                color = discord.Color.red()
 
-                # Check if colors are supported
-                color_support = hasattr(sys.stdout, "isatty") and sys.stdout.isatty()
+            # Check if file exists
+            import os
+            if not os.path.exists(log_file):
+                await ctx.respond(
+                    f"❌ **Log file not found:** {log_file}", ephemeral=True
+                )
+                return
 
+            # Read last N lines from log file
+            try:
+                with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                    # Read all lines and get last N lines
+                    all_lines = f.readlines()
+                    recent_lines = all_lines[-lines:] if len(all_lines) >= lines else all_lines
+                    
+                    if not recent_lines:
+                        log_content = "📝 *No log entries found*"
+                    else:
+                        log_content = "```ansi\n" + ''.join(recent_lines) + "```"
+                        
+                        # Truncate if too long for Discord (4000 chars limit)
+                        if len(log_content) > 4000:
+                            log_content = log_content[:3900] + "\n```... [truncated]```"
+            except Exception as e:
+                await ctx.respond(
+                    f"❌ **Error reading log file:** {str(e)}", ephemeral=True
+                )
+                return
+
+            # Create embed with log content
+            embed = discord.Embed(
+                title=title,
+                description=f"**Showing last {len(recent_lines)} lines**\n{log_content}",
+                color=color,
+                timestamp=datetime.now(),
+            )
+
+            embed.add_field(
+                name="📁 File",
+                value=f"`{log_file}`",
+                inline=False
+            )
+
+            embed.add_field(
+                name="⚙️ Options",
+                value=f"Use `/logs type: error` for error logs\n"
+                      f"Use `/logs lines: 50` for more lines",
+                inline=False
+            )
+
+            await ctx.respond(embed=embed, ephemeral=True)
+
+        except Exception as e:
+            await ctx.respond(f"❌ Error viewing logs: {e}", ephemeral=True)
+
+    @commands.slash_command(
+        name="inject_fact",
+        description="Inject important facts into the global knowledge base (Owner only)",
+        guild_ids=None,  # Global command
+    )
+    @commands.is_owner()
+    async def inject_fact(
+        self,
+        ctx,
+        fact: str,
+        category: str = "global",
+        expires_in: str = "never",
+        make_public: bool = True,
+    ):
+        """
+        Inject important facts into the global knowledge base.
+        
+        Args:
+            fact: The fact or information to remember
+            category: Category for organizing the fact (default: "global")
+            expires_in: Expiration time (e.g., '1d', '2h', '30m', 'never' for permanent)
+            make_public: Whether the fact should be accessible to all users (default: True)
+        """
+        try:
+            await ctx.response.defer(ephemeral=True)
+
+            # Validate that we have a database connection
+            if not hasattr(self.bot, "DBConn") or not self.bot.DBConn:
+                await ctx.respond(
+                    "❌ Database connection not available", ephemeral=True
+                )
+                return
+
+            history_db = self.bot.DBConn
+
+            # Parse expiration time
+            expires_at = None
+            if expires_in and expires_in.lower() != "never":
+                try:
+                    now = datetime.now(timezone.utc)
+                    if expires_in.endswith("d"):
+                        days = int(expires_in[:-1])
+                        expires_at = now + timedelta(days=days)
+                    elif expires_in.endswith("h"):
+                        hours = int(expires_in[:-1])
+                        expires_at = now + timedelta(hours=hours)
+                    elif expires_in.endswith("m"):
+                        minutes = int(expires_in[:-1])
+                        expires_at = now + timedelta(minutes=minutes)
+                    else:
+                        raise ValueError("Invalid time format")
+                except:
+                    await ctx.respond(
+                        "⚠️ Invalid expiration format. Use number followed by d, h, or m (e.g., 1d, 2h, 30m), or 'never' for permanent",
+                        ephemeral=True,
+                    )
+                    return
+
+            # Determine target guild/user ID for global facts
+            # For global facts, we'll use a special system-wide identifier
+            guild_id = 0  # Special ID for global facts
+            user_id = ctx.author.id
+
+            # Prepend system indicator to fact text
+            system_prefix = "[SYSTEM_GLOBAL]" if make_public else "[SYSTEM_PRIVATE]"
+            category_prefix = f"[{category}]" if category else ""
+            fact_with_metadata = f"{system_prefix}{category_prefix} {fact}"
+
+            # Store the fact in the global knowledge base
+            fact_id = await history_db.add_fact(
+                guild_id=guild_id,
+                user_id=user_id,
+                fact_text=fact_with_metadata,
+                source=f"admin_injection/{user_id}",
+                expires_at=expires_at,
+            )
+
+            # Prepare response
+            response = f"✅ Successfully injected fact into global knowledge base:\n**{fact}**"
+            if category:
+                response += f"\n📁 Category: {category}"
+            if expires_at:
+                response += f"\n⏰ Expires: {expires_at.strftime('%Y-%m-%d %H:%M')} UTC"
+            else:
+                response += "\n♾️ Permanent"
+
+            await ctx.respond(response, ephemeral=True)
+
+        except Exception as e:
+            logging.error(f"Error injecting fact: {e}")
+            await ctx.respond(
+                f"❌ Failed to inject fact: {str(e)}", ephemeral=True
+            )
+
+    @commands.slash_command(
+        name="list_global_facts",
+        description="List all global facts in the knowledge base (Owner only)",
+        guild_ids=None,  # Global command
+    )
+    @commands.is_owner()
+    async def list_global_facts(self, ctx, limit: int = 10):
+        """List all global facts in the knowledge base."""
+        try:
+            await ctx.response.defer(ephemeral=True)
+
+            # Validate that we have a database connection
+            if not hasattr(self.bot, "DBConn") or not self.bot.DBConn:
+                await ctx.respond(
+                    "❌ Database connection not available", ephemeral=True
+                )
+                return
+
+            history_db = self.bot.DBConn
+
+            # Limit the results
+            limit = min(max(1, limit), 50)
+
+            # Get global facts (guild_id = 0)
+            guild_id = 0
+            collection_name = f"knowledge_{guild_id}"
+
+            # Check if collection exists
+            collections = await history_db._db.list_collection_names()
+            if collection_name not in collections:
+                await ctx.respond("📝 No global facts found in the knowledge base.", ephemeral=True)
+                return
+
+            knowledge_collection = history_db._db[collection_name]
+            facts = []
+
+            try:
+                async for fact in knowledge_collection.find().sort("created_at", -1).limit(limit):
+                    if fact and (
+                        fact.get("expires_at") is None
+                        or fact["expires_at"] > datetime.now(timezone.utc)
+                    ):
+                        facts.append(fact)
+
+                if not facts:
+                    await ctx.respond("📝 No global facts found in the knowledge base.", ephemeral=True)
+                    return
+
+                # Format the response
                 embed = discord.Embed(
-                    title="🎨 Logging Status",
-                    color=discord.Color.purple(),
+                    title="🌍 Global Knowledge Base Facts",
+                    color=discord.Color.gold(),
                     timestamp=datetime.now(),
                 )
 
-                embed.add_field(
-                    name="📊 Status",
-                    value=f"**Color Support:** {'✅ Enabled' if color_support else '❌ Disabled'}\n"
-                    f"**Terminal:** {'✅ TTY' if color_support else '❌ Non-TTY'}\n"
-                    f"**Logging Level:** {logging.getLogger().level}",
-                    inline=False,
-                )
+                for i, fact in enumerate(facts, 1):
+                    fact_text = fact.get("fact_text", "Unknown fact")
+                    created_at = fact.get("created_at", datetime.now(timezone.utc))
+                    expires_at = fact.get("expires_at")
+                    
+                    # Clean up the fact text for display
+                    display_text = fact_text.replace("[SYSTEM_GLOBAL]", "").replace("[SYSTEM_PRIVATE]", "")
+                    
+                    field_value = f"**{display_text}**"
+                    if expires_at:
+                        field_value += f"\n*Expires: {expires_at.strftime('%Y-%m-%d %H:%M')}*"
+                    field_value += f"\n*Added: {created_at.strftime('%Y-%m-%d %H:%M')}*"
+                    
+                    embed.add_field(
+                        name=f"Fact #{i}",
+                        value=field_value,
+                        inline=False
+                    )
+
+                embed.set_footer(text=f"Showing {len(facts)} of {limit} facts")
 
                 await ctx.respond(embed=embed, ephemeral=True)
 
-            else:
-                await ctx.respond(
-                    "❌ **Invalid action!** Use: `status` or `test`", ephemeral=True
-                )
+            except Exception as e:
+                logging.error(f"Error listing global facts: {e}")
+                await ctx.respond(f"❌ Failed to list global facts: {str(e)}", ephemeral=True)
 
         except Exception as e:
-            await ctx.respond(f"❌ Error managing logs: {e}", ephemeral=True)
+            logging.error(f"Error in list_global_facts: {e}")
+            await ctx.respond(f"❌ Error: {str(e)}", ephemeral=True)
 
     async def cog_command_error(
         self, ctx: commands.Context, error: commands.CommandError

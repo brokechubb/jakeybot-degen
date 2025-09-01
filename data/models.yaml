@@ -2,12 +2,28 @@
 # provider::model_name
 
 ############################################
-# Pollinations.AI Models - Simplified
+# Pollinations.AI Models - Enhanced
 ############################################
-# Uncensored Models (Perfect for Jakey's personality)
+
+# Text Generation Models
 - model: pollinations::evil
   name: Pollinations Evil
   description: Uncensored model perfect for unfiltered responses (✅ Now with tool support!)
+- model: pollinations::unity
+  name: Pollinations Unity
+  description: Uncensored model with vision capabilities (✅ Tool support + Image analysis)
+- model: pollinations::openai
+  name: Pollinations OpenAI
+  description: Standard text generation with tool support
+- model: pollinations::openai-fast
+  name: Pollinations OpenAI Fast
+  description: Faster text generation with tool support
+- model: pollinations::openai-roblox
+  name: Pollinations OpenAI Roblox
+  description: Text generation optimized for gaming contexts
+- model: pollinations::mistral
+  name: Pollinations Mistral
+  description: Mistral-based text generation with tool support
 
 # Image Generation Models
 - model: pollinations::flux
@@ -19,3 +35,21 @@
 - model: pollinations::sdxl
   name: Pollinations SDXL
   description: Image generation using Stable Diffusion XL via Pollinations.AI
+
+# Vision Models (Image Analysis)
+- model: pollinations::openai-large
+  name: Pollinations OpenAI Large
+  description: Advanced vision model for detailed image analysis
+- model: pollinations::claude-hybridspace
+  name: Pollinations Claude Hybridspace
+  description: Claude-based vision model for image understanding
+
+# Audio Models
+- model: pollinations::openai-audio
+  name: Pollinations OpenAI Audio
+  description: Speech-to-text and text-to-speech capabilities
+
+# Specialized Models
+- model: pollinations::searchgpt
+  name: Pollinations SearchGPT
+  description: Web search enhanced model for current information
